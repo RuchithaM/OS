@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LIFE OS — Your Personal Operating System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+<style>
+/* =============================================
+   ROOT / THEME
+   ============================================= */
+:root {
+  --bg: #0c0e14;
+  --surface: #13161f;
+  --surface2: #1b1f2e;
+  --surface3: #22273a;
+  --border: rgba(255,255,255,0.07);
+  --text: #e8eaf0;
+  --muted: #6b7280;
+  --accent: #f0c040;
+
+  --fitness: #f97316;
+  --food:    #22c55e;
+  --work:    #3b82f6;
+  --finance: #a78bfa;
+  --life:    #f472b6;
+  --learn:   #06b6d4;
+
+  --r: 14px;
+  --transition: 0.3s cubic-bezier(.4,0,.2,1);
+  --shadow: 0 4px 32px rgba(0,0,0,0.4);
+}
+[data-theme="light"] {
+  --bg: #f4f5f9;
+  --surface: #ffffff;
+  --surface2: #eef0f6;
+  --surface3: #e4e7f0;
+  --border: rgba(0,0,0,0.08);
+  --text: #1a1d28;
+  --muted: #6b7280;
+  --shadow: 0 4px 32px rgba(0,0,0,0.10);
+}
+
+/* =============================================
+   RESET & BASE
+   ============================================= */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+  min-height: 100vh;
+  transition: background var(--transition), color var(--transition);
+}
+h1,h2,h3,h4,h5 { font-family: 'Syne', sans-serif; line-height: 1.2; }
+a { color: inherit; text-decoration: none; }
+ul { list-style: none; }
+button { cursor: pointer; border: none; background: none; font-family: inherit; }
+input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; cursor: pointer; flex-shrink:0; }
+
+/* =============================================
+   STICKY HEADER
+   ============================================= */
+#header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 58px;
+  backdrop-filter: blur(12px);
+  box-shadow: var(--shadow);
+}
+.header-logo {
+  font-family: 'Syne', sans-serif;
+  font-size: 18px; font-weight: 800; letter-spacing: -0.5px;
+  display: flex; align-items: center; gap: 8px;
+}
+.header-logo span { color: var(--accent); }
+.header-right { display: flex; align-items: center; gap: 12px; }
+.date-badge {
+  font-size: 12px; color: var(--muted);
+  background: var(--surface2); border: 1px solid var(--border);
+  padding: 4px 10px; border-radius: 20px; font-weight: 500;
+}
+.theme-toggle {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--surface2); border: 1px solid var(--border);
+  font-size: 16px; display: flex; align-items: center; justify-content: center;
+  transition: background var(--transition); color: var(--text);
+}
+.theme-toggle:hover { background: var(--surface3); }
+
+/* =============================================
+   HERO
+   ============================================= */
+#hero {
+  padding: 32px 20px 24px; text-align: center; position: relative; overflow: hidden;
+}
+#hero::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(240,192,64,0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-title {
+  font-size: clamp(22px, 5vw, 38px); font-weight: 800; letter-spacing: -1px; margin-bottom: 8px;
+}
+.hero-title em { color: var(--accent); font-style: normal; }
+.hero-subtitle { color: var(--muted); font-size: 14px; margin-bottom: 18px; }
+#quote-box {
+  display: inline-block;
+  background: var(--surface); border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  padding: 12px 20px; border-radius: var(--r);
+  max-width: 520px; font-size: 14px; font-style: italic; color: var(--muted);
+  animation: fadeUp 0.6s ease both;
+}
+
+/* =============================================
+   PROGRESS
+   ============================================= */
+#progress-bar-wrap {
+  display: flex; align-items: center; justify-content: center; gap: 16px;
+  margin: 16px 20px 0; flex-wrap: wrap;
+}
+.progress-label { font-size: 13px; color: var(--muted); }
+.progress-track {
+  flex: 1; max-width: 300px; height: 6px;
+  background: var(--surface3); border-radius: 99px; overflow: hidden;
+}
+.progress-fill {
+  height: 100%; border-radius: 99px;
+  background: linear-gradient(90deg, var(--accent), #f97316);
+  transition: width 0.5s ease;
+}
+.progress-pct { font-size: 13px; font-weight: 600; color: var(--accent); min-width: 32px; }
+
+/* =============================================
+   DAY NAV
+   ============================================= */
+#day-nav {
+  display: flex; gap: 8px; padding: 20px 20px 0;
+  overflow-x: auto; scrollbar-width: none;
+}
+#day-nav::-webkit-scrollbar { display: none; }
+.day-btn {
+  flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 10px 16px; border-radius: var(--r);
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--muted); font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 600;
+  transition: all var(--transition); position: relative; cursor: pointer;
+}
+.day-btn .day-abbr { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
+.day-btn .day-num { font-size: 18px; font-weight: 800; }
+.day-btn:hover { background: var(--surface2); color: var(--text); }
+.day-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+.day-btn.office-day::after {
+  content: '🏢'; position: absolute; top: 4px; right: 4px; font-size: 9px;
+}
+.day-btn .day-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--surface3);
+  margin-top: 2px; transition: background var(--transition);
+}
+.day-btn.has-progress .day-dot { background: var(--fitness); }
+
+/* =============================================
+   WEEKLY STRIP
+   ============================================= */
+#weekly-strip {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 16px 20px; margin: 16px 20px 0;
+}
+.ws-title {
+  font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; margin-bottom: 12px;
+  color: var(--muted); letter-spacing: 1px; text-transform: uppercase;
+}
+.ws-days { display: flex; gap: 8px; }
+.ws-day { flex: 1; text-align: center; }
+.ws-day-label { font-size: 10px; color: var(--muted); margin-bottom: 4px; }
+.ws-bar-wrap { height: 48px; display: flex; align-items: flex-end; justify-content: center; }
+.ws-bar {
+  width: 12px; border-radius: 4px 4px 0 0; background: var(--surface3);
+  transition: height 0.5s ease, background 0.3s ease; min-height: 4px;
+}
+.ws-bar.has-data { background: linear-gradient(180deg, var(--accent), #f97316); }
+
+/* =============================================
+   MAIN
+   ============================================= */
+#main {
+  max-width: 900px; margin: 0 auto; padding: 20px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+
+/* =============================================
+   SECTION CARDS (Accordion)
+   ============================================= */
+.section-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); overflow: hidden;
+  transition: box-shadow var(--transition);
+  animation: fadeUp 0.4s ease both;
+}
+.section-card:hover { box-shadow: var(--shadow); }
+.section-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px 20px; cursor: pointer; user-select: none; position: relative;
+}
+.section-header::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px; border-radius: 0 4px 4px 0;
+}
+.section-card[data-color="fitness"] .section-header::before { background: var(--fitness); }
+.section-card[data-color="food"]    .section-header::before { background: var(--food); }
+.section-card[data-color="work"]    .section-header::before { background: var(--work); }
+.section-card[data-color="finance"] .section-header::before { background: var(--finance); }
+.section-card[data-color="life"]    .section-header::before { background: var(--life); }
+.section-card[data-color="learn"]   .section-header::before { background: var(--learn); }
+
+.section-icon {
+  width: 38px; height: 38px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.section-card[data-color="fitness"] .section-icon { background: rgba(249,115,22,0.15); }
+.section-card[data-color="food"]    .section-icon { background: rgba(34,197,94,0.15); }
+.section-card[data-color="work"]    .section-icon { background: rgba(59,130,246,0.15); }
+.section-card[data-color="finance"] .section-icon { background: rgba(167,139,250,0.15); }
+.section-card[data-color="life"]    .section-icon { background: rgba(244,114,182,0.15); }
+.section-card[data-color="learn"]   .section-icon { background: rgba(6,182,212,0.15); }
+
+.section-title-wrap { flex: 1; }
+.section-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; }
+.section-subtitle { font-size: 12px; color: var(--muted); }
+.section-chevron { color: var(--muted); font-size: 18px; transition: transform 0.3s ease; }
+.section-card.open .section-chevron { transform: rotate(180deg); }
+.section-badge {
+  font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px;
+  background: var(--surface2); color: var(--muted);
+}
+.section-body {
+  max-height: 0; overflow: hidden;
+  transition: max-height 0.5s cubic-bezier(.4,0,.2,1);
+}
+.section-card.open .section-body { max-height: 5000px; border-top: 1px solid var(--border); }
+.section-inner { padding: 20px; }
+
+/* =============================================
+   CHECKLIST
+   ============================================= */
+.checklist { display: flex; flex-direction: column; gap: 8px; }
+.check-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 14px; background: var(--surface2);
+  border-radius: 10px; border: 1px solid var(--border);
+  transition: all var(--transition); cursor: pointer;
+}
+.check-item:hover { background: var(--surface3); }
+.check-item.done { opacity: 0.55; }
+.check-item.done .check-label { text-decoration: line-through; color: var(--muted); }
+.check-label { flex: 1; font-size: 14px; }
+.check-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.check-tag {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+  padding: 2px 7px; border-radius: 99px; flex-shrink: 0; align-self: center;
+  text-transform: uppercase;
+}
+.tag-time { background: rgba(240,192,64,0.15); color: var(--accent); }
+.tag-key  { background: rgba(249,115,22,0.15); color: var(--fitness); }
+.tag-new  { background: rgba(167,139,250,0.15); color: var(--finance); }
+
+/* =============================================
+   SCHEDULE
+   ============================================= */
+.schedule { display: flex; flex-direction: column; gap: 2px; }
+.time-block {
+  display: flex; align-items: stretch; gap: 12px;
+  padding: 8px 0; position: relative;
+}
+.time-block::before {
+  content: ''; position: absolute; left: 58px; top: 0; bottom: 0;
+  width: 1px; background: var(--border);
+}
+.tb-time {
+  width: 56px; flex-shrink: 0; text-align: right;
+  font-size: 11px; font-weight: 600; color: var(--muted); padding-top: 2px;
+}
+.tb-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  margin-top: 5px; margin-left: -4px; z-index: 1; border: 2px solid var(--bg);
+}
+.tb-content {
+  flex: 1; background: var(--surface2);
+  border-radius: 10px; padding: 9px 13px; border: 1px solid var(--border);
+}
+.tb-title { font-size: 13px; font-weight: 600; }
+.tb-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.tb-current { border-color: var(--accent) !important; }
+
+/* =============================================
+   WORKOUT CARDS
+   ============================================= */
+.workout-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap: 12px; margin-top: 12px; }
+.workout-card {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px;
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+.workout-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+.wc-name { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.wc-sets { font-size: 12px; color: var(--muted); }
+.wc-link { display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; font-size: 11px; color: var(--learn); }
+.wc-link:hover { text-decoration: underline; }
+
+/* =============================================
+   MEAL CARDS
+   ============================================= */
+.meal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px,1fr)); gap: 12px; margin-top: 12px; }
+.meal-card {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px; border-left: 3px solid var(--food);
+}
+.mc-meal { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--food); margin-bottom: 4px; }
+.mc-name { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.mc-detail { font-size: 12px; color: var(--muted); }
+.mc-protein {
+  display: inline-block; margin-top: 6px; font-size: 11px; font-weight: 600;
+  color: var(--food); background: rgba(34,197,94,0.12); padding: 2px 8px; border-radius: 99px;
+}
+
+/* =============================================
+   FINANCE SECTION
+   ============================================= */
+.finance-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.fin-tab {
+  padding: 6px 14px; border-radius: 99px; font-size: 12px; font-weight: 600;
+  background: var(--surface2); border: 1px solid var(--border); color: var(--muted);
+  transition: all var(--transition); cursor: pointer;
+}
+.fin-tab.active { background: var(--finance); color: #fff; border-color: var(--finance); }
+.fin-tab-content { display: none; }
+.fin-tab-content.active { display: block; }
+
+.concept-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(175px,1fr)); gap: 10px; margin-top: 10px; }
+.concept-card {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px; cursor: pointer;
+  transition: all var(--transition); border-left: 3px solid var(--finance);
+}
+.concept-card:hover { background: var(--surface3); transform: translateY(-1px); }
+.cc-icon { font-size: 22px; margin-bottom: 6px; }
+.cc-title { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+.cc-desc { font-size: 12px; color: var(--muted); }
+
+/* Stock Tracker */
+.stock-tracker { display: grid; grid-template-columns: repeat(auto-fill, minmax(195px,1fr)); gap: 12px; margin-top: 12px; }
+.stock-card {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 12px; padding: 16px; transition: all var(--transition);
+}
+.stock-card:hover { background: var(--surface3); }
+.sc-symbol { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 800; }
+.sc-name { font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+.sc-price { font-size: 20px; font-weight: 700; margin-bottom: 2px; }
+.sc-change { font-size: 12px; font-weight: 600; }
+.sc-change.up { color: var(--food); }
+.sc-change.down { color: #ef4444; }
+.mini-chart { height: 40px; margin-top: 10px; }
+.mini-chart svg { width: 100%; height: 100%; }
+.sc-notes {
+  width: 100%; background: var(--surface3); border: 1px solid var(--border);
+  border-radius: 6px; padding: 6px 8px; font-size: 12px; color: var(--text);
+  font-family: 'DM Sans', sans-serif; resize: none; min-height: 48px;
+  margin-top: 10px; display: block;
+}
+.sc-notes:focus { outline: 2px solid var(--finance); }
+
+.rules-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(195px,1fr)); gap: 10px; margin-top: 10px; }
+.rule-card {
+  display: flex; align-items: flex-start; gap: 10px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px;
+}
+.rule-icon { font-size: 18px; flex-shrink: 0; }
+.rule-text { font-size: 13px; }
+.rule-text strong { display: block; margin-bottom: 2px; font-family: 'Syne', sans-serif; }
+.rule-text span { font-size: 12px; color: var(--muted); }
+
+.session-card {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 12px; padding: 16px; margin-bottom: 10px;
+  border-left: 3px solid var(--finance);
+}
+.session-title { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.session-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.session-tag {
+  font-size: 11px; padding: 2px 8px; border-radius: 99px;
+  background: rgba(167,139,250,0.1); color: var(--finance); font-weight: 600;
+}
+
+/* =============================================
+   TIP BOX
+   ============================================= */
+.tip-box {
+  display: flex; align-items: flex-start; gap: 10px;
+  background: rgba(240,192,64,0.07); border: 1px solid rgba(240,192,64,0.2);
+  border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; font-size: 13px;
+}
+.tip-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+/* =============================================
+   LIFE CARDS
+   ============================================= */
+.life-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(195px,1fr)); gap: 10px; margin-top: 10px; }
+.life-card {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px; border-top: 3px solid var(--life);
+}
+.lc-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--life); margin-bottom: 6px; }
+.lc-title { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.lc-detail { font-size: 12px; color: var(--muted); }
+
+/* =============================================
+   HELPERS
+   ============================================= */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.chip-group { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.chip {
+  font-size: 12px; padding: 4px 12px; border-radius: 99px;
+  background: var(--surface3); border: 1px solid var(--border);
+  color: var(--muted); font-weight: 500;
+}
+.label {
+  font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase; color: var(--muted);
+  margin-bottom: 10px; margin-top: 18px;
+}
+.label:first-child { margin-top: 0; }
+.divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+/* Office / Weekend banners */
+.info-banner {
+  display: flex; align-items: flex-start; gap: 10px;
+  border-radius: 10px; padding: 12px 14px; margin-bottom: 16px; font-size: 13px;
+  border: 1px solid;
+}
+.info-banner.office { background: rgba(59,130,246,0.1); border-color: rgba(59,130,246,0.2); }
+.info-banner.weekend { background: rgba(167,139,250,0.08); border-color: rgba(167,139,250,0.2); }
+.ib-icon { font-size: 18px; flex-shrink: 0; }
+
+/* =============================================
+   MODAL
+   ============================================= */
+#modal-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+}
+#modal-overlay.open { opacity: 1; pointer-events: auto; }
+#modal {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 18px; max-width: 480px; width: 100%; max-height: 80vh;
+  overflow-y: auto; padding: 28px; position: relative;
+  transform: translateY(20px); transition: transform 0.3s ease;
+}
+#modal-overlay.open #modal { transform: translateY(0); }
+#modal-close {
+  position: absolute; top: 16px; right: 16px;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--surface2); border: 1px solid var(--border);
+  font-size: 16px; display: flex; align-items: center; justify-content: center;
+  color: var(--muted); cursor: pointer;
+}
+#modal-title { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; margin-bottom: 10px; }
+#modal-body { font-size: 14px; color: var(--muted); line-height: 1.8; }
+
+/* =============================================
+   ANIMATIONS
+   ============================================= */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.section-card:nth-child(1) { animation-delay: 0.05s; }
+.section-card:nth-child(2) { animation-delay: 0.10s; }
+.section-card:nth-child(3) { animation-delay: 0.15s; }
+.section-card:nth-child(4) { animation-delay: 0.20s; }
+.section-card:nth-child(5) { animation-delay: 0.25s; }
+.section-card:nth-child(6) { animation-delay: 0.30s; }
+.section-card:nth-child(7) { animation-delay: 0.35s; }
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(240,192,64,0.3); }
+  50% { box-shadow: 0 0 0 6px rgba(240,192,64,0); }
+}
+.current-pulse { animation: pulse 2s infinite; }
+
+/* =============================================
+   SCROLLBAR & MOBILE
+   ============================================= */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 99px; }
+
+@media (max-width: 600px) {
+  #main { padding: 12px; }
+  .section-inner { padding: 14px; }
+  .section-header { padding: 14px; }
+  .hero-title { font-size: 22px; }
+  .workout-grid, .meal-grid, .concept-grid, .stock-tracker,
+  .rules-grid, .life-grid, .two-col { grid-template-columns: 1fr; }
+  .section-badge { display: none; }
+}
+
+footer { text-align: center; padding: 32px 20px; font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header id="header">
+  <div class="header-logo">⚡ LIFE <span>OS</span></div>
+  <div class="header-right">
+    <div class="date-badge" id="date-badge">—</div>
+    <button class="theme-toggle" id="theme-btn" title="Toggle theme">🌙</button>
+  </div>
+</header>
+
+<!-- ===== HERO ===== -->
+<section id="hero">
+  <h1 class="hero-title">Your Personal <em>Operating System</em></h1>
+  <p class="hero-subtitle">Fitness · Career · Finance · Learning · Life — one system, zero friction.</p>
+  <div id="quote-box">Loading…</div>
+</section>
+
+<!-- PROGRESS BAR -->
+<div id="progress-bar-wrap">
+  <span class="progress-label">Today's progress</span>
+  <div class="progress-track">
+    <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+  </div>
+  <span class="progress-pct" id="progress-pct">0%</span>
+</div>
+
+<!-- DAY NAV -->
+<div id="day-nav"></div>
+
+<!-- WEEKLY STRIP -->
+<div id="weekly-strip">
+  <div class="ws-title">Week at a glance</div>
+  <div class="ws-days" id="ws-days"></div>
+</div>
+
+<!-- MAIN CONTENT -->
+<main id="main"></main>
+
+<!-- MODAL -->
+<div id="modal-overlay">
+  <div id="modal">
+    <button id="modal-close">✕</button>
+    <div id="modal-title"></div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<footer>Built with 💛 for your growth. Review every Sunday. Adjust every month. 🌱</footer>
+
+<script>
+/* ========================================================
+   DATA
+   ======================================================== */
+const QUOTES = [
+  "Small daily improvements are the key to staggering long-term results.",
+  "You don't rise to the level of your goals. You fall to the level of your systems.",
+  "The best investment you can make is in yourself.",
+  "Discipline is choosing between what you want now and what you want most.",
+  "Compound interest works on money — and on skills.",
+  "One percent better every day. That's all it takes.",
+  "Your morning routine is the architecture of your whole day.",
+  "In investing, what is comfortable is rarely profitable.",
+  "Knowledge is the only asset that compounds faster than money.",
+  "Systems beat willpower. Always.",
+];
+
+const FINANCE_CONCEPTS = [
+  { icon:"📈", title:"What is a Stock?", desc:"Ownership slice of a company", body:"A <strong>stock</strong> is a small piece of ownership in a company. When you buy 1 share of Infosys, you own a tiny slice of Infosys. Companies list shares on <strong>NSE</strong> (National Stock Exchange) or <strong>BSE</strong> (Bombay Stock Exchange) so anyone can buy or sell them. The price changes based on demand, company performance, and market mood." },
+  { icon:"🏦", title:"Mutual Funds", desc:"Pooled investing — safer for beginners", body:"A <strong>mutual fund</strong> pools money from thousands of investors. A professional fund manager invests that pool in stocks, bonds, or both. You get automatic diversification (spread of risk) without needing to pick individual stocks. This is an excellent starting point for beginners." },
+  { icon:"📅", title:"SIP", desc:"Invest fixed amount monthly, automatically", body:"<strong>SIP (Systematic Investment Plan)</strong> means investing a fixed amount (e.g. ₹500 or ₹1,000) every month into a mutual fund — automatically debited from your account. Benefits: you don't need to time the market, you build discipline, and <strong>rupee cost averaging</strong> protects you from market volatility. Even ₹500/month for 20 years with 12% returns can grow to ~₹4.5 lakhs. Start today." },
+  { icon:"🏗️", title:"Index Funds", desc:"Mirror the market with very low fees", body:"An <strong>index fund</strong> simply copies an index like <strong>Nifty 50</strong> (top 50 Indian companies by size). No active fund manager → very low fees (expense ratio < 0.1%). Warren Buffett recommends index funds for most people. A Nifty 50 index fund SIP is one of the simplest and most effective long-term investment strategies." },
+  { icon:"📊", title:"P/E Ratio", desc:"Is a stock cheap or expensive?", body:"<strong>P/E (Price-to-Earnings) ratio</strong> = Stock Price ÷ Earnings Per Share. A high P/E might mean expensive or high growth expectations. A low P/E might mean cheap or slow growth. Always compare P/E within the same industry. Never buy a stock based on P/E alone. It's one tool, not the full picture." },
+  { icon:"🛡️", title:"Risk Management", desc:"Protecting your money always comes first", body:"Key rules:<br><br>1. Never invest money you need in the next 1–3 years.<br>2. Diversify — don't put more than 5–10% in one stock.<br>3. Start very small. Learn first, scale later.<br>4. Avoid leverage (borrowed money) completely as a beginner.<br>5. Keep 3–6 months of expenses as emergency fund in a savings account BEFORE investing." },
+  { icon:"📉", title:"Market Cycles", desc:"Markets rise and fall — that's completely normal", body:"Stock markets go through <strong>Bull markets</strong> (prices rising, optimism — everyone is excited) and <strong>Bear markets</strong> (prices falling, fear — everyone is panicking). Both are completely normal and cyclical. As a long-term investor, bear markets are actually <em>opportunities</em> to buy quality companies at a discount. The golden rule: don't panic-sell during downturns." },
+  { icon:"💸", title:"Dividends", desc:"Getting paid just for owning shares", body:"Some companies share a portion of their profits with shareholders — this is called a <strong>dividend</strong>. If you own 100 shares and the company pays ₹5 dividend per share, you receive ₹500 in cash — without selling anything. Dividend investing is a popular passive income strategy for long-term investors. Look for companies with consistent dividend histories." },
+];
+
+const GYM_PLAN = {
+  Mon: { label:"Push Day 💪", exercises:[
+    { name:"Bench Press", sets:"3×10–12 reps", link:"https://www.youtube.com/results?search_query=bench+press+form+beginners" },
+    { name:"Incline Dumbbell Press", sets:"3×12 reps", link:"https://www.youtube.com/results?search_query=incline+dumbbell+press+beginners" },
+    { name:"Dumbbell Shoulder Press", sets:"3×10 reps", link:"https://www.youtube.com/results?search_query=dumbbell+shoulder+press+form" },
+    { name:"Lateral Raises", sets:"3×15 reps", link:"https://www.youtube.com/results?search_query=lateral+raise+form+beginners" },
+    { name:"Tricep Pushdowns (Cable)", sets:"3×15 reps", link:"https://www.youtube.com/results?search_query=tricep+pushdown+cable+form" },
+  ]},
+  Tue: { label:"Pull Day 🏋️", exercises:[
+    { name:"Lat Pulldown", sets:"3×12 reps", link:"https://www.youtube.com/results?search_query=lat+pulldown+form+beginners" },
+    { name:"Seated Cable Row", sets:"3×12 reps", link:"https://www.youtube.com/results?search_query=seated+cable+row+form" },
+    { name:"Face Pulls", sets:"3×15 reps", link:"https://www.youtube.com/results?search_query=face+pull+form+beginners" },
+    { name:"Bicep Curls (Dumbbell)", sets:"3×12 reps", link:"https://www.youtube.com/results?search_query=bicep+curl+form+beginners" },
+    { name:"Hammer Curls", sets:"3×12 reps", link:"https://www.youtube.com/results?search_query=hammer+curl+form" },
+  ]},
+  Wed: { label:"Leg Day 🦵", exercises:[
+    { name:"Goblet Squat (or Barbell)", sets:"3×12 reps", link:"https://www.youtube.com/results?search_query=goblet+squat+form+beginners" },
+    { name:"Romanian Deadlift", sets:"3×12 reps", link:"https://www.youtube.com/results?search_query=romanian+deadlift+form+beginners" },
+    { name:"Leg Press", sets:"3×15 reps", link:"https://www.youtube.com/results?search_query=leg+press+form+beginners" },
+    { name:"Leg Curl (Machine)", sets:"3×15 reps", link:"https://www.youtube.com/results?search_query=leg+curl+machine+form" },
+    { name:"Standing Calf Raises", sets:"4×20 reps", link:"https://www.youtube.com/results?search_query=calf+raises+form" },
+  ]},
+  Thu: { label:"Rest / Light Walk 🚶", exercises:[] },
+  Fri: { label:"Full Body — Office Day 🏢", exercises:[
+    { name:"Dumbbell Squat", sets:"3×12 reps", link:"https://www.youtube.com/results?search_query=dumbbell+squat+form" },
+    { name:"Push-ups", sets:"3×15 reps", link:"https://www.youtube.com/results?search_query=push+up+form+beginners" },
+    { name:"Single Arm Dumbbell Row", sets:"3×12 each", link:"https://www.youtube.com/results?search_query=single+arm+dumbbell+row" },
+    { name:"Plank Hold", sets:"3×30–60 sec", link:"https://www.youtube.com/results?search_query=plank+form+beginners" },
+  ]},
+  Sat: { label:"Core + Cardio 🔥", exercises:[
+    { name:"Treadmill Walk / Light Jog", sets:"20–25 min", link:"https://www.youtube.com/results?search_query=treadmill+fat+loss+intervals+beginners" },
+    { name:"Crunches", sets:"3×20 reps", link:"https://www.youtube.com/results?search_query=crunch+form+beginners" },
+    { name:"Leg Raises", sets:"3×15 reps", link:"https://www.youtube.com/results?search_query=leg+raise+abs+form" },
+    { name:"Russian Twists", sets:"3×20 reps", link:"https://www.youtube.com/results?search_query=russian+twist+abs+form" },
+    { name:"Bicycle Crunches", sets:"3×20 reps", link:"https://www.youtube.com/results?search_query=bicycle+crunches+abs+form" },
+  ]},
+  Sun: { label:"Rest & Recovery 🌿", exercises:[] },
+};
+
+const MEALS = {
+  Mon:[
+    { meal:"Breakfast", name:"Oats Porridge + Boiled Eggs", detail:"1 cup oats with milk, 2 boiled eggs, 1 banana", protein:"~28g" },
+    { meal:"Lunch", name:"Rice + Dal + Sabzi", detail:"1 cup rice, moong dal, any seasonal sabzi + curd", protein:"~22g" },
+    { meal:"Snack", name:"Greek Yogurt + Chia Seeds", detail:"1 cup low-fat yogurt + 1 tsp chia seeds + fruit", protein:"~15g" },
+    { meal:"Dinner", name:"Egg Bhurji + Chapati", detail:"3 eggs scrambled with onion/tomato + 2 chapatis + salad", protein:"~30g" },
+  ],
+  Tue:[
+    { meal:"Breakfast", name:"Moong Dal Chilla", detail:"3 chillas + mint chutney + 1 boiled egg", protein:"~25g" },
+    { meal:"Lunch", name:"Sambar Rice + Rasam", detail:"Brown rice if possible, sambar, papad, 1 egg", protein:"~20g" },
+    { meal:"Snack", name:"Peanut Butter Toast", detail:"2 whole wheat slices + 2 tbsp natural PB + banana", protein:"~14g" },
+    { meal:"Dinner", name:"Paneer Bhurji + Chapati", detail:"100g paneer scrambled + veggies + 2 chapatis + salad", protein:"~32g" },
+  ],
+  Wed:[
+    { meal:"Breakfast", name:"3-Egg Omelette + Toast", detail:"Veggie omelette (onion, capsicum, tomato) + 2 slices toast", protein:"~27g" },
+    { meal:"Lunch", name:"Curd Rice + Pickle + Salad", detail:"Curd rice with tadka, raw cucumber + carrot salad", protein:"~18g" },
+    { meal:"Snack", name:"Sprouted Moong Chaat", detail:"1 cup sprouted moong + lemon + chaat masala + coriander", protein:"~12g" },
+    { meal:"Dinner", name:"Dal Tadka + 2 Chapatis", detail:"Thick dal with ghee tadka + roti + sautéed sabzi", protein:"~26g" },
+  ],
+  Thu:[
+    { meal:"Breakfast", name:"Quick Idli + Sambar", detail:"4 idlis (pre-made/frozen) + sambar — light & fast", protein:"~18g" },
+    { meal:"Lunch", name:"Office Lunch / Dabba", detail:"Rice or chapati + dal + sabzi — moderate portions", protein:"~22g" },
+    { meal:"Snack", name:"Almonds + 1 Fruit", detail:"~15 almonds + 1 seasonal fruit", protein:"~8g" },
+    { meal:"Dinner", name:"Egg Soup + Toast", detail:"Simple egg drop soup + 2 whole wheat toasts (low effort)", protein:"~24g" },
+  ],
+  Fri:[
+    { meal:"Breakfast", name:"Banana Peanut Smoothie", detail:"1 banana + 1 tbsp PB + 1 cup milk + 2 tbsp oats", protein:"~18g" },
+    { meal:"Lunch", name:"Office / Canteen Lunch", detail:"Prioritise protein: dal, eggs, paneer over rice-heavy options", protein:"~20g" },
+    { meal:"Snack", name:"Greek Yogurt + Fruit", detail:"1 cup yogurt + any seasonal fruit", protein:"~15g" },
+    { meal:"Dinner", name:"Moong Dal Khichdi", detail:"Pressure cooker khichdi + papad + pickle — light & filling", protein:"~20g" },
+  ],
+  Sat:[
+    { meal:"Breakfast", name:"Masala Egg Paratha", detail:"2 egg-stuffed parathas + mint curd + pickle", protein:"~28g" },
+    { meal:"Lunch", name:"Rajma Chawal", detail:"Rajma (pressure cooker) + rice + raw onion + lemon", protein:"~24g" },
+    { meal:"Snack", name:"Roasted Chana + Chai", detail:"½ cup roasted chana + 1 cup ginger chai", protein:"~10g" },
+    { meal:"Dinner", name:"Grilled Paneer Tikka + Salad", detail:"150g paneer grilled with spices + raita + salad — weekend treat!", protein:"~34g" },
+  ],
+  Sun:[
+    { meal:"Breakfast", name:"South Indian Feast 🥘", detail:"Dosa + sambar + coconut chutney — enjoy it fully!", protein:"~16g" },
+    { meal:"Lunch", name:"Meal Prep + Eat", detail:"Cook dal, rice, chapatis in bulk for the week while eating", protein:"~22g" },
+    { meal:"Snack", name:"Seasonal Fruit Platter", detail:"Mixed fruits — light, refreshing, antioxidant-rich", protein:"~5g" },
+    { meal:"Dinner", name:"Simple Egg Curry + Rice", detail:"Quick egg curry + steamed rice + papad", protein:"~30g" },
+  ],
+};
+
+const FINANCE_DAILY = {
+  Mon: "📖 Learn: What is a Stock? (Concept card → click Learn tab)",
+  Tue: "📖 Learn: How do NSE and BSE work?",
+  Wed: "🎥 Watch 1 video on Mutual Funds (15 min on YouTube)",
+  Thu: "📰 Read 1 financial article (Economic Times app, 15 min)",
+  Fri: "📊 Track 1 company: check its stock price & read 1 headline",
+  Sat: "📖 Learn: SIP vs Lump Sum — which is better for beginners?",
+  Sun: "✍️ Weekly reflection: What did I learn about money this week?",
+};
+
+const FINANCE_WEEKLY = {
+  Wed: { session:"Market Basics Deep Dive", topics:["What is Sensex & Nifty?","How stock indices work","Reading a basic price chart","Bull vs Bear market explained"] },
+  Sat: { session:"Personal Finance Session", topics:["Create a simple monthly budget","Calculate your emergency fund target","Plan your first SIP (even ₹500)","Tax basics: Section 80C explained"] },
+};
+
+const STOCK_DEMO = [
+  { symbol:"TCS", name:"Tata Consultancy Services", price:"₹3,842", change:"+1.2%", up:true, spark:[60,58,65,62,70,68,72,75] },
+  { symbol:"INFY", name:"Infosys Ltd.", price:"₹1,620", change:"-0.4%", up:false, spark:[80,78,75,72,74,70,68,65] },
+  { symbol:"HDFCBANK", name:"HDFC Bank Ltd.", price:"₹1,710", change:"+0.8%", up:true, spark:[50,55,53,58,60,62,65,68] },
+  { symbol:"RELIANCE", name:"Reliance Industries", price:"₹2,940", change:"+0.3%", up:true, spark:[40,42,45,43,48,50,52,55] },
+];
+
+const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+const OFFICE_DAYS = ["Thu","Fri"];
+
+/* ========================================================
+   STATE
+   ======================================================== */
+const state = {
+  activeDay: DAYS[(() => { const d = new Date().getDay(); return d === 0 ? 6 : d - 1; })()],
+  theme: localStorage.getItem('lifeOS_theme') || 'dark',
+  checks: JSON.parse(localStorage.getItem('lifeOS_checks') || '{}'),
+  weekProgress: JSON.parse(localStorage.getItem('lifeOS_weekProgress') || '{}'),
+};
+
+// Apply saved theme
+document.documentElement.setAttribute('data-theme', state.theme);
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('theme-btn');
+  if (btn) btn.textContent = state.theme === 'dark' ? '🌙' : '☀️';
+});
+
+function persist() {
+  localStorage.setItem('lifeOS_checks', JSON.stringify(state.checks));
+  localStorage.setItem('lifeOS_weekProgress', JSON.stringify(state.weekProgress));
+  localStorage.setItem('lifeOS_theme', state.theme);
+}
+
+/* ========================================================
+   MINI CHART SVG
+   ======================================================== */
+function miniSVG(data, up) {
+  const W = 160, H = 40;
+  const max = Math.max(...data), min = Math.min(...data);
+  const range = max - min || 1;
+  const pts = data.map((v, i) => {
+    const x = (i / (data.length - 1)) * W;
+    const y = H - ((v - min) / range) * (H - 4) - 2;
+    return x + "," + y;
+  }).join(" ");
+  const c = up ? "#22c55e" : "#ef4444";
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="${c}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+
+/* ========================================================
+   CHECK TOGGLE
+   ======================================================== */
+function ck(day, section, idx, el) {
+  const key = day + "_" + section + "_" + idx;
+  state.checks[key] = !state.checks[key];
+  el.classList.toggle('done', !!state.checks[key]);
+  const cb = el.querySelector('input[type=checkbox]');
+  if (cb) cb.checked = !!state.checks[key];
+  recalcProgress(day);
+  persist();
+}
+
+function recalcProgress(day) {
+  const allItems = document.querySelectorAll('.check-item');
+  const total = allItems.length;
+  let done = 0;
+  allItems.forEach(item => { if (item.classList.contains('done')) done++; });
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  const fill = document.getElementById('progress-fill');
+  const pctEl = document.getElementById('progress-pct');
+  if (fill) fill.style.width = pct + '%';
+  if (pctEl) pctEl.textContent = pct + '%';
+  state.weekProgress[day] = pct;
+  renderWeekStrip();
+  persist();
+}
+
+/* ========================================================
+   CHECKLIST HTML
+   ======================================================== */
+function checklistHTML(day, section, items) {
+  return '<div class="checklist">' + items.map((it, i) => {
+    const key = day + "_" + section + "_" + i;
+    const done = !!state.checks[key];
+    return `<div class="check-item ${done ? 'done' : ''}" onclick="ck('${day}','${section}',${i},this)">
+      <input type="checkbox" ${done ? 'checked' : ''} onclick="event.stopPropagation()">
+      <div style="flex:1">
+        <div class="check-label">${it.label}</div>
+        ${it.meta ? `<div class="check-meta">${it.meta}</div>` : ''}
+      </div>
+      ${it.tag ? `<span class="check-tag ${it.cls || 'tag-time'}">${it.tag}</span>` : ''}
+    </div>`;
+  }).join('') + '</div>';
+}
+
+/* ========================================================
+   SCHEDULE
+   ======================================================== */
+function buildSchedule(day) {
+  const isOffice = OFFICE_DAYS.includes(day);
+  const isWeekend = day === 'Sat' || day === 'Sun';
+
+  if (isWeekend) return [
+    { t:"6:45", lbl:"Wake Up (Relaxed)", desc:"Weekend — no alarm pressure. Drink water first.", dot:"#f0c040" },
+    { t:"7:00", lbl:"Finance Learning", desc: FINANCE_DAILY[day], dot:"#a78bfa" },
+    { t:"7:30", lbl:"Workout", desc: GYM_PLAN[day].label, dot:"#f97316" },
+    { t:"9:00", lbl:"Brunch", desc: MEALS[day][0].name + " — enjoy it!", dot:"#22c55e" },
+    { t:"10:00", lbl:"Deep Work / Learning", desc:"Salesforce Trailhead or personal project — 2 hrs", dot:"#3b82f6" },
+    { t:"12:30", lbl:"Lunch", desc: MEALS[day][1].name, dot:"#22c55e" },
+    { t:"13:30", lbl:"Finance Deep Session", desc: FINANCE_WEEKLY[day] ? FINANCE_WEEKLY[day].session + " (45–60 mins)" : "Review week's learning", dot:"#a78bfa" },
+    { t:"15:00", lbl:"Free Time / Hobbies", desc:"Painting, reading, exploring — completely guilt-free!", dot:"#f472b6" },
+    { t:"17:00", lbl:"Quality Time with Partner", desc:"Walk together, cook, watch something, connect", dot:"#f472b6" },
+    { t:"19:30", lbl:"Dinner", desc: MEALS[day][3].name, dot:"#22c55e" },
+    { t:"21:00", lbl: day === 'Sun' ? "Weekly Planning 📋" : "Evening Wind Down", desc: day === 'Sun' ? "Review week, plan next week, set 3 intentions" : "Light reading, stretch, relax", dot:"#f0c040" },
+    { t:"22:30", lbl:"Sleep 💤", desc:"Reset for the week. 7–8 hours is non-negotiable.", dot:"#6b7280" },
+  ];
+
+  const base = [
+    { t:"5:45", lbl:"Wake Up 💧", desc:"Drink 500ml water immediately. No phone for 10 minutes.", dot:"#f0c040" },
+    { t:"5:50", lbl:"Morning Routine", desc:"Brush, freshen up, 5-min light stretch", dot:"#06b6d4" },
+    { t:"6:00", lbl:"Finance Learning Block", desc: FINANCE_DAILY[day], dot:"#a78bfa" },
+    { t:"6:20", lbl:"Breakfast", desc: MEALS[day][0].name, dot:"#22c55e" },
+    { t:"6:45", lbl:"Gym / Workout", desc: GYM_PLAN[day].label + (isOffice ? " — lighter session today" : ""), dot:"#f97316" },
+    { t:"8:15", lbl:"Shower + Get Ready", desc:"Fresh, energised, ready to work", dot:"#06b6d4" },
+  ];
+
+  if (isOffice) {
+    base.push({ t:"9:30", lbl:"Commute Prep", desc:"Pack bag, food dabba, leave by 9:45 AM", dot:"#3b82f6" });
+    base.push({ t:"10:00", lbl:"Commute (1 hr)", desc:"🎧 Listen to finance podcast or Salesforce audio content", dot:"#a78bfa" });
+  } else {
+    base.push({ t:"9:00", lbl:"Deep Work Block", desc:"Salesforce / Trailhead — 90 mins, phone on DND", dot:"#3b82f6" });
+    base.push({ t:"10:30", lbl:"Break + Snack", desc:"Light snack, 10-min walk, review work list", dot:"#22c55e" });
+  }
+
+  base.push(
+    { t:"11:00", lbl:"Work Starts 💼", desc:"Log in, check priority messages, plan your 3 top tasks", dot:"#3b82f6" },
+    { t:"13:30", lbl:"Lunch Break 🍽️", desc: MEALS[day][1].name + " — step away from screen completely", dot:"#22c55e" },
+    { t:"14:30", lbl:"Work Continues", desc:"Focus blocks with micro-breaks every 90 min (stand, stretch)", dot:"#3b82f6" },
+    { t:"17:00", lbl:"Snack Break", desc: MEALS[day][2].name + " — move around for 10 min", dot:"#22c55e" },
+    { t:"20:00", lbl:"Work Ends 🏁", desc:"Save all work, write tomorrow's top 3 tasks, close tabs", dot:"#3b82f6" }
+  );
+
+  if (isOffice) base.push({ t:"20:30", lbl:"Commute Home", desc:"Decompress — music, podcast, or just zone out", dot:"#6b7280" });
+
+  base.push(
+    { t: isOffice ? "21:30" : "20:30", lbl:"Quality Time ❤️", desc:"Dinner together, no phones, real conversations, relax", dot:"#f472b6" },
+    { t: isOffice ? "22:00" : "21:00", lbl:"Dinner", desc: MEALS[day][3].name + " — light, no heavy carbs at night", dot:"#22c55e" },
+    { t: isOffice ? "22:30" : "21:30", lbl:"Wind Down", desc:"Light reading, 5-min journal, gratitude, no blue light", dot:"#06b6d4" },
+    { t: isOffice ? "23:00" : "22:00", lbl:"Sleep 💤", desc:"7–8 hours is essential for fat loss and recovery", dot:"#6b7280" }
+  );
+
+  return base;
+}
+
+function scheduleHTML(day) {
+  const blocks = buildSchedule(day);
+  const now = new Date();
+  const nowM = now.getHours() * 60 + now.getMinutes();
+  const todayIdx = now.getDay() === 0 ? 6 : now.getDay() - 1;
+  const isToday = day === DAYS[todayIdx];
+
+  return '<div class="schedule">' + blocks.map((b, i) => {
+    const parts = b.t.split(':').map(Number);
+    const bM = parts[0] * 60 + (parts[1] || 0);
+    const next = blocks[i + 1];
+    const nM = next ? (next.t.split(':').map(Number).reduce((a, v, j) => j === 0 ? v * 60 : a + v, 0)) : bM + 60;
+    const cur = isToday && nowM >= bM && nowM < nM;
+    return `<div class="time-block">
+      <div class="tb-time">${b.t}</div>
+      <div class="tb-dot" style="background:${b.dot}"></div>
+      <div class="tb-content ${cur ? 'tb-current current-pulse' : ''}">
+        <div class="tb-title">${b.lbl}${cur ? ' <span style="font-size:10px;color:var(--accent);margin-left:6px;font-weight:800;">← NOW</span>' : ''}</div>
+        <div class="tb-desc">${b.desc}</div>
+      </div>
+    </div>`;
+  }).join('') + '</div>';
+}
+
+/* ========================================================
+   FINANCE HTML
+   ======================================================== */
+function financeHTML(day) {
+  const daily = FINANCE_DAILY[day];
+  const weekly = FINANCE_WEEKLY[day];
+
+  const weeklyBlock = weekly ? `
+    <div class="session-card">
+      <div class="session-title">📅 This ${day}: ${weekly.session}</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px;">45–60 minutes deep session</div>
+      <div class="session-tags">${weekly.topics.map(t => `<span class="session-tag">${t}</span>`).join('')}</div>
+    </div>` : '';
+
+  const conceptCards = FINANCE_CONCEPTS.map((c, i) =>
+    `<div class="concept-card" onclick="openModal('${c.icon} ${c.title}','${c.body.replace(/'/g, "&#39;")}')">
+      <div class="cc-icon">${c.icon}</div>
+      <div class="cc-title">${c.title}</div>
+      <div class="cc-desc">${c.desc}</div>
+    </div>`
+  ).join('');
+
+  const stockCards = STOCK_DEMO.map(s =>
+    `<div class="stock-card">
+      <div class="sc-symbol">${s.symbol}</div>
+      <div class="sc-name">${s.name}</div>
+      <div class="sc-price">${s.price}</div>
+      <div class="sc-change ${s.up ? 'up' : 'down'}">${s.change} today</div>
+      <div class="mini-chart">${miniSVG(s.spark, s.up)}</div>
+      <textarea class="sc-notes" placeholder="Your observation about this company…" onchange="localStorage.setItem('note_${s.symbol}',this.value)">${localStorage.getItem('note_' + s.symbol) || ''}</textarea>
+    </div>`
+  ).join('');
+
+  const checkItems = [
+    { label: "Completed daily finance learning (15 min)", tag: "Daily", cls: "tag-new" },
+    { label: "Noted 1 new concept in my finance journal", meta: "Use Notes app or physical notebook" },
+    weekly
+      ? { label: "Completed weekly deep session: " + weekly.session, tag: "KEY", cls: "tag-key" }
+      : { label: "Observed 1 stock price movement", meta: "Just watch, no action needed" },
+  ];
+
+  return `
+    <div class="tip-box">
+      <span class="tip-icon">💡</span>
+      <span>No prior knowledge needed. One concept at a time. Consistency beats intensity — 15 mins daily builds a strong foundation.</span>
+    </div>
+
+    <div class="finance-tabs">
+      <button class="fin-tab active" onclick="swFin('learn',this)">📘 Learn</button>
+      <button class="fin-tab" onclick="swFin('tracker',this)">📊 Stock Tracker</button>
+      <button class="fin-tab" onclick="swFin('rules',this)">💡 Rules</button>
+      <button class="fin-tab" onclick="swFin('today',this)">📅 Today</button>
+    </div>
+
+    <div class="fin-tab-content active" id="fin-learn">
+      <div class="label">Tap any concept to learn</div>
+      <div class="concept-grid">${conceptCards}</div>
+    </div>
+
+    <div class="fin-tab-content" id="fin-tracker">
+      <div class="label">Demo Stock Tracker — observe, don't trade</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Track these for a week. Notice price movements. Write your observations below each card.</p>
+      <div class="stock-tracker">${stockCards}</div>
+    </div>
+
+    <div class="fin-tab-content" id="fin-rules">
+      <div class="label">Golden Rules for Beginners</div>
+      <div class="rules-grid">
+        <div class="rule-card"><div class="rule-icon">🧠</div><div class="rule-text"><strong>Learn First, Invest Later</strong><span>Spend 3–6 months learning. Paper trade (pretend). No real money until confident.</span></div></div>
+        <div class="rule-card"><div class="rule-icon">🚫</div><div class="rule-text"><strong>No Gambling Mindset</strong><span>Stock market ≠ casino. If someone promises guaranteed returns — run away.</span></div></div>
+        <div class="rule-card"><div class="rule-icon">🐢</div><div class="rule-text"><strong>Long Term Always Wins</strong><span>Warren Buffett's average holding period: 20+ years. Patience is your strongest edge.</span></div></div>
+        <div class="rule-card"><div class="rule-icon">📊</div><div class="rule-text"><strong>Diversify Always</strong><span>Never put more than 5–10% of your portfolio in any single stock. Spread the risk.</span></div></div>
+        <div class="rule-card"><div class="rule-icon">🛡️</div><div class="rule-text"><strong>Emergency Fund First</strong><span>Keep 3–6 months of expenses liquid in a savings account BEFORE any investing.</span></div></div>
+        <div class="rule-card"><div class="rule-icon">📱</div><div class="rule-text"><strong>Avoid Overtrading</strong><span>More trades = more fees + emotional mistakes. Buy quality, hold long. Less is more.</span></div></div>
+        <div class="rule-card"><div class="rule-icon">📅</div><div class="rule-text"><strong>Start a SIP Today</strong><span>Even ₹500/month in a Nifty 50 index fund. The habit matters more than the amount.</span></div></div>
+        <div class="rule-card"><div class="rule-icon">📰</div><div class="rule-text"><strong>Read, Don't React</strong><span>Headlines trigger fear and greed. Read Economic Times calmly. Ignore WhatsApp tips.</span></div></div>
+      </div>
+    </div>
+
+    <div class="fin-tab-content" id="fin-today">
+      <div class="label">Today's Finance Block (${day})</div>
+      <div class="session-card">
+        <div class="session-title">🌅 Daily Block — 15 mins</div>
+        <div style="font-size:14px;margin-top:6px;color:var(--text)">${daily}</div>
+      </div>
+      ${weeklyBlock}
+      <div class="label">Finance Checklist</div>
+      ${checklistHTML(day, 'finance', checkItems)}
+    </div>`;
+}
+
+/* ========================================================
+   SECTION BUILDER
+   ======================================================== */
+function mkSection({ id, color, icon, title, sub, badge, content }) {
+  const div = document.createElement('div');
+  div.className = 'section-card';
+  div.setAttribute('data-color', color);
+  div.setAttribute('data-id', id);
+  div.innerHTML = `
+    <div class="section-header" onclick="toggleSec('${id}')">
+      <div class="section-icon">${icon}</div>
+      <div class="section-title-wrap">
+        <div class="section-title">${title}</div>
+        <div class="section-subtitle">${sub}</div>
+      </div>
+      ${badge ? `<span class="section-badge">${badge}</span>` : ''}
+      <span class="section-chevron">⌄</span>
+    </div>
+    <div class="section-body"><div class="section-inner">${content}</div></div>`;
+  return div;
+}
+
+function toggleSec(id) {
+  const card = document.querySelector('[data-id="' + id + '"]');
+  if (!card) return;
+  const wasOpen = card.classList.contains('open');
+  document.querySelectorAll('.section-card.open').forEach(c => c.classList.remove('open'));
+  if (!wasOpen) card.classList.add('open');
+}
+
+/* ========================================================
+   RENDER DAY
+   ======================================================== */
+function renderDay(day) {
+  const main = document.getElementById('main');
+  main.innerHTML = '';
+
+  const isOffice = OFFICE_DAYS.includes(day);
+  const isWeekend = day === 'Sat' || day === 'Sun';
+  const gym = GYM_PLAN[day];
+  const meals = MEALS[day];
+
+  // Banners
+  const officeBanner = isOffice
+    ? `<div class="info-banner office"><div class="ib-icon">🏢</div><div>Office day! Commute: 1 hour each way. Lighter workout, easy prep meals. Use commute time for learning.</div></div>`
+    : '';
+  const weekendBanner = isWeekend
+    ? `<div class="info-banner weekend"><div class="ib-icon">🌿</div><div>Weekend mode — recharge, explore, learn, and spend real quality time with your partner.</div></div>`
+    : '';
+
+  /* ----- SCHEDULE ----- */
+  const schedCard = mkSection({
+    id: 'schedule', color: 'work', icon: '🕐',
+    title: 'Daily Schedule',
+    sub: isOffice ? 'Office day — adjusted flow' : isWeekend ? 'Relaxed weekend flow' : 'Work from home flow',
+    badge: isOffice ? '🏢 Office' : isWeekend ? '🌿 Weekend' : '🏠 WFH',
+    content: officeBanner + weekendBanner + scheduleHTML(day)
+  });
+
+  /* ----- FITNESS ----- */
+  const workoutContent = gym.exercises.length
+    ? `<div class="workout-grid">${gym.exercises.map(e =>
+        `<div class="workout-card">
+          <div class="wc-name">${e.name}</div>
+          <div class="wc-sets">${e.sets}</div>
+          <a class="wc-link" href="${e.link}" target="_blank" onclick="event.stopPropagation()">▶ Watch form tutorial ↗</a>
+        </div>`
+      ).join('')}</div>`
+    : `<div style="text-align:center;padding:24px 0;color:var(--muted)">🌙 Rest day — light walk, stretch, foam roll. Muscles grow during rest.</div>`;
+
+  const fitChecks = gym.exercises.length
+    ? [
+        { label: gym.label + " — full workout done", tag: "KEY", cls: "tag-key" },
+        { label: "Drank 2.5–3L of water today", meta: "Hydration boosts fat metabolism" },
+        { label: "Hit protein target (~80–100g today)", meta: "Protein protects muscle during fat loss" },
+        { label: "Avoided junk food & excess sugar", meta: "Small win compounding daily" },
+      ]
+    : [
+        { label: "Rest day: light walk or stretch (20 min)", tag: "Easy", cls: "tag-time" },
+        { label: "Drank 2.5L water today" },
+        { label: "Sleep early tonight — recovery is training" },
+      ];
+
+  const fitCard = mkSection({
+    id: 'fitness', color: 'fitness', icon: '🏋️',
+    title: 'Fitness',
+    sub: gym.label,
+    badge: gym.exercises.length ? gym.exercises.length + ' exercises' : 'Rest',
+    content: `
+      <div class="label">Workout: ${gym.label}</div>
+      ${workoutContent}
+      <hr class="divider">
+      <div class="label">Fitness Checklist</div>
+      ${checklistHTML(day, 'fitness', fitChecks)}
+      <hr class="divider">
+      <div class="tip-box">
+        <span class="tip-icon">🔥</span>
+        <span><strong>Fat loss tip:</strong> Stay in a 300–400 cal deficit. Track daily steps (aim 8,000+). Sleep 7–8h. Protein at every meal. Progress > perfection.</span>
+      </div>`
+  });
+
+  /* ----- FOOD ----- */
+  const mealGrid = `<div class="meal-grid">${meals.map(m =>
+    `<div class="meal-card">
+      <div class="mc-meal">${m.meal}</div>
+      <div class="mc-name">${m.name}</div>
+      <div class="mc-detail">${m.detail}</div>
+      <span class="mc-protein">${m.protein} protein</span>
+    </div>`
+  ).join('')}</div>`;
+
+  const foodCard = mkSection({
+    id: 'food', color: 'food', icon: '🍳',
+    title: 'Meal Plan',
+    sub: 'South Indian · High Protein · Egg-friendly · Fast prep',
+    badge: '~85–100g protein',
+    content: `
+      <div class="tip-box">
+        <span class="tip-icon">🌿</span>
+        <span><strong>Sunday prep trick:</strong> Cook dal + rice + boil 6 eggs in pressure cooker. Saves 45+ minutes every weekday morning.</span>
+      </div>
+      <div class="label">Today's Meals</div>
+      ${mealGrid}
+      <hr class="divider">
+      <div class="label">Meal Checklist</div>
+      ${checklistHTML(day, 'food', [
+        { label: "Breakfast: " + meals[0].name, tag: meals[0].protein, cls: "tag-time" },
+        { label: "Lunch: " + meals[1].name, tag: meals[1].protein, cls: "tag-time" },
+        { label: "Snack: " + meals[2].name },
+        { label: "Dinner: " + meals[3].name, tag: meals[3].protein, cls: "tag-time" },
+        { label: "No random snacking / junk food today", meta: "If hungry, add a boiled egg" },
+      ])}`
+  });
+
+  /* ----- WORK ----- */
+  const workCard = mkSection({
+    id: 'work', color: 'work', icon: '💼',
+    title: 'Work & Upskilling',
+    sub: '11AM–8PM work + 2hr Salesforce deep work',
+    badge: 'Salesforce Dev',
+    content: `
+      <div class="label">Work System (11 AM – 8 PM)</div>
+      ${checklistHTML(day, 'work', [
+        { label: "Identified my 3 top tasks for today (before 11 AM)", tag: "Morning", cls: "tag-time" },
+        { label: "Completed Salesforce deep work block (2 hrs, DND on)", tag: "KEY", cls: "tag-key" },
+        { label: "Took micro-breaks every 90 min (5 min stand + stretch)", meta: "Prevents burnout, improves focus" },
+        { label: "Batched Slack/email — max 3 check-ins today", meta: "Reactive = unproductive" },
+        { label: "Reviewed 1 Salesforce concept or Trailhead module", meta: "15–20 min only" },
+        { label: "Wrote tomorrow's top 3 tasks before logging off", meta: "Zero decision fatigue tomorrow morning" },
+      ])}
+      <hr class="divider">
+      <div class="label">Salesforce Upskilling Focus Areas</div>
+      <div class="chip-group">
+        <span class="chip">Apex Programming</span>
+        <span class="chip">Lightning Web Components</span>
+        <span class="chip">Trailhead Modules</span>
+        <span class="chip">Flow Builder</span>
+        <span class="chip">SOQL Queries</span>
+        <span class="chip">Admin Certification</span>
+        <span class="chip">Integration APIs</span>
+        <span class="chip">Data Modeling</span>
+      </div>
+      <div class="tip-box" style="margin-top:14px">
+        <span class="tip-icon">🧠</span>
+        <span><strong>Deep work rule:</strong> 90-min sprint → 10-min real break (no phone). One tab, one task, one goal. Your best Salesforce work happens in this window.</span>
+      </div>`
+  });
+
+  /* ----- FINANCE ----- */
+  const finCard = mkSection({
+    id: 'finance', color: 'finance', icon: '💰',
+    title: 'Financial Learning',
+    sub: '15 min daily concepts + weekly deep sessions',
+    badge: FINANCE_WEEKLY[day] ? '📅 Weekly Session Today' : '📘 Daily Block',
+    content: financeHTML(day)
+  });
+
+  /* ----- LIFE ----- */
+  const lifeChecks = isWeekend
+    ? [
+        { label: "Grocery shopping + meal prep for the week", meta: "Sunday priority — saves weekday stress" },
+        { label: "Clothes washing + basic household chores", meta: "Batch everything in one go" },
+        { label: "Dedicated quality time with partner (no phones)", tag: "❤️", cls: "tag-key" },
+        { label: "1 hobby session (painting, exploring, creative time)", meta: "Protect this time — you need it" },
+        day === 'Sun' ? { label: "Weekly review + planning for next week", meta: "15 min: what worked? what to improve?" } : { label: "Outdoor walk or nature time (30 min)", meta: "Recharge the mind" },
+      ]
+    : [
+        { label: "Quality time with partner after work (8:30–9:30 PM)", tag: "❤️", cls: "tag-key" },
+        { label: "Tidy workspace + room before sleep", meta: "Clean space = calm mind" },
+        { label: "Prepared clothes + bag for tomorrow", meta: "Saves 10 min of morning decisions" },
+        { label: "5-min journaling / gratitude before sleep", meta: "3 wins today + 1 intention for tomorrow" },
+      ];
+
+  const lifeCard = mkSection({
+    id: 'life', color: 'life', icon: '❤️',
+    title: 'Life & Wellness',
+    sub: 'Relationship · Home · Hobbies · Rest',
+    content: `
+      <div class="life-grid">
+        <div class="life-card"><div class="lc-label">❤️ Relationship</div><div class="lc-title">Quality Time</div><div class="lc-detail">After work — no phones, dinner together, real conversations. This time is sacred.</div></div>
+        <div class="life-card"><div class="lc-label">🧹 Home</div><div class="lc-title">Weekend Chores</div><div class="lc-detail">Groceries Sunday. Washing Saturday. Batch all chores in 1–2 hour window. Done.</div></div>
+        <div class="life-card"><div class="lc-label">🎨 Hobbies</div><div class="lc-title">Creative Time</div><div class="lc-detail">Painting, exploring, reading — weekend afternoons. Non-negotiable recharge time.</div></div>
+        <div class="life-card"><div class="lc-label">🌙 Sleep</div><div class="lc-title">Recovery Ritual</div><div class="lc-detail">Wind down 10 PM — dim lights, no screens, light reading, sleep 10:30–11 PM.</div></div>
+      </div>
+      <hr class="divider">
+      <div class="label">Life Checklist</div>
+      ${checklistHTML(day, 'life', lifeChecks)}`
+  });
+
+  /* ----- WEEKEND LEARNING ----- */
+  let learnCard = null;
+  if (isWeekend) {
+    learnCard = mkSection({
+      id: 'learn', color: 'learn', icon: '📚',
+      title: 'Weekend Learning',
+      sub: 'Salesforce · Finance · Growth · Reflection',
+      badge: 'Flexible',
+      content: `
+        <div class="label">Choose 1–2 blocks this ${day}</div>
+        <div class="two-col">
+          <div class="life-card" style="border-top-color:var(--learn)"><div class="lc-label" style="color:var(--learn)">💼 Salesforce</div><div class="lc-title">Trailhead Sprint</div><div class="lc-detail">Complete 1 module, 1 project, or make progress on 1 superbadge</div></div>
+          <div class="life-card" style="border-top-color:var(--finance)"><div class="lc-label" style="color:var(--finance)">📈 Finance</div><div class="lc-title">Market Deep Dive</div><div class="lc-detail">Watch 1 long-form video or read a chapter of an investing book (e.g. Rich Dad Poor Dad)</div></div>
+          <div class="life-card" style="border-top-color:var(--life)"><div class="lc-label" style="color:var(--life)">🧠 Growth</div><div class="lc-title">Weekly Reflection</div><div class="lc-detail">What went well? What to change? Write 3 intentions for next week. 15 min only.</div></div>
+          <div class="life-card" style="border-top-color:var(--food)"><div class="lc-label" style="color:var(--food)">🌿 Wellbeing</div><div class="lc-title">Tech-Free Hour</div><div class="lc-detail">Nature walk, 10-min meditation, or journaling. No screens. Non-negotiable recharge.</div></div>
+        </div>
+        <hr class="divider">
+        <div class="label">Weekend Learning Checklist</div>
+        ${checklistHTML(day, 'learn', [
+          { label: "Completed 1 Salesforce / Trailhead module", tag: "Career", cls: "tag-key" },
+          { label: "Completed finance deep session (45–60 min)", tag: "Finance", cls: "tag-new" },
+          { label: "Weekly reflection journal written (15 min)", meta: "Wins + gaps + next week intentions" },
+          { label: "Tech-free hour completed (walk / meditation)", meta: "Your brain needs offline time too" },
+          day === 'Sun' ? { label: "Monday is planned — 3 top tasks written", meta: "Start Sunday night stress-free" } : { label: "Rest of weekend is intentionally planned" },
+        ])}`
+    });
+  }
+
+  [schedCard, fitCard, foodCard, workCard, finCard, lifeCard, learnCard]
+    .filter(Boolean)
+    .forEach(c => main.appendChild(c));
+
+  setTimeout(() => {
+    toggleSec('schedule');
+    recalcProgress(day);
+  }, 50);
+}
+
+/* ========================================================
+   FINANCE TAB SWITCH
+   ======================================================== */
+function swFin(tab, btn) {
+  document.querySelectorAll('.fin-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.fin-tab-content').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  const el = document.getElementById('fin-' + tab);
+  if (el) el.classList.add('active');
+}
+
+/* ========================================================
+   MODAL
+   ======================================================== */
+function openModal(title, body) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = body;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+document.getElementById('modal-close').addEventListener('click', () => {
+  document.getElementById('modal-overlay').classList.remove('open');
+});
+document.getElementById('modal-overlay').addEventListener('click', e => {
+  if (e.target.id === 'modal-overlay') document.getElementById('modal-overlay').classList.remove('open');
+});
+
+/* ========================================================
+   DAY NAV
+   ======================================================== */
+function renderDayNav() {
+  const nav = document.getElementById('day-nav');
+  nav.innerHTML = '';
+  const now = new Date();
+  const todayIdx = now.getDay() === 0 ? 6 : now.getDay() - 1;
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - todayIdx);
+
+  DAYS.forEach((day, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const btn = document.createElement('button');
+    btn.className = [
+      'day-btn',
+      day === state.activeDay ? 'active' : '',
+      OFFICE_DAYS.includes(day) ? 'office-day' : '',
+      (state.weekProgress[day] || 0) > 0 ? 'has-progress' : '',
+    ].filter(Boolean).join(' ');
+    btn.innerHTML = `<div class="day-abbr">${day}</div><div class="day-num">${d.getDate()}</div><div class="day-dot"></div>`;
+    btn.addEventListener('click', () => {
+      state.activeDay = day;
+      renderDayNav();
+      renderDay(day);
+    });
+    nav.appendChild(btn);
+  });
+}
+
+/* ========================================================
+   WEEKLY STRIP
+   ======================================================== */
+function renderWeekStrip() {
+  const cont = document.getElementById('ws-days');
+  if (!cont) return;
+  cont.innerHTML = DAYS.map(d => {
+    const pct = state.weekProgress[d] || 0;
+    const h = Math.max(4, Math.round((pct / 100) * 44));
+    return `<div class="ws-day">
+      <div class="ws-day-label">${d}</div>
+      <div class="ws-bar-wrap">
+        <div class="ws-bar ${pct > 0 ? 'has-data' : ''}" style="height:${h}px" title="${pct}%"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ========================================================
+   QUOTE
+   ======================================================== */
+function setQuote() {
+  const q = QUOTES[new Date().getDay() % QUOTES.length];
+  document.getElementById('quote-box').innerHTML = `"${q}"`;
+}
+
+/* ========================================================
+   DATE BADGE
+   ======================================================== */
+function setDate() {
+  const now = new Date();
+  document.getElementById('date-badge').textContent = now.toLocaleDateString('en-IN', {
+    weekday: 'short', month: 'short', day: 'numeric'
+  });
+}
+
+/* ========================================================
+   THEME TOGGLE
+   ======================================================== */
+document.getElementById('theme-btn').addEventListener('click', () => {
+  state.theme = state.theme === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', state.theme);
+  document.getElementById('theme-btn').textContent = state.theme === 'dark' ? '🌙' : '☀️';
+  persist();
+});
+document.getElementById('theme-btn').textContent = state.theme === 'dark' ? '🌙' : '☀️';
+
+/* ========================================================
+   INIT
+   ======================================================== */
+setQuote();
+setDate();
+renderDayNav();
+renderWeekStrip();
+renderDay(state.activeDay);
+</script>
+</body>
+</html>
