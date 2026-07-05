@@ -133,15 +133,16 @@
   <div class="view" id="view-today">
     <div class="card">
       <div class="datenav">
-        <button onclick="TodayView.shiftDate(-1)">← Prev</button>
-        <b id="todaySelDate"></b>
-        <button onclick="TodayView.shiftDate(1)">Next →</button>
+        <button onclick="TodayView.shiftDate(-1)">←</button>
+        <input type="date" id="todayDatePicker" style="width:auto;margin:0;padding:6px 8px;" onchange="TodayView.setDate(this.value)">
+        <button onclick="TodayView.shiftDate(1)">→</button>
+        <button class="btn small ghost" onclick="TodayView.goToday()">Today</button>
       </div>
-      <div class="row between">
-        <h3 style="margin:0;">Day type</h3>
-        <div class="toggle" id="officeToggle">
-          <button data-v="0" class="active">Home day</button>
-          <button data-v="1">Office day</button>
+      <div class="row between" style="margin-top:8px;">
+        <span class="muted" id="todaySelDate"></span>
+        <div class="toggle" id="officeToggle" style="transform:scale(.9);transform-origin:right;">
+          <button data-v="0" class="active">WFH</button>
+          <button data-v="1">WFO</button>
         </div>
       </div>
     </div>
@@ -439,15 +440,19 @@ async function computeStreak(section, planItemKeysForWeekday){
 /* ============ HOME ============ */
 async function renderHome(){
   $('homeDateLbl').textContent = new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
-  const {data:sp} = await sb.from('schedule_plans').select('day,activity,time_text');
-  const {data:gp} = await sb.from('gym_plans').select('day,exercise_name');
-  const {data:mp} = await sb.from('meal_plans').select('day,meal_type');
+  const [{data:sp},{data:gp},{data:mp}] = await Promise.all([
+    sb.from('schedule_plans').select('day,activity,time_text'),
+    sb.from('gym_plans').select('day,exercise_name'),
+    sb.from('meal_plans').select('day,meal_type')
+  ]);
   const schedByDay=wd=>(sp||[]).filter(r=>r.day===wd).map(r=>r.activity+'|'+r.time_text);
   const gymByDay=wd=>(gp||[]).filter(r=>r.day===wd).map(r=>r.exercise_name);
   const mealByDay=wd=>(mp||[]).filter(r=>r.day===wd).map(r=>r.meal_type);
-  const schedStreak = await computeStreak('schedule', schedByDay);
-  const gymStreak = await computeStreak('gym', gymByDay);
-  const mealStreak = await computeStreak('meals', mealByDay);
+  const [schedStreak, gymStreak, mealStreak] = await Promise.all([
+    computeStreak('schedule', schedByDay),
+    computeStreak('gym', gymByDay),
+    computeStreak('meals', mealByDay)
+  ]);
   const tiles=[
     {tab:'today',emoji:'📅',name:'Today',streak:schedStreak},
     {tab:'gym',emoji:'💪',name:'Gym',streak:gymStreak},
@@ -472,6 +477,15 @@ TodayView.shiftDate = function(n){
   this.date = addDays(this.date, n);
   renderToday();
 };
+TodayView.setDate = function(dateStr){
+  if(!dateStr) return;
+  this.date = dateStr;
+  renderToday();
+};
+TodayView.goToday = function(){
+  this.date = todayISO();
+  renderToday();
+};
 async function currentOfficeFlag(dateStr){
   const {data} = await sb.from('schedule_overrides').select('is_office_day').eq('date',dateStr).order('created_at',{ascending:false}).limit(1);
   return (data && data[0]) ? (data[0].is_office_day?1:0) : 0;
@@ -485,13 +499,16 @@ document.querySelectorAll('#officeToggle button').forEach(b=>{ b.onclick=()=>set
 async function renderToday(){
   const dateStr = TodayView.date;
   const isToday = dateStr===todayISO();
+  $('todayDatePicker').value = dateStr;
   $('todaySelDate').textContent = new Date(dateStr+'T00:00:00').toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'}) + (isToday?' (Today)':'');
-  const isOffice = await currentOfficeFlag(dateStr);
-  document.querySelectorAll('#officeToggle button').forEach(b=>b.classList.toggle('active', Number(b.dataset.v)===Number(isOffice)));
   const wd = weekdayName(new Date(dateStr+'T00:00:00'));
-  const {data:plan} = await sb.from('schedule_plans').select('*').eq('day',wd).order('created_at');
+  const [isOffice, {data:plan}, checkedSet] = await Promise.all([
+    currentOfficeFlag(dateStr),
+    sb.from('schedule_plans').select('*').eq('day',wd).order('created_at'),
+    getChecksForDate('schedule', dateStr)
+  ]);
+  document.querySelectorAll('#officeToggle button').forEach(b=>b.classList.toggle('active', Number(b.dataset.v)===Number(isOffice)));
   const items = plan||[];
-  const checkedSet = await getChecksForDate('schedule', dateStr);
   if(!items.length){
     $('scheduleList').innerHTML = '<div class="empty">No plan set for '+wd+' yet — add one below</div>';
     $('schedProgLbl').textContent=''; $('schedProgBar').style.width='0%';
@@ -526,9 +543,11 @@ const SchedulePlan = {
 /* ============ GYM ============ */
 async function renderGymToday(){
   const wd = weekdayName(new Date());
-  const {data} = await sb.from('gym_plans').select('*').eq('day',wd).order('created_at');
+  const [{data},checkedSet] = await Promise.all([
+    sb.from('gym_plans').select('*').eq('day',wd).order('created_at'),
+    getChecksForDate('gym', todayISO())
+  ]);
   const items = data||[];
-  const checkedSet = await getChecksForDate('gym', todayISO());
   if(!items.length){ $('gymTodayList').innerHTML='<div class="empty">No gym plan for '+wd+' yet</div>'; $('gymProgLbl').textContent=''; $('gymProgBar').style.width='0%'; return; }
   const checkedCount = items.filter(i=>checkedSet.has(i.exercise_name)).length;
   $('gymProgLbl').textContent = checkedCount+'/'+items.length;
@@ -556,9 +575,11 @@ const GymPlan = {
 /* ============ MEALS ============ */
 async function renderMealPlanToday(){
   const wd = weekdayName(new Date());
-  const {data} = await sb.from('meal_plans').select('*').eq('day',wd).order('created_at');
+  const [{data},checkedSet] = await Promise.all([
+    sb.from('meal_plans').select('*').eq('day',wd).order('created_at'),
+    getChecksForDate('meals', todayISO())
+  ]);
   const items = data||[];
-  const checkedSet = await getChecksForDate('meals', todayISO());
   if(!items.length){ $('mealPlanToday').innerHTML='<div class="empty">No meal plan for '+wd+' yet</div>'; $('mealProgLbl').textContent=''; $('mealProgBar').style.width='0%'; return; }
   const checkedCount = items.filter(i=>checkedSet.has(i.meal_type)).length;
   $('mealProgLbl').textContent = checkedCount+'/'+items.length;
@@ -616,9 +637,11 @@ async function renderMealLog(){
     </div>`).join('');
 }
 async function renderCalorieChart(){
-  const {data:settings} = await sb.from('user_settings').select('target_calories').maybeSingle();
+  const [{data:settings},{data:meals}] = await Promise.all([
+    sb.from('user_settings').select('target_calories').maybeSingle(),
+    sb.from('meal_logs').select('calories').eq('date',todayISO())
+  ]);
   const goal = settings?.target_calories || 1500;
-  const {data:meals} = await sb.from('meal_logs').select('calories').eq('date',todayISO());
   const eaten = (meals||[]).reduce((a,m)=>a+(m.calories||0),0);
   const left = Math.max(goal-eaten,0);
   $('calGoalLbl').textContent=goal; $('calEatenLbl').textContent=eaten; $('calLeftLbl').textContent=left;
@@ -673,18 +696,20 @@ async function renderLearningTasks(){
     </div>`).join('');
 }
 async function renderLearningStats(){
-  const {data:sessions} = await sb.from('learning_sessions').select('minutes').eq('date',todayISO());
+  const ws=weekStart();
+  const prevWs = addDays(ws,-7);
+  const [{data:sessions},{data:weekSessions},{data:prevSessions},{data:allSessions}] = await Promise.all([
+    sb.from('learning_sessions').select('minutes').eq('date',todayISO()),
+    sb.from('learning_sessions').select('minutes,date').gte('date',ws),
+    sb.from('learning_sessions').select('minutes').gte('date',prevWs).lt('date',ws),
+    sb.from('learning_sessions').select('date').gte('date',addDays(todayISO(),-35))
+  ]);
   const todayMin = (sessions||[]).reduce((a,s)=>a+(s.minutes||0),0);
   $('lrnTodayMin').textContent = todayMin;
-  const ws=weekStart();
-  const {data:weekSessions} = await sb.from('learning_sessions').select('minutes,date').gte('date',ws);
   const weekMin = (weekSessions||[]).reduce((a,s)=>a+(s.minutes||0),0);
-  const prevWs = addDays(ws,-7);
-  const {data:prevSessions} = await sb.from('learning_sessions').select('minutes').gte('date',prevWs).lt('date',ws);
   const prevMin = (prevSessions||[]).reduce((a,s)=>a+(s.minutes||0),0);
   $('lrnVsLast').textContent = prevSessions&&prevSessions.length ? (weekMin>=prevMin?'+':'')+(weekMin-prevMin) : '–';
   let streak=0, cur=todayISO();
-  const {data:allSessions} = await sb.from('learning_sessions').select('date').gte('date',addDays(todayISO(),-35));
   const daysWithSession = new Set((allSessions||[]).map(s=>s.date));
   for(let i=0;i<35;i++){ if(daysWithSession.has(cur)){streak++; cur=addDays(cur,-1);} else break; }
   $('lrnStreak').textContent = streak;
@@ -821,68 +846,71 @@ const Steps = {
 /* ============ WEEK STATUS ============ */
 async function renderWeekStatus(){
   const ws = weekStart();
-  // steps
-  const {data:steps} = await sb.from('steps_log').select('steps').gte('date',ws);
+  const [
+    {data:steps},
+    {data:sp},{data:gp},{data:mp},
+    {data:gymChecks},{data:mealChecks},
+    {data:lrnSessions},{data:journalWeek},{data:expWeek},{data:jobsWeek}
+  ] = await Promise.all([
+    sb.from('steps_log').select('steps').gte('date',ws),
+    sb.from('schedule_plans').select('day,activity,time_text'),
+    sb.from('gym_plans').select('day,exercise_name'),
+    sb.from('meal_plans').select('day,meal_type'),
+    sb.from('day_checks').select('date,item_key').eq('section','gym').gte('date',ws),
+    sb.from('day_checks').select('date,item_key').eq('section','meals').gte('date',ws),
+    sb.from('learning_sessions').select('minutes').gte('date',ws),
+    sb.from('journal_entries').select('date').gte('date',ws),
+    sb.from('expenses').select('amount,transaction_type').gte('date',ws),
+    sb.from('job_applications').select('id').gte('created_at',ws)
+  ]);
   const totalSteps = (steps||[]).reduce((a,s)=>a+s.steps,0);
   $('stepsWeekTotal').textContent = `${totalSteps.toLocaleString()} steps this week`;
-  // overview streaks
-  const {data:sp} = await sb.from('schedule_plans').select('day,activity,time_text');
-  const {data:gp} = await sb.from('gym_plans').select('day,exercise_name');
-  const {data:mp} = await sb.from('meal_plans').select('day,meal_type');
   const schedByDay=wd=>(sp||[]).filter(r=>r.day===wd).map(r=>r.activity+'|'+r.time_text);
   const gymByDay=wd=>(gp||[]).filter(r=>r.day===wd).map(r=>r.exercise_name);
   const mealByDay=wd=>(mp||[]).filter(r=>r.day===wd).map(r=>r.meal_type);
-  const schedStreak = await computeStreak('schedule', schedByDay);
-  const gymStreak = await computeStreak('gym', gymByDay);
-  const mealStreak = await computeStreak('meals', mealByDay);
+  const [schedStreak, gymStreak, mealStreak] = await Promise.all([
+    computeStreak('schedule', schedByDay),
+    computeStreak('gym', gymByDay),
+    computeStreak('meals', mealByDay)
+  ]);
   $('weekOverview').innerHTML = `<div class="grid3">
     <div class="stat"><div class="num">🔥${schedStreak}</div><div class="lbl">Schedule</div></div>
     <div class="stat"><div class="num">🔥${gymStreak}</div><div class="lbl">Gym</div></div>
     <div class="stat"><div class="num">🔥${mealStreak}</div><div class="lbl">Meals</div></div>
   </div>`;
-  // gym this week: count of days with all checked
   let gymDone=0;
-  const {data:gymChecks} = await sb.from('day_checks').select('date,item_key').eq('section','gym').gte('date',ws);
   const gymByDate={}; (gymChecks||[]).forEach(c=>{(gymByDate[c.date]=gymByDate[c.date]||new Set()).add(c.item_key);});
   for(let i=0;i<7;i++){ const d=addDays(ws,i); if(d>todayISO())break; const wd=weekdayName(new Date(d+'T00:00:00')); const items=gymByDay(wd); if(items.length && items.every(k=>(gymByDate[d]||new Set()).has(k))) gymDone++; }
   $('weekGym').innerHTML = `<div class="muted">${gymDone} full workout days completed this week</div>`;
-  // meals this week
   let mealDone=0;
-  const {data:mealChecks} = await sb.from('day_checks').select('date,item_key').eq('section','meals').gte('date',ws);
   const mealByDate={}; (mealChecks||[]).forEach(c=>{(mealByDate[c.date]=mealByDate[c.date]||new Set()).add(c.item_key);});
   for(let i=0;i<7;i++){ const d=addDays(ws,i); if(d>todayISO())break; const wd=weekdayName(new Date(d+'T00:00:00')); const items=mealByDay(wd); if(items.length && items.every(k=>(mealByDate[d]||new Set()).has(k))) mealDone++; }
   $('weekMeals').innerHTML = `<div class="muted">${mealDone} full meal-plan days completed this week</div>`;
-  // learning this week
-  const {data:lrnSessions} = await sb.from('learning_sessions').select('minutes').gte('date',ws);
   const lrnMin = (lrnSessions||[]).reduce((a,s)=>a+(s.minutes||0),0);
   $('weekLearning').innerHTML = `<div class="muted">${lrnMin} min logged via check-in this week</div>`;
-  // journal this week
-  const {data:journalWeek} = await sb.from('journal_entries').select('date').gte('date',ws);
   $('weekJournal').innerHTML = `<div class="muted">${(journalWeek||[]).length}/7 days journaled this week</div>`;
-  // expenses this week
-  const {data:expWeek} = await sb.from('expenses').select('amount,transaction_type').gte('date',ws);
   const spend = (expWeek||[]).filter(e=>e.transaction_type==='Debit').reduce((a,e)=>a+Number(e.amount),0);
   $('weekExpenses').innerHTML = `<div class="muted">₹${spend.toFixed(0)} spent this week across ${(expWeek||[]).length} transactions</div>`;
-  // jobs this week
-  const {data:jobsWeek} = await sb.from('job_applications').select('id').gte('created_at',ws);
   $('weekJobs').innerHTML = `<div class="muted">${(jobsWeek||[]).length} new roles tracked this week</div>`;
 }
 
 /* ============ INIT ============ */
 async function initApp(){
-  await renderHome();
-  await renderToday();
-  renderGymToday();
-  renderMealPlanToday();
-  renderMealLog();
-  renderCalorieChart();
-  renderLearningTasks();
-  renderLearningStats();
-  renderProjectPhases();
+  await Promise.all([
+    renderHome(),
+    renderToday(),
+    renderGymToday(),
+    renderMealPlanToday(),
+    renderMealLog(),
+    renderCalorieChart(),
+    renderLearningTasks(),
+    renderLearningStats(),
+    renderProjectPhases(),
+    renderJournalHistory(),
+    renderExpenses(),
+    renderJobs()
+  ]);
   renderJournalForm();
-  renderJournalHistory();
-  renderExpenses();
-  renderJobs();
   if(localStorage.getItem('lrn_active_session')){
     $('checkInBtn').style.display='none'; $('checkOutBtn').style.display='block';
     LearningTimer.activeId = localStorage.getItem('lrn_active_session');
