@@ -3,17 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Life OS</title>
+<title>Planner</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
   :root{
-    --bg:#0f1613; --panel:#16201c; --panel-2:#1c2823; --line:#2a3833;
-    --ink:#eef2ef; --ink-dim:#9fb0a8;
-    --accent:#5fd6a8; --accent-2:#e8a561; --accent-3:#7a9cff; --danger:#e8687a;
-    --radius:14px; --font-display:'Fraunces', Georgia, serif; --font-body:'Inter', -apple-system, sans-serif; --font-mono:'JetBrains Mono', monospace;
+    --bg:#f5efe6; --panel:#fffdf9; --panel-2:#eee3d3; --line:#e0d2ba;
+    --ink:#3c3530; --ink-dim:#8c7b6b;
+    --accent:#b5764f; --accent-2:#8a9a5b; --accent-3:#6b8f87; --danger:#c25b4a;
+    --radius:16px; --font-display:'Georgia', serif; --font-body:-apple-system,'Segoe UI',sans-serif;
+  }
+  html[data-theme="dark"]{
+    --bg:#231e1a; --panel:#2c2620; --panel-2:#372f27; --line:#4a4034;
+    --ink:#f0e8dc; --ink-dim:#b8a996;
+    --accent:#d18f61; --accent-2:#a3b578; --accent-3:#84a89f; --danger:#d97362;
   }
   *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);transition:background .3s,color .3s;}
   body{padding-bottom:80px;}
   h1,h2,h3{font-family:var(--font-display);font-weight:600;margin:0 0 8px;}
   a{color:var(--accent-3);}
@@ -21,66 +27,69 @@
   .app{max-width:640px;margin:0 auto;padding:16px;display:none;}
   .app.show{display:block;}
   header.top{position:sticky;top:0;background:var(--bg);z-index:20;padding:14px 16px 10px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;}
-  header.top .brand{font-family:var(--font-display);font-size:1.3rem;letter-spacing:.3px;}
+  header.top .brand{font-family:var(--font-display);font-size:1.4rem;letter-spacing:.3px;}
   header.top .brand span{color:var(--accent);}
-  .sync-dot{width:9px;height:9px;border-radius:50%;background:var(--danger);display:inline-block;margin-right:6px;}
-  .sync-dot.on{background:var(--accent);}
-  .sync-pill{font-size:.72rem;color:var(--ink-dim);display:flex;align-items:center;cursor:pointer;background:var(--panel);border:1px solid var(--line);padding:5px 10px;border-radius:20px;}
-  nav.tabs{display:flex;overflow-x:auto;gap:6px;padding:10px 16px;position:sticky;top:52px;background:var(--bg);z-index:19;border-bottom:1px solid var(--line);}
+  .icon-btn{background:var(--panel);border:1px solid var(--line);color:var(--ink);width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem;}
+  .headerbtns{display:flex;gap:8px;align-items:center;}
+  nav.tabs{display:flex;overflow-x:auto;gap:6px;padding:10px 16px;position:sticky;top:60px;background:var(--bg);z-index:19;border-bottom:1px solid var(--line);}
   nav.tabs button{flex:0 0 auto;background:var(--panel);border:1px solid var(--line);color:var(--ink-dim);padding:8px 14px;border-radius:20px;font-size:.82rem;white-space:nowrap;}
-  nav.tabs button.active{background:var(--accent);color:#08130f;border-color:var(--accent);font-weight:600;}
+  nav.tabs button.active{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600;}
   .view{display:none;padding:18px 16px 8px;}
   .view.active{display:block;}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:14px;}
-  .card h3{font-size:.95rem;color:var(--ink-dim);text-transform:uppercase;letter-spacing:.06em;font-family:var(--font-body);font-weight:600;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:14px;box-shadow:0 2px 10px rgba(0,0,0,.03);}
+  .card h3{font-size:.92rem;color:var(--ink-dim);text-transform:uppercase;letter-spacing:.06em;font-family:var(--font-body);font-weight:700;}
   .row{display:flex;gap:10px;align-items:center;}
   .row.between{justify-content:space-between;}
   .toggle{display:inline-flex;background:var(--panel-2);border-radius:20px;padding:3px;border:1px solid var(--line);}
   .toggle button{border:none;background:transparent;color:var(--ink-dim);padding:7px 14px;border-radius:16px;font-size:.82rem;}
-  .toggle button.active{background:var(--accent-3);color:#08130f;font-weight:600;}
-  .timeline{position:relative;padding-left:28px;}
-  .timeline::before{content:'';position:absolute;left:9px;top:4px;bottom:4px;width:2px;background:var(--line);}
-  .slot{position:relative;padding:10px 0 10px 14px;border-bottom:1px dashed var(--line);}
-  .slot:last-child{border-bottom:none;}
-  .slot::before{content:'';position:absolute;left:-23px;top:16px;width:9px;height:9px;border-radius:50%;background:var(--accent-3);}
-  .slot.gym::before{background:var(--accent);}
-  .slot.food::before{background:var(--accent-2);}
-  .slot .time{font-family:var(--font-mono);font-size:.72rem;color:var(--accent-3);}
-  .slot .label{font-size:.95rem;margin-top:2px;}
-  input,textarea,select{width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--ink);padding:10px;border-radius:8px;font-family:var(--font-body);font-size:.9rem;margin-bottom:8px;}
-  textarea{min-height:120px;font-family:var(--font-mono);font-size:.82rem;}
+  .toggle button.active{background:var(--accent-3);color:#fff;font-weight:600;}
+  input,textarea,select{width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--ink);padding:10px;border-radius:10px;font-family:var(--font-body);font-size:.9rem;margin-bottom:8px;}
+  textarea{min-height:110px;font-family:monospace;font-size:.8rem;}
   label{font-size:.78rem;color:var(--ink-dim);display:block;margin-bottom:3px;}
-  .btn{background:var(--accent);color:#08130f;border:none;padding:10px 16px;border-radius:8px;font-weight:600;font-size:.85rem;}
+  .btn{background:var(--accent);color:#fff;border:none;padding:10px 16px;border-radius:10px;font-weight:600;font-size:.85rem;}
   .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--ink);}
-  .btn.small{padding:6px 10px;font-size:.75rem;border-radius:6px;}
+  .btn.small{padding:6px 10px;font-size:.75rem;border-radius:8px;}
   .btn.block{width:100%;}
   .pill{display:inline-block;font-size:.68rem;padding:3px 9px;border-radius:20px;background:var(--panel-2);color:var(--ink-dim);border:1px solid var(--line);}
-  .pill.done{background:rgba(95,214,168,.15);color:var(--accent);border-color:var(--accent);}
+  .pill.done{background:rgba(232,140,160,.18);color:var(--accent);border-color:var(--accent);}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
   .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
-  .stat{text-align:center;background:var(--panel-2);border-radius:10px;padding:12px 6px;}
+  .stat{text-align:center;background:var(--panel-2);border-radius:12px;padding:12px 6px;}
   .stat .num{font-family:var(--font-display);font-size:1.4rem;color:var(--accent);}
-  .stat .lbl{font-size:.68rem;color:var(--ink-dim);text-transform:uppercase;}
+  .stat .lbl{font-size:.66rem;color:var(--ink-dim);text-transform:uppercase;}
   .list-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);}
   .list-item:last-child{border-bottom:none;}
   .muted{color:var(--ink-dim);font-size:.82rem;}
   .thumb{width:100%;border-radius:10px;margin-top:8px;max-height:180px;object-fit:cover;}
-  .progress{height:6px;background:var(--panel-2);border-radius:4px;overflow:hidden;margin-top:6px;}
-  .progress > div{height:100%;background:var(--accent);}
+  .progress{height:8px;background:var(--panel-2);border-radius:5px;overflow:hidden;margin-top:6px;}
+  .progress > div{height:100%;background:var(--accent);transition:width .3s;}
   .empty{text-align:center;padding:30px 10px;color:var(--ink-dim);font-size:.85rem;}
-  .badge-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
   .cal-btn{display:inline-flex;align-items:center;gap:5px;background:var(--panel-2);border:1px solid var(--accent-3);color:var(--accent-3);padding:5px 10px;border-radius:8px;font-size:.72rem;text-decoration:none;}
   #loginScreen{max-width:340px;margin:80px auto;padding:0 20px;display:block;}
   #loginScreen .card{padding:24px;}
-  #loginScreen h1{font-size:1.6rem;text-align:center;}
-  #loginScreen .brand-accent{color:var(--accent);}
+  #loginScreen h1{font-size:1.8rem;text-align:center;}
   #loginErr{color:var(--danger);font-size:.82rem;min-height:18px;margin-bottom:6px;}
+  .check-item{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);}
+  .check-item:last-child{border-bottom:none;}
+  .check-item input[type=checkbox]{width:20px;height:20px;flex:0 0 auto;margin:2px 0 0;accent-color:var(--accent);}
+  .check-item .time{font-size:.7rem;color:var(--accent-3);font-family:monospace;}
+  .check-item .label{font-size:.9rem;}
+  .check-item.checked .label{text-decoration:line-through;color:var(--ink-dim);}
+  .datenav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .datenav button{background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:6px 10px;color:var(--ink);}
+  .tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .tile{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;text-align:left;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.03);}
+  .tile .emoji{font-size:1.6rem;}
+  .tile .tname{font-family:var(--font-display);font-size:1rem;margin-top:6px;}
+  .tile .streak{font-size:.72rem;color:var(--accent);margin-top:4px;}
+  details.planner{margin-top:10px;}
+  details.planner summary{cursor:pointer;color:var(--accent-3);font-size:.82rem;font-weight:600;padding:6px 0;}
 </style>
 </head>
 <body>
 
 <div id="loginScreen">
-  <h1>Life<span class="brand-accent">OS</span></h1>
+  <h1>Planner</h1>
   <div class="card">
     <label>Email</label><input id="loginEmail" type="email">
     <label>Password</label><input id="loginPass" type="password">
@@ -90,120 +99,179 @@
 </div>
 
 <header class="top" style="display:none;" id="topHeader">
-  <div class="brand">Life<span>OS</span></div>
-  <div class="sync-pill" onclick="Auth.logout()">
-    <span class="sync-dot on"></span><span>Log out</span>
+  <div class="brand">Planner</div>
+  <div class="headerbtns">
+    <button class="icon-btn" onclick="toggleTheme()" id="themeBtn">🌙</button>
+    <button class="icon-btn" onclick="Auth.logout()">⏻</button>
   </div>
 </header>
 
 <nav class="tabs" id="tabNav" style="display:none;">
-  <button data-tab="today" class="active">Today</button>
+  <button data-tab="home" class="active">Home</button>
+  <button data-tab="today">Today</button>
   <button data-tab="gym">Gym</button>
   <button data-tab="meals">Meals</button>
   <button data-tab="learning">Learning</button>
   <button data-tab="journal">Journal</button>
   <button data-tab="expenses">Expenses</button>
   <button data-tab="jobs">Jobs</button>
+  <button data-tab="week">Week</button>
 </nav>
 
 <div class="app" id="app">
 
-  <div class="view active" id="view-today">
+  <!-- HOME -->
+  <div class="view active" id="view-home">
     <div class="card">
+      <h3>Hello 🌿</h3>
+      <div class="muted" id="homeDateLbl"></div>
+    </div>
+    <div class="tiles" id="homeTiles"></div>
+  </div>
+
+  <!-- TODAY -->
+  <div class="view" id="view-today">
+    <div class="card">
+      <div class="datenav">
+        <button onclick="TodayView.shiftDate(-1)">← Prev</button>
+        <b id="todaySelDate"></b>
+        <button onclick="TodayView.shiftDate(1)">Next →</button>
+      </div>
       <div class="row between">
-        <h3>Day type</h3>
+        <h3 style="margin:0;">Day type</h3>
         <div class="toggle" id="officeToggle">
           <button data-v="0" class="active">Home day</button>
           <button data-v="1">Office day</button>
         </div>
       </div>
-      <div class="muted" id="todayDateLbl"></div>
     </div>
     <div class="card">
-      <h3>Schedule</h3>
-      <div class="timeline" id="scheduleList"></div>
+      <div class="row between"><h3 style="margin:0;">Schedule</h3><span class="pill" id="schedProgLbl"></span></div>
+      <div class="progress"><div id="schedProgBar" style="width:0%"></div></div>
+      <div id="scheduleList" style="margin-top:10px;"></div>
+      <details class="planner">
+        <summary>✏️ Edit weekly schedule template</summary>
+        <div class="muted">One day per block. Format: <code>Activity : Time</code></div>
+        <textarea id="schedInput" placeholder="Monday
+Wake : 5am
+Fresh up : 6am
+Cook breakfast : 7am
+
+Tuesday
+Wake : 5am
+..."></textarea>
+        <button class="btn block" onclick="SchedulePlan.save()">Save weekly template</button>
+      </details>
     </div>
   </div>
 
+  <!-- GYM -->
   <div class="view" id="view-gym">
     <div class="card">
-      <h3>7-Day Plan · Fat loss · 67kg → 55kg target</h3>
-      <div class="muted">1h sessions. Office days: office gym, ⚡ = equipment-flexible.</div>
+      <div class="row between"><h3 style="margin:0;">Today's workout</h3><span class="pill" id="gymProgLbl"></span></div>
+      <div class="progress"><div id="gymProgBar" style="width:0%"></div></div>
+      <div id="gymTodayList" style="margin-top:10px;"></div>
+      <details class="planner">
+        <summary>✏️ Edit weekly gym plan</summary>
+        <div class="muted">Format: <code>Monday - Target Area</code> then <code>Exercise | Sets | YouTube link</code></div>
+        <textarea id="gymInput" placeholder="Monday - Full Body
+Goblet squats | 3x12 | https://youtube.com/...
+Push-ups | 3x10 | "></textarea>
+        <button class="btn block" onclick="GymPlan.save()">Save weekly plan</button>
+      </details>
     </div>
-    <div id="gymPlanList"></div>
   </div>
 
+  <!-- MEALS -->
   <div class="view" id="view-meals">
     <div class="card">
-      <h3>Templates</h3>
-      <div class="toggle" id="mealDayToggle">
-        <button data-v="0" class="active">Home day</button>
-        <button data-v="1">Office day</button>
+      <div class="row between"><h3 style="margin:0;">Today's meal plan</h3><span class="pill" id="mealProgLbl"></span></div>
+      <div class="progress"><div id="mealProgBar" style="width:0%"></div></div>
+      <div id="mealPlanToday" style="margin-top:10px;"></div>
+      <details class="planner">
+        <summary>✏️ Plan this week's meals (do Sunday night)</summary>
+        <div class="muted">Format: <code>Meal type : description</code></div>
+        <textarea id="mealPlanInput" placeholder="Monday
+Breakfast : oats + egg whites
+Lunch : paneer + salad + roti
+Dinner : soup + veg
+
+Tuesday
+..."></textarea>
+        <button class="btn block" onclick="MealPlan.save()">Save weekly meal plan</button>
+      </details>
+    </div>
+    <div class="card">
+      <h3>Calories today</h3>
+      <div class="row" style="gap:16px;">
+        <canvas id="calChart" width="120" height="120" style="max-width:120px;"></canvas>
+        <div>
+          <div class="muted">Goal: <span id="calGoalLbl"></span> kcal</div>
+          <div class="muted">Eaten: <span id="calEatenLbl"></span> kcal</div>
+          <div class="muted">Left: <span id="calLeftLbl"></span> kcal</div>
+          <button class="btn small ghost" onclick="Meals.editGoal()" style="margin-top:6px;">Set goal</button>
+        </div>
       </div>
-      <div id="mealTemplates" style="margin-top:10px;"></div>
     </div>
     <div class="card">
       <h3>Log a meal</h3>
-      <label>Meal type</label>
       <select id="mealType"><option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snack</option></select>
-      <label>What did you eat</label>
-      <input id="mealDesc" placeholder="e.g. oats + egg whites">
+      <input id="mealDesc" placeholder="What did you eat">
       <div class="grid3">
         <div><label>Calories</label><input id="mealCal" type="number"></div>
         <div><label>Protein g</label><input id="mealProt" type="number"></div>
         <div><label>Fat g</label><input id="mealFat" type="number"></div>
       </div>
-      <label>Photo</label>
       <input type="file" id="mealPhoto" accept="image/*" capture="environment">
       <img id="mealPhotoPreview" class="thumb" style="display:none;">
       <button class="btn block" onclick="Meals.log()">Save meal</button>
     </div>
-    <div class="card">
-      <h3>Today's log</h3>
-      <div id="mealLogList"><div class="empty">No meals logged yet</div></div>
-    </div>
+    <div class="card"><h3>Today's log</h3><div id="mealLogList"><div class="empty">No meals logged yet</div></div></div>
   </div>
 
+  <!-- LEARNING -->
   <div class="view" id="view-learning">
     <div class="card">
       <div class="grid3">
+        <div class="stat"><div class="num" id="lrnTodayMin">0</div><div class="lbl">Min Today</div></div>
         <div class="stat"><div class="num" id="lrnStreak">0</div><div class="lbl">Day Streak</div></div>
-        <div class="stat"><div class="num" id="lrnWeekMin">0</div><div class="lbl">Min This Wk</div></div>
         <div class="stat"><div class="num" id="lrnVsLast">–</div><div class="lbl">Vs Last Wk</div></div>
       </div>
-    </div>
-    <div class="card">
-      <h3>Weekday Salesforce plan</h3>
-      <div class="muted">One line per task: <code>Task | Link | Minutes</code>. A weekday name starts a new day.</div>
-      <textarea id="lrnInput" placeholder="Monday
-Learn REST API basics | https://trailhead.salesforce.com/... | 20"></textarea>
-      <button class="btn ghost" onclick="Learning.preview()">Preview</button>
-      <button class="btn" onclick="Learning.save()">Save week plan</button>
-      <div id="lrnPreview"></div>
+      <div class="row" style="margin-top:12px;gap:10px;">
+        <button class="btn block" id="checkInBtn" onclick="LearningTimer.checkIn()">▶ Check in</button>
+        <button class="btn block ghost" id="checkOutBtn" onclick="LearningTimer.checkOut()" style="display:none;">⏹ Check out</button>
+      </div>
     </div>
     <div class="card">
       <h3>This week's tasks</h3>
       <div id="lrnTaskList"><div class="empty">No tasks yet</div></div>
+      <details class="planner">
+        <summary>✏️ Plan this week's Salesforce topics (do Sunday night)</summary>
+        <div class="muted">Format: <code>Task | Link | Minutes</code></div>
+        <textarea id="lrnInput" placeholder="Monday
+Learn REST API basics | https://trailhead.salesforce.com/... | 20"></textarea>
+        <button class="btn ghost" onclick="Learning.preview()">Preview</button>
+        <button class="btn block" onclick="Learning.save()">Save week plan</button>
+        <div id="lrnPreview"></div>
+      </details>
     </div>
     <div class="card">
       <h3>Weekend side project · Study Buddy App</h3>
-      <div class="muted">6–8h across 2 days.</div>
       <div id="projPhases"></div>
     </div>
   </div>
 
+  <!-- JOURNAL -->
   <div class="view" id="view-journal">
     <div class="card">
       <h3 id="journalDateLbl">Today's entry</h3>
       <div id="journalQuestions"></div>
       <button class="btn block" onclick="Journal.save()">Save entry</button>
     </div>
-    <div class="card">
-      <h3>Past entries</h3>
-      <div id="journalHistory"><div class="empty">No entries yet</div></div>
-    </div>
+    <div class="card"><h3>Past entries</h3><div id="journalHistory"><div class="empty">No entries yet</div></div></div>
   </div>
 
+  <!-- EXPENSES -->
   <div class="view" id="view-expenses">
     <div class="card">
       <div class="grid2">
@@ -213,10 +281,7 @@ Learn REST API basics | https://trailhead.salesforce.com/... | 20"></textarea>
     </div>
     <div class="card">
       <h3>Add transaction</h3>
-      <div class="toggle" id="expTypeToggle">
-        <button data-v="Debit" class="active">Debit</button>
-        <button data-v="Credit">Credit</button>
-      </div>
+      <div class="toggle" id="expTypeToggle"><button data-v="Debit" class="active">Debit</button><button data-v="Credit">Credit</button></div>
       <label>Amount</label><input id="expAmt" type="number">
       <div class="grid2">
         <div><label>Source</label><input id="expSource" placeholder="e.g. Salary / Card"></div>
@@ -230,6 +295,7 @@ Learn REST API basics | https://trailhead.salesforce.com/... | 20"></textarea>
     <div class="card"><h3>Recent</h3><div id="expList"><div class="empty">No transactions yet</div></div></div>
   </div>
 
+  <!-- JOBS -->
   <div class="view" id="view-jobs">
     <div class="card">
       <h3>Add a role</h3>
@@ -243,140 +309,278 @@ Learn REST API basics | https://trailhead.salesforce.com/... | 20"></textarea>
     <div class="card"><h3>Tracked roles</h3><div id="jobList"><div class="empty">No roles saved yet</div></div></div>
   </div>
 
+  <!-- WEEK STATUS -->
+  <div class="view" id="view-week">
+    <div class="card"><h3>This week at a glance</h3><div id="weekOverview"></div></div>
+    <div class="card">
+      <h3>Steps</h3>
+      <div class="row">
+        <input id="stepsInput" type="number" placeholder="Steps today">
+        <button class="btn" onclick="Steps.log()">Log</button>
+      </div>
+      <div class="muted" id="stepsWeekTotal"></div>
+    </div>
+    <div class="card"><h3>Gym this week</h3><div id="weekGym"></div></div>
+    <div class="card"><h3>Meals this week</h3><div id="weekMeals"></div></div>
+    <div class="card"><h3>Learning this week</h3><div id="weekLearning"></div></div>
+    <div class="card"><h3>Journal this week</h3><div id="weekJournal"></div></div>
+    <div class="card"><h3>Expenses this week</h3><div id="weekExpenses"></div></div>
+    <div class="card"><h3>Jobs this week</h3><div id="weekJobs"></div></div>
+  </div>
+
 </div>
 
 <script>
-/* ============ SUPABASE INIT ============ */
 const SUPABASE_URL = 'https://ahotmcsogmognxuplozh.supabase.co';
 const SUPABASE_KEY = 'sb_publishable__N_rCfIiNjIMoMwqW9EYlQ_W3l_X2DY';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const $=id=>document.getElementById(id);
-const todayISO=()=>new Date().toISOString().slice(0,10);
-const weekdayName=d=>['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][d.getDay()];
-function isWeekend(d){return d.getDay()===0||d.getDay()===6;}
+const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const fmtDate=d=>d.toISOString().slice(0,10);
+const weekdayName=d=>DAYS[d.getDay()];
+function todayISO(){return fmtDate(new Date());}
+function addDays(dateStr,n){ const d=new Date(dateStr+'T00:00:00'); d.setDate(d.getDate()+n); return fmtDate(d); }
+function weekStartOf(dateStr){ const d=new Date(dateStr+'T00:00:00'); const day=d.getDay(); const diff=d.getDate()-day+(day===0?-6:1); const ws=new Date(d); ws.setDate(diff); return fmtDate(ws); }
 
-/* ============ AUTH ============ */
+/* THEME */
+function toggleTheme(){
+  const html=document.documentElement;
+  const isDark = html.getAttribute('data-theme')==='dark';
+  html.setAttribute('data-theme', isDark?'light':'dark');
+  $('themeBtn').textContent = isDark ? '🌙' : '☀️';
+  localStorage.setItem('planner_theme', isDark?'light':'dark');
+}
+(function(){
+  const saved=localStorage.getItem('planner_theme');
+  if(saved==='dark'){ document.documentElement.setAttribute('data-theme','dark'); }
+})();
+
+/* AUTH */
 const Auth = {
   async login(){
     $('loginErr').textContent='';
     const email=$('loginEmail').value.trim(), password=$('loginPass').value;
-    const {data,error} = await sb.auth.signInWithPassword({email,password});
+    const {error} = await sb.auth.signInWithPassword({email,password});
     if(error){ $('loginErr').textContent = error.message; return; }
     enterApp();
   },
-  async logout(){
-    await sb.auth.signOut();
-    location.reload();
-  }
+  async logout(){ await sb.auth.signOut(); location.reload(); }
 };
 async function enterApp(){
   $('loginScreen').style.display='none';
   $('topHeader').style.display='flex';
   $('tabNav').style.display='flex';
   $('app').classList.add('show');
+  if(localStorage.getItem('planner_theme')==='dark') $('themeBtn').textContent='☀️';
   await initApp();
 }
 document.querySelectorAll('#tabNav button').forEach(b=>{
-  b.onclick=()=>{
-    document.querySelectorAll('#tabNav button').forEach(x=>x.classList.remove('active'));
-    b.classList.add('active');
-    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-    $('view-'+b.dataset.tab).classList.add('active');
-  };
+  b.onclick=()=>switchTab(b.dataset.tab);
 });
-
-/* ============ TODAY / SCHEDULE (real durations) ============ */
-const HOME_SCHEDULE=[
-  {t:'5:30',l:'Wake up',c:''},
-  {t:'5:30',l:'Washroom (10m)',c:''},
-  {t:'5:40',l:'Room clean + mop (20m)',c:''},
-  {t:'6:00',l:'Get ready for gym',c:''},
-  {t:'6:10',l:'Gym (1h)',c:'gym'},
-  {t:'7:10',l:'Freshen up post-gym (45m)',c:''},
-  {t:'7:55',l:'Pray + skincare',c:''},
-  {t:'8:15',l:'Breakfast (fat-loss, fast)',c:'food'},
-  {t:'8:45',l:'Salesforce focus block',c:'learn'},
-  {t:'11:00',l:'Work starts',c:'work'},
-  {t:'14:00',l:'Lunch (1h) — cook + eat',c:'food'},
-  {t:'16:30',l:'Snack',c:'food'},
-  {t:'20:00',l:'Work ends',c:'work'},
-  {t:'20:15',l:'Walk',c:''},
-  {t:'20:45',l:'Cook dinner + podcast/audiobook (45m-1h)',c:'food'},
-  {t:'21:45',l:'Dinner',c:'food'},
-  {t:'22:15',l:'Walk',c:''},
-  {t:'22:35',l:'Wind down, sleep',c:''},
-];
-const OFFICE_SCHEDULE=[
-  {t:'5:30',l:'Wake up',c:''},
-  {t:'5:30',l:'Washroom (10m)',c:''},
-  {t:'5:40',l:'Cook fast breakfast + pack lunch (45m)',c:'food'},
-  {t:'6:25',l:'Get ready (45m)',c:''},
-  {t:'7:10',l:'Commute to office (1h)',c:''},
-  {t:'9:00',l:'Work (lunch = packed meal, ~30m)',c:'work'},
-  {t:'18:00',l:'Work ends',c:'work'},
-  {t:'18:15',l:'Gym at office (1h)',c:'gym'},
-  {t:'19:15',l:'Freshen up (45m)',c:''},
-  {t:'20:00',l:'Commute home (1h)',c:''},
-  {t:'21:00',l:'Quick simple dinner (no cooking)',c:'food'},
-  {t:'21:30',l:'Walk',c:''},
-  {t:'21:50',l:'Room clean + mop (evening — no morning time)',c:''},
-  {t:'22:20',l:'Wind down, sleep',c:''},
-];
-
-async function currentOfficeFlag(){
-  const d = todayISO();
-  const {data} = await sb.from('schedule_overrides').select('is_office_day').eq('date',d).order('created_at',{ascending:false}).limit(1);
-  return (data && data[0]) ? (data[0].is_office_day?1:0) : 0;
+function switchTab(tab){
+  document.querySelectorAll('#tabNav button').forEach(x=>x.classList.toggle('active', x.dataset.tab===tab));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  $('view-'+tab).classList.add('active');
+  if(tab==='week') renderWeekStatus();
+  if(tab==='home') renderHome();
 }
-async function setOfficeFlag(v){
-  const d = todayISO();
-  await sb.from('schedule_overrides').insert({date:d, is_office_day: v===1});
-  renderSchedule();
+
+/* GENERIC WEEKLY PLAN PARSER */
+function parseWeekly(text, sep, fieldNames){
+  const lines=text.split('\n');
+  let currentDay=null, currentMeta='';
+  const rows=[];
+  lines.forEach(raw=>{
+    const line=raw.trim(); if(!line) return;
+    const dashParts=line.split(/\s*-\s*/);
+    if(DAYS.map(d=>d.toLowerCase()).includes(dashParts[0].toLowerCase())){
+      currentDay = DAYS.find(d=>d.toLowerCase()===dashParts[0].toLowerCase());
+      currentMeta = dashParts.slice(1).join(' - ')||'';
+      return;
+    }
+    if(!currentDay) return;
+    let parts;
+    if(sep==='|'){ parts=line.split('|').map(s=>s.trim()); }
+    else { const idx=line.indexOf(':'); parts = idx>-1 ? [line.slice(0,idx).trim(), line.slice(idx+1).trim()] : [line,'']; }
+    const row={day:currentDay, meta:currentMeta};
+    fieldNames.forEach((f,i)=>row[f]=parts[i]||'');
+    rows.push(row);
+  });
+  return rows;
 }
-async function renderSchedule(){
-  const isOffice = await currentOfficeFlag();
-  document.querySelectorAll('#officeToggle button').forEach(b=>b.classList.toggle('active', Number(b.dataset.v)===Number(isOffice)));
-  const d = new Date();
-  $('todayDateLbl').textContent = `${weekdayName(d)} · ${isOffice?'Office day':'Home day'}${isWeekend(d)?' · Side-project day':''}`;
-  let sched = isOffice ? OFFICE_SCHEDULE : HOME_SCHEDULE;
-  if(isWeekend(d) && !isOffice){
-    sched = sched.map(s=> s.c==='work' ? {...s, l:'Side project — Study Buddy App (see Learning tab)', c:'learn'} : s);
+
+/* GENERIC CHECK HELPERS */
+async function toggleCheck(section, itemKey, dateStr, checked){
+  if(checked){ await sb.from('day_checks').upsert({date:dateStr, section, item_key:itemKey, checked:true},{onConflict:'user_id,date,section,item_key'}); }
+  else { await sb.from('day_checks').delete().eq('date',dateStr).eq('section',section).eq('item_key',itemKey); }
+}
+async function getChecksForDate(section,dateStr){
+  const {data} = await sb.from('day_checks').select('item_key').eq('date',dateStr).eq('section',section);
+  return new Set((data||[]).map(c=>c.item_key));
+}
+async function computeStreak(section, planItemKeysForWeekday){
+  const start = addDays(todayISO(),-35);
+  const {data} = await sb.from('day_checks').select('date,item_key').eq('section',section).gte('date',start);
+  const byDate={};
+  (data||[]).forEach(c=>{ (byDate[c.date]=byDate[c.date]||new Set()).add(c.item_key); });
+  let streak=0; let cur=todayISO();
+  for(let i=0;i<35;i++){
+    const wd=weekdayName(new Date(cur+'T00:00:00'));
+    const items=planItemKeysForWeekday(wd);
+    if(items.length===0){ cur=addDays(cur,-1); continue; }
+    const checkedSet=byDate[cur]||new Set();
+    const allDone=items.every(k=>checkedSet.has(k));
+    if(allDone){ streak++; cur=addDays(cur,-1); } else break;
   }
-  $('scheduleList').innerHTML = sched.map(s=>`<div class="slot ${s.c}"><div class="time">${s.t}</div><div class="label">${s.l}</div></div>`).join('');
+  return streak;
 }
-document.querySelectorAll('#officeToggle button').forEach(b=>{ b.onclick=()=>setOfficeFlag(Number(b.dataset.v)); });
 
-/* ============ GYM ============ */
-const GYM_PLAN=[
-  {day:'Monday',focus:'Full body strength', moves:['Goblet squats 3x12','Push-ups 3x10','Bent-over rows 3x12','Plank 3x30s','⚡ Bodyweight lunges 3x12']},
-  {day:'Tuesday',focus:'HIIT cardio + core', moves:['Jump rope 10min','Mountain climbers 3x30s','Bicycle crunches 3x20','Burpees 3x10 ⚡']},
-  {day:'Wednesday',focus:'Lower body + glutes', moves:['Deadlifts 3x10','Bulgarian split squats 3x10','Hip thrusts 3x12','Calf raises 3x15']},
-  {day:'Thursday',focus:'Upper body + arms', moves:['Dumbbell shoulder press 3x10','Lat pulldown 3x12','Bicep curls 3x12','Tricep dips 3x12 ⚡']},
-  {day:'Friday',focus:'HIIT + fat burn circuit', moves:['Circuit x4: squat jumps, high knees, plank shoulder taps, kettlebell swings — 40s on/20s off']},
-  {day:'Saturday',focus:'Active recovery + core', moves:['20min incline walk','Russian twists 3x20','Dead bug 3x12','Stretch/mobility 15min']},
-  {day:'Sunday',focus:'Light cardio + stretch', moves:['30min walk/jog','Full body stretch 15min','Optional: yoga flow']},
-];
-function renderGym(){
-  $('gymPlanList').innerHTML = GYM_PLAN.map(g=>`
-    <div class="card">
-      <div class="row between"><h3 style="margin:0;text-transform:none;color:var(--ink);font-size:1rem;">${g.day}</h3><span class="pill">${g.focus}</span></div>
-      <ul style="margin:8px 0 0 18px;padding:0;font-size:.85rem;">${g.moves.map(m=>`<li>${m}</li>`).join('')}</ul>
+/* ============ HOME ============ */
+async function renderHome(){
+  $('homeDateLbl').textContent = new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
+  const {data:sp} = await sb.from('schedule_plans').select('day,activity,time_text');
+  const {data:gp} = await sb.from('gym_plans').select('day,exercise_name');
+  const {data:mp} = await sb.from('meal_plans').select('day,meal_type');
+  const schedByDay=wd=>(sp||[]).filter(r=>r.day===wd).map(r=>r.activity+'|'+r.time_text);
+  const gymByDay=wd=>(gp||[]).filter(r=>r.day===wd).map(r=>r.exercise_name);
+  const mealByDay=wd=>(mp||[]).filter(r=>r.day===wd).map(r=>r.meal_type);
+  const schedStreak = await computeStreak('schedule', schedByDay);
+  const gymStreak = await computeStreak('gym', gymByDay);
+  const mealStreak = await computeStreak('meals', mealByDay);
+  const tiles=[
+    {tab:'today',emoji:'📅',name:'Today',streak:schedStreak},
+    {tab:'gym',emoji:'💪',name:'Gym',streak:gymStreak},
+    {tab:'meals',emoji:'🍽️',name:'Meals',streak:mealStreak},
+    {tab:'learning',emoji:'📚',name:'Learning',streak:null},
+    {tab:'journal',emoji:'📓',name:'Journal',streak:null},
+    {tab:'expenses',emoji:'💸',name:'Expenses',streak:null},
+    {tab:'jobs',emoji:'💼',name:'Jobs',streak:null},
+    {tab:'week',emoji:'📊',name:'Week Status',streak:null},
+  ];
+  $('homeTiles').innerHTML = tiles.map(t=>`
+    <div class="tile" onclick="switchTab('${t.tab}')">
+      <div class="emoji">${t.emoji}</div>
+      <div class="tname">${t.name}</div>
+      ${t.streak!==null?`<div class="streak">🔥 ${t.streak} day streak</div>`:''}
     </div>`).join('');
 }
 
-/* ============ MEALS ============ */
-const MEAL_TEMPLATES={
-  0:{Breakfast:'Egg white oats + berries (~300 kcal, 25g protein)', Lunch:'Grilled chicken/paneer + salad + 1 roti, cooked fresh (~450 kcal)', Dinner:'Soup + stir-fried veg + light protein (~350 kcal)'},
-  1:{Breakfast:'Overnight oats prepped night before, grab & go (~300 kcal)', Lunch:'Packed: quinoa/millet bowl + protein + veg (~450 kcal)', Dinner:'Quick: pre-cooked protein + microwave veg, minimal prep (~350 kcal)'}
+/* ============ TODAY / SCHEDULE ============ */
+const TodayView = { date: todayISO() };
+TodayView.shiftDate = function(n){
+  this.date = addDays(this.date, n);
+  renderToday();
 };
-function renderMealTemplates(dayType){
-  const t = MEAL_TEMPLATES[dayType];
-  $('mealTemplates').innerHTML = Object.entries(t).map(([k,v])=>`<div class="list-item"><div><b>${k}</b><div class="muted">${v}</div></div></div>`).join('');
+async function currentOfficeFlag(dateStr){
+  const {data} = await sb.from('schedule_overrides').select('is_office_day').eq('date',dateStr).order('created_at',{ascending:false}).limit(1);
+  return (data && data[0]) ? (data[0].is_office_day?1:0) : 0;
 }
-document.querySelectorAll('#mealDayToggle button').forEach(b=>{
-  b.onclick=()=>{document.querySelectorAll('#mealDayToggle button').forEach(x=>x.classList.remove('active'));b.classList.add('active');renderMealTemplates(Number(b.dataset.v));};
-});
+async function setOfficeFlag(dateStr,v){
+  await sb.from('schedule_overrides').insert({date:dateStr, is_office_day: v===1});
+  renderToday();
+}
+document.querySelectorAll('#officeToggle button').forEach(b=>{ b.onclick=()=>setOfficeFlag(TodayView.date, Number(b.dataset.v)); });
+
+async function renderToday(){
+  const dateStr = TodayView.date;
+  const isToday = dateStr===todayISO();
+  $('todaySelDate').textContent = new Date(dateStr+'T00:00:00').toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'}) + (isToday?' (Today)':'');
+  const isOffice = await currentOfficeFlag(dateStr);
+  document.querySelectorAll('#officeToggle button').forEach(b=>b.classList.toggle('active', Number(b.dataset.v)===Number(isOffice)));
+  const wd = weekdayName(new Date(dateStr+'T00:00:00'));
+  const {data:plan} = await sb.from('schedule_plans').select('*').eq('day',wd).order('created_at');
+  const items = plan||[];
+  const checkedSet = await getChecksForDate('schedule', dateStr);
+  if(!items.length){
+    $('scheduleList').innerHTML = '<div class="empty">No plan set for '+wd+' yet — add one below</div>';
+    $('schedProgLbl').textContent=''; $('schedProgBar').style.width='0%';
+    return;
+  }
+  const checkedCount = items.filter(i=>checkedSet.has(i.activity+'|'+i.time_text)).length;
+  $('schedProgLbl').textContent = checkedCount+'/'+items.length;
+  $('schedProgBar').style.width = Math.round(checkedCount/items.length*100)+'%';
+  $('scheduleList').innerHTML = items.map(i=>{
+    const key=i.activity+'|'+i.time_text;
+    const checked=checkedSet.has(key);
+    return `<div class="check-item ${checked?'checked':''}">
+      <input type="checkbox" ${checked?'checked':''} ${isToday?'':'disabled'} onchange="onScheduleCheck('${dateStr}','${key.replace(/'/g,"\\'")}',this.checked)">
+      <div><div class="time">${i.time_text}</div><div class="label">${i.activity}</div></div>
+    </div>`;
+  }).join('');
+}
+async function onScheduleCheck(dateStr,key,checked){
+  await toggleCheck('schedule', key, dateStr, checked);
+  renderToday();
+}
+const SchedulePlan = {
+  async save(){
+    const rows = parseWeekly($('schedInput').value, ':', ['activity','time_text']);
+    if(!rows.length) return;
+    await sb.from('schedule_plans').delete().neq('id','00000000-0000-0000-0000-000000000000');
+    await sb.from('schedule_plans').insert(rows.map(r=>({day:r.day, activity:r.activity, time_text:r.time_text})));
+    renderToday();
+  }
+};
+
+/* ============ GYM ============ */
+async function renderGymToday(){
+  const wd = weekdayName(new Date());
+  const {data} = await sb.from('gym_plans').select('*').eq('day',wd).order('created_at');
+  const items = data||[];
+  const checkedSet = await getChecksForDate('gym', todayISO());
+  if(!items.length){ $('gymTodayList').innerHTML='<div class="empty">No gym plan for '+wd+' yet</div>'; $('gymProgLbl').textContent=''; $('gymProgBar').style.width='0%'; return; }
+  const checkedCount = items.filter(i=>checkedSet.has(i.exercise_name)).length;
+  $('gymProgLbl').textContent = checkedCount+'/'+items.length;
+  $('gymProgBar').style.width = Math.round(checkedCount/items.length*100)+'%';
+  const target = items[0].target_area ? `<div class="pill" style="margin-bottom:8px;">${items[0].target_area}</div>` : '';
+  $('gymTodayList').innerHTML = target + items.map(i=>{
+    const checked=checkedSet.has(i.exercise_name);
+    return `<div class="check-item ${checked?'checked':''}">
+      <input type="checkbox" ${checked?'checked':''} onchange="onGymCheck('${i.exercise_name.replace(/'/g,"\\'")}',this.checked)">
+      <div><div class="label">${i.exercise_name} <span class="muted">${i.sets||''}</span></div>${i.youtube_link?`<a href="${i.youtube_link}" target="_blank" style="font-size:.75rem;">▶ watch</a>`:''}</div>
+    </div>`;
+  }).join('');
+}
+async function onGymCheck(key,checked){ await toggleCheck('gym', key, todayISO(), checked); renderGymToday(); }
+const GymPlan = {
+  async save(){
+    const rows = parseWeekly($('gymInput').value, '|', ['exercise_name','sets','youtube_link']);
+    if(!rows.length) return;
+    await sb.from('gym_plans').delete().neq('id','00000000-0000-0000-0000-000000000000');
+    await sb.from('gym_plans').insert(rows.map(r=>({day:r.day, target_area:r.meta, exercise_name:r.exercise_name, sets:r.sets, youtube_link:r.youtube_link})));
+    renderGymToday();
+  }
+};
+
+/* ============ MEALS ============ */
+async function renderMealPlanToday(){
+  const wd = weekdayName(new Date());
+  const {data} = await sb.from('meal_plans').select('*').eq('day',wd).order('created_at');
+  const items = data||[];
+  const checkedSet = await getChecksForDate('meals', todayISO());
+  if(!items.length){ $('mealPlanToday').innerHTML='<div class="empty">No meal plan for '+wd+' yet</div>'; $('mealProgLbl').textContent=''; $('mealProgBar').style.width='0%'; return; }
+  const checkedCount = items.filter(i=>checkedSet.has(i.meal_type)).length;
+  $('mealProgLbl').textContent = checkedCount+'/'+items.length;
+  $('mealProgBar').style.width = Math.round(checkedCount/items.length*100)+'%';
+  $('mealPlanToday').innerHTML = items.map(i=>{
+    const checked=checkedSet.has(i.meal_type);
+    return `<div class="check-item ${checked?'checked':''}">
+      <input type="checkbox" ${checked?'checked':''} onchange="onMealCheck('${i.meal_type.replace(/'/g,"\\'")}',this.checked)">
+      <div><b>${i.meal_type}</b><div class="muted">${i.description}</div></div>
+    </div>`;
+  }).join('');
+}
+async function onMealCheck(key,checked){ await toggleCheck('meals', key, todayISO(), checked); renderMealPlanToday(); }
+const MealPlan = {
+  async save(){
+    const rows = parseWeekly($('mealPlanInput').value, ':', ['meal_type','description']);
+    if(!rows.length) return;
+    await sb.from('meal_plans').delete().neq('id','00000000-0000-0000-0000-000000000000');
+    await sb.from('meal_plans').insert(rows.map(r=>({day:r.day, meal_type:r.meal_type, description:r.description})));
+    renderMealPlanToday();
+  }
+};
 let mealPhotoB64=null;
 $('mealPhoto').onchange=e=>{
   const f=e.target.files[0]; if(!f) return;
@@ -384,17 +588,20 @@ $('mealPhoto').onchange=e=>{
   reader.onload=ev=>{$('mealPhotoPreview').src=ev.target.result;$('mealPhotoPreview').style.display='block';mealPhotoB64=ev.target.result;};
   reader.readAsDataURL(f);
 };
+let calChartInstance=null;
 const Meals = {
   async log(){
-    const fields = {
-      date: todayISO(), meal_type:$('mealType').value, description:$('mealDesc').value,
-      calories: Number($('mealCal').value)||0, protein:Number($('mealProt').value)||0, fat:Number($('mealFat').value)||0,
-      photo_url: mealPhotoB64
-    };
+    const fields={date:todayISO(), meal_type:$('mealType').value, description:$('mealDesc').value, calories:Number($('mealCal').value)||0, protein:Number($('mealProt').value)||0, fat:Number($('mealFat').value)||0, photo_url:mealPhotoB64};
     await sb.from('meal_logs').insert(fields);
     ['mealDesc','mealCal','mealProt','mealFat'].forEach(id=>$(id).value='');
     $('mealPhotoPreview').style.display='none'; mealPhotoB64=null;
-    renderMealLog();
+    renderMealLog(); renderCalorieChart();
+  },
+  async editGoal(){
+    const val = prompt('Daily calorie goal (kcal):', $('calGoalLbl').textContent||'1500');
+    if(!val) return;
+    await sb.from('user_settings').upsert({target_calories:Number(val)},{onConflict:'user_id'});
+    renderCalorieChart();
   }
 };
 async function renderMealLog(){
@@ -408,41 +615,33 @@ async function renderMealLog(){
       ${m.photo_url?`<img class="thumb" src="${m.photo_url}">`:''}
     </div>`).join('');
 }
+async function renderCalorieChart(){
+  const {data:settings} = await sb.from('user_settings').select('target_calories').maybeSingle();
+  const goal = settings?.target_calories || 1500;
+  const {data:meals} = await sb.from('meal_logs').select('calories').eq('date',todayISO());
+  const eaten = (meals||[]).reduce((a,m)=>a+(m.calories||0),0);
+  const left = Math.max(goal-eaten,0);
+  $('calGoalLbl').textContent=goal; $('calEatenLbl').textContent=eaten; $('calLeftLbl').textContent=left;
+  const ctx=$('calChart').getContext('2d');
+  if(calChartInstance) calChartInstance.destroy();
+  calChartInstance = new Chart(ctx,{type:'doughnut',data:{labels:['Eaten','Left'],datasets:[{data:[eaten,left],backgroundColor:['#b5764f','#e0d2ba'],borderWidth:0}]},options:{plugins:{legend:{display:false}},cutout:'65%'}});
+}
 
 /* ============ LEARNING ============ */
-function weekStart(){
-  const d=new Date(); const day=d.getDay(); const diff=d.getDate()-day+(day===0?-6:1);
-  return new Date(d.setDate(diff)).toISOString().slice(0,10);
-}
+function weekStart(){ return weekStartOf(todayISO()); }
 const Learning = {
-  parse(text){
-    const lines = text.split('\n');
-    const days=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
-    let currentDay=null; const tasks=[];
-    lines.forEach((raw,i)=>{
-      const line=raw.trim(); if(!line) return;
-      if(days.includes(line.toLowerCase())){ currentDay=line; return; }
-      if(line.includes('|')){
-        const [name,link,mins]=line.split('|').map(s=>s.trim());
-        const minutesNum=Number(mins);
-        const valid = name && currentDay && (!mins || !isNaN(minutesNum));
-        tasks.push({day:currentDay, name, link, minutes:minutesNum||0, valid, line:i+1});
-      }
-    });
-    return {tasks};
-  },
+  parse(text){ return {tasks: parseWeekly(text,'|',['name','link','minutes']).map(r=>({day:r.day,name:r.name,link:r.link,minutes:Number(r.minutes)||0}))}; },
   preview(){
     const {tasks} = this.parse($('lrnInput').value);
     $('lrnPreview').innerHTML = `<table style="width:100%;font-size:.78rem;margin-top:10px;border-collapse:collapse;">
-      <tr style="color:var(--ink-dim);"><td>Day</td><td>Task</td><td>Min</td><td></td></tr>
-      ${tasks.map(t=>`<tr style="border-top:1px solid var(--line);"><td>${t.day||'-'}</td><td>${t.name}</td><td>${t.minutes}</td><td>${t.valid?'✓':'⚠️ line '+t.line}</td></tr>`).join('')}
+      <tr style="color:var(--ink-dim);"><td>Day</td><td>Task</td><td>Min</td></tr>
+      ${tasks.map(t=>`<tr style="border-top:1px solid var(--line);"><td>${t.day}</td><td>${t.name}</td><td>${t.minutes}</td></tr>`).join('')}
     </table>`;
   },
   async save(){
     const {tasks} = this.parse($('lrnInput').value);
-    const valid = tasks.filter(t=>t.valid);
     const ws = weekStart();
-    const rows = valid.map(t=>({week_start:ws, day:t.day, task_name:t.name, resource_link:t.link, estimated_minutes:t.minutes, actual_minutes:0, status:'To Do'}));
+    const rows = tasks.filter(t=>t.name).map(t=>({week_start:ws, day:t.day, task_name:t.name, resource_link:t.link, estimated_minutes:t.minutes, actual_minutes:0, status:'To Do'}));
     if(rows.length) await sb.from('learning_tasks').insert(rows);
     renderLearningTasks(); this.preview();
   },
@@ -467,24 +666,48 @@ async function renderLearningTasks(){
     <div class="list-item" style="display:block;">
       <div class="row between"><b>${t.day}: ${t.task_name}</b><span class="pill ${t.status==='Done'?'done':''}">${t.status}</span></div>
       <div class="muted">${t.estimated_minutes} min ${t.resource_link?`· <a href="${t.resource_link}" target="_blank">resource</a>`:''}</div>
-      <div class="badge-row">
+      <div style="margin-top:6px;display:flex;gap:6px;">
         <a class="cal-btn" href="${icsFor(t.task_name, ws, t.estimated_minutes)}" download="task.ics">📅 Add to calendar</a>
         <button class="btn small ghost" onclick="Learning.markDone('${t.id}')">Mark done</button>
       </div>
     </div>`).join('');
 }
 async function renderLearningStats(){
+  const {data:sessions} = await sb.from('learning_sessions').select('minutes').eq('date',todayISO());
+  const todayMin = (sessions||[]).reduce((a,s)=>a+(s.minutes||0),0);
+  $('lrnTodayMin').textContent = todayMin;
   const ws=weekStart();
-  const {data} = await sb.from('learning_tasks').select('actual_minutes,status').eq('week_start',ws);
-  const doneMin=(data||[]).filter(t=>t.status==='Done').reduce((a,b)=>a+(b.actual_minutes||0),0);
-  $('lrnWeekMin').textContent=doneMin;
-  // previous week comparison
-  const prevWs=new Date(new Date(ws).getTime()-7*86400000).toISOString().slice(0,10);
-  const {data:prevData} = await sb.from('learning_tasks').select('actual_minutes,status').eq('week_start',prevWs);
-  const prevMin=(prevData||[]).filter(t=>t.status==='Done').reduce((a,b)=>a+(b.actual_minutes||0),0);
-  $('lrnVsLast').textContent = prevData&&prevData.length ? (doneMin>=prevMin?'+':'')+(doneMin-prevMin) : '–';
-  $('lrnStreak').textContent = (data||[]).filter(t=>t.status==='Done').length;
+  const {data:weekSessions} = await sb.from('learning_sessions').select('minutes,date').gte('date',ws);
+  const weekMin = (weekSessions||[]).reduce((a,s)=>a+(s.minutes||0),0);
+  const prevWs = addDays(ws,-7);
+  const {data:prevSessions} = await sb.from('learning_sessions').select('minutes').gte('date',prevWs).lt('date',ws);
+  const prevMin = (prevSessions||[]).reduce((a,s)=>a+(s.minutes||0),0);
+  $('lrnVsLast').textContent = prevSessions&&prevSessions.length ? (weekMin>=prevMin?'+':'')+(weekMin-prevMin) : '–';
+  let streak=0, cur=todayISO();
+  const {data:allSessions} = await sb.from('learning_sessions').select('date').gte('date',addDays(todayISO(),-35));
+  const daysWithSession = new Set((allSessions||[]).map(s=>s.date));
+  for(let i=0;i<35;i++){ if(daysWithSession.has(cur)){streak++; cur=addDays(cur,-1);} else break; }
+  $('lrnStreak').textContent = streak;
 }
+const LearningTimer = {
+  activeId: null,
+  async checkIn(){
+    const {data} = await sb.from('learning_sessions').insert({date:todayISO(), check_in:new Date().toISOString()}).select().single();
+    this.activeId = data.id;
+    $('checkInBtn').style.display='none'; $('checkOutBtn').style.display='block';
+    localStorage.setItem('lrn_active_session', data.id);
+  },
+  async checkOut(){
+    const id = this.activeId || localStorage.getItem('lrn_active_session');
+    if(!id) return;
+    const {data} = await sb.from('learning_sessions').select('check_in').eq('id',id).single();
+    const mins = Math.max(1, Math.round((Date.now()-new Date(data.check_in).getTime())/60000));
+    await sb.from('learning_sessions').update({check_out:new Date().toISOString(), minutes:mins}).eq('id',id);
+    localStorage.removeItem('lrn_active_session');
+    $('checkInBtn').style.display='block'; $('checkOutBtn').style.display='none';
+    renderLearningStats();
+  }
+};
 const PROJECT_PHASES=['1. Data model — objects, fields, validation','2. Planner + Home widget (core to-do loop)','3. Dashboard + buddy comparison','4. Mobile polish'];
 async function renderProjectPhases(){
   const {data} = await sb.from('project_milestones').select('*').order('updated_at',{ascending:false});
@@ -500,8 +723,7 @@ async function renderProjectPhases(){
   }).join('');
 }
 async function updateProjectPct(i,val){
-  $('projPct'+i).textContent=val+'%';
-  $('projBar'+i).style.width=val+'%';
+  $('projPct'+i).textContent=val+'%'; $('projBar'+i).style.width=val+'%';
   await sb.from('project_milestones').insert({phase:PROJECT_PHASES[i], percent_complete:Number(val), weekend_date:todayISO()});
 }
 
@@ -516,6 +738,7 @@ const Journal = {
     const fields={date:todayISO()};
     JOURNAL_QUESTIONS.forEach((q,i)=>fields['q'+(i+1)]=$('jq'+i).value);
     await sb.from('journal_entries').insert(fields);
+    await toggleCheck('journal','entry',todayISO(),true);
     renderJournalHistory();
     JOURNAL_QUESTIONS.forEach((q,i)=>$('jq'+i).value='');
   }
@@ -536,6 +759,7 @@ const Expenses = {
     const type = document.querySelector('#expTypeToggle button.active').dataset.v;
     const fields={date:todayISO(), amount:Number($('expAmt').value)||0, transaction_type:type, source:$('expSource').value, target:$('expTarget').value, category:$('expCategory').value};
     await sb.from('expenses').insert(fields);
+    await toggleCheck('expenses','logged',todayISO(),true);
     ['expAmt','expSource','expTarget'].forEach(id=>$(id).value='');
     renderExpenses();
   }
@@ -562,13 +786,11 @@ const Jobs = {
     const jd = $('jobJD').value;
     const skills=['integration','apex','lwc','data cloud','platform events','rest','soap','bulk api','flow','mulesoft','einstein'];
     const found=skills.filter(s=>jd.toLowerCase().includes(s));
-    const fields={
-      job_title:$('jobTitle').value, company:$('jobCompany').value, jd_link:$('jobLink').value,
+    const fields={ job_title:$('jobTitle').value, company:$('jobCompany').value, jd_link:$('jobLink').value,
       match_percent: Math.round((found.length/skills.length)*100),
-      gap_notes: 'Mentioned: '+(found.join(', ')||'none detected')+'. Review JD manually for full picture.',
-      status:'Saved'
-    };
+      gap_notes: 'Mentioned: '+(found.join(', ')||'none detected')+'. Review JD manually for full picture.', status:'Saved' };
     await sb.from('job_applications').insert(fields);
+    await toggleCheck('jobs','reviewed',todayISO(),true);
     ['jobTitle','jobCompany','jobLink','jobJD'].forEach(id=>$(id).value='');
     renderJobs();
   }
@@ -585,12 +807,75 @@ async function renderJobs(){
     </div>`).join('');
 }
 
+/* ============ STEPS ============ */
+const Steps = {
+  async log(){
+    const v = Number($('stepsInput').value);
+    if(!v) return;
+    await sb.from('steps_log').insert({date:todayISO(), steps:v});
+    $('stepsInput').value='';
+    renderWeekStatus();
+  }
+};
+
+/* ============ WEEK STATUS ============ */
+async function renderWeekStatus(){
+  const ws = weekStart();
+  // steps
+  const {data:steps} = await sb.from('steps_log').select('steps').gte('date',ws);
+  const totalSteps = (steps||[]).reduce((a,s)=>a+s.steps,0);
+  $('stepsWeekTotal').textContent = `${totalSteps.toLocaleString()} steps this week`;
+  // overview streaks
+  const {data:sp} = await sb.from('schedule_plans').select('day,activity,time_text');
+  const {data:gp} = await sb.from('gym_plans').select('day,exercise_name');
+  const {data:mp} = await sb.from('meal_plans').select('day,meal_type');
+  const schedByDay=wd=>(sp||[]).filter(r=>r.day===wd).map(r=>r.activity+'|'+r.time_text);
+  const gymByDay=wd=>(gp||[]).filter(r=>r.day===wd).map(r=>r.exercise_name);
+  const mealByDay=wd=>(mp||[]).filter(r=>r.day===wd).map(r=>r.meal_type);
+  const schedStreak = await computeStreak('schedule', schedByDay);
+  const gymStreak = await computeStreak('gym', gymByDay);
+  const mealStreak = await computeStreak('meals', mealByDay);
+  $('weekOverview').innerHTML = `<div class="grid3">
+    <div class="stat"><div class="num">🔥${schedStreak}</div><div class="lbl">Schedule</div></div>
+    <div class="stat"><div class="num">🔥${gymStreak}</div><div class="lbl">Gym</div></div>
+    <div class="stat"><div class="num">🔥${mealStreak}</div><div class="lbl">Meals</div></div>
+  </div>`;
+  // gym this week: count of days with all checked
+  let gymDone=0;
+  const {data:gymChecks} = await sb.from('day_checks').select('date,item_key').eq('section','gym').gte('date',ws);
+  const gymByDate={}; (gymChecks||[]).forEach(c=>{(gymByDate[c.date]=gymByDate[c.date]||new Set()).add(c.item_key);});
+  for(let i=0;i<7;i++){ const d=addDays(ws,i); if(d>todayISO())break; const wd=weekdayName(new Date(d+'T00:00:00')); const items=gymByDay(wd); if(items.length && items.every(k=>(gymByDate[d]||new Set()).has(k))) gymDone++; }
+  $('weekGym').innerHTML = `<div class="muted">${gymDone} full workout days completed this week</div>`;
+  // meals this week
+  let mealDone=0;
+  const {data:mealChecks} = await sb.from('day_checks').select('date,item_key').eq('section','meals').gte('date',ws);
+  const mealByDate={}; (mealChecks||[]).forEach(c=>{(mealByDate[c.date]=mealByDate[c.date]||new Set()).add(c.item_key);});
+  for(let i=0;i<7;i++){ const d=addDays(ws,i); if(d>todayISO())break; const wd=weekdayName(new Date(d+'T00:00:00')); const items=mealByDay(wd); if(items.length && items.every(k=>(mealByDate[d]||new Set()).has(k))) mealDone++; }
+  $('weekMeals').innerHTML = `<div class="muted">${mealDone} full meal-plan days completed this week</div>`;
+  // learning this week
+  const {data:lrnSessions} = await sb.from('learning_sessions').select('minutes').gte('date',ws);
+  const lrnMin = (lrnSessions||[]).reduce((a,s)=>a+(s.minutes||0),0);
+  $('weekLearning').innerHTML = `<div class="muted">${lrnMin} min logged via check-in this week</div>`;
+  // journal this week
+  const {data:journalWeek} = await sb.from('journal_entries').select('date').gte('date',ws);
+  $('weekJournal').innerHTML = `<div class="muted">${(journalWeek||[]).length}/7 days journaled this week</div>`;
+  // expenses this week
+  const {data:expWeek} = await sb.from('expenses').select('amount,transaction_type').gte('date',ws);
+  const spend = (expWeek||[]).filter(e=>e.transaction_type==='Debit').reduce((a,e)=>a+Number(e.amount),0);
+  $('weekExpenses').innerHTML = `<div class="muted">₹${spend.toFixed(0)} spent this week across ${(expWeek||[]).length} transactions</div>`;
+  // jobs this week
+  const {data:jobsWeek} = await sb.from('job_applications').select('id').gte('created_at',ws);
+  $('weekJobs').innerHTML = `<div class="muted">${(jobsWeek||[]).length} new roles tracked this week</div>`;
+}
+
 /* ============ INIT ============ */
 async function initApp(){
-  await renderSchedule();
-  renderGym();
-  renderMealTemplates(0);
+  await renderHome();
+  await renderToday();
+  renderGymToday();
+  renderMealPlanToday();
   renderMealLog();
+  renderCalorieChart();
   renderLearningTasks();
   renderLearningStats();
   renderProjectPhases();
@@ -598,6 +883,10 @@ async function initApp(){
   renderJournalHistory();
   renderExpenses();
   renderJobs();
+  if(localStorage.getItem('lrn_active_session')){
+    $('checkInBtn').style.display='none'; $('checkOutBtn').style.display='block';
+    LearningTimer.activeId = localStorage.getItem('lrn_active_session');
+  }
 }
 window.onload = async ()=>{
   const {data:{session}} = await sb.auth.getSession();
