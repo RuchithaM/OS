@@ -126,6 +126,10 @@
       <h3>Hello 🌿</h3>
       <div class="muted" id="homeDateLbl"></div>
     </div>
+    <div class="card" id="quoteCard" style="background:linear-gradient(135deg,var(--panel-2),var(--panel));">
+      <div class="pill" id="quoteCategory" style="margin-bottom:8px;"></div>
+      <div style="font-family:var(--font-display);font-size:1.1rem;font-style:italic;" id="quoteText">Loading...</div>
+    </div>
     <div class="tiles" id="homeTiles"></div>
   </div>
 
@@ -186,6 +190,18 @@ Push-ups | 3x10 | "></textarea>
   <!-- MEALS -->
   <div class="view" id="view-meals">
     <div class="card">
+      <h3>Calories today</h3>
+      <div class="row" style="gap:16px;">
+        <canvas id="calChart" width="120" height="120" style="max-width:120px;"></canvas>
+        <div>
+          <div class="muted">Goal: <span id="calGoalLbl"></span> kcal</div>
+          <div class="muted">Eaten: <span id="calEatenLbl"></span> kcal</div>
+          <div class="muted">Left: <span id="calLeftLbl"></span> kcal</div>
+          <button class="btn small ghost" onclick="Meals.editGoal()" style="margin-top:6px;">Set goal</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
       <div class="row between"><h3 style="margin:0;">Today's meal plan</h3><span class="pill" id="mealProgLbl"></span></div>
       <div class="progress"><div id="mealProgBar" style="width:0%"></div></div>
       <div id="mealPlanToday" style="margin-top:10px;"></div>
@@ -203,16 +219,19 @@ Tuesday
       </details>
     </div>
     <div class="card">
-      <h3>Calories today</h3>
-      <div class="row" style="gap:16px;">
-        <canvas id="calChart" width="120" height="120" style="max-width:120px;"></canvas>
-        <div>
-          <div class="muted">Goal: <span id="calGoalLbl"></span> kcal</div>
-          <div class="muted">Eaten: <span id="calEatenLbl"></span> kcal</div>
-          <div class="muted">Left: <span id="calLeftLbl"></span> kcal</div>
-          <button class="btn small ghost" onclick="Meals.editGoal()" style="margin-top:6px;">Set goal</button>
+      <details class="planner">
+        <summary>📖 Nutrition glossary</summary>
+        <div id="glossaryList" style="margin-top:8px;">
+          <div class="list-item"><div><b>Calories</b><div class="muted">Energy from food. Fat loss needs a small, steady calorie deficit.</div></div></div>
+          <div class="list-item"><div><b>Protein</b><div class="muted">Builds/preserves muscle while losing fat. Aim for a good source at every meal.</div></div></div>
+          <div class="list-item"><div><b>Carbohydrates</b><div class="muted">Main energy source. Complex carbs (oats, millets) digest slower than simple sugars.</div></div></div>
+          <div class="list-item"><div><b>Fat</b><div class="muted">Needed in moderation for hormones — don't eliminate, just portion it.</div></div></div>
+          <div class="list-item"><div><b>Fiber</b><div class="muted">Keeps you full longer, aids digestion — found in veg, whole grains, fruit skins.</div></div></div>
+          <div class="list-item"><div><b>BMR</b><div class="muted">Basal Metabolic Rate — calories your body burns at rest just to function.</div></div></div>
+          <div class="list-item"><div><b>TDEE</b><div class="muted">Total Daily Energy Expenditure — BMR plus activity. Eating below this creates the deficit.</div></div></div>
+          <div class="list-item"><div><b>Deficit</b><div class="muted">Eating less than you burn — the core mechanism behind fat loss.</div></div></div>
         </div>
-      </div>
+      </details>
     </div>
     <div class="card">
       <h3>Log a meal</h3>
@@ -338,11 +357,88 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const $=id=>document.getElementById(id);
 const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-const fmtDate=d=>d.toISOString().slice(0,10);
+function todayISO(){
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function addDays(dateStr,n){
+  const [y,m,day] = dateStr.split('-').map(Number);
+  const dt = new Date(Date.UTC(y,m-1,day));
+  dt.setUTCDate(dt.getUTCDate()+n);
+  return dt.toISOString().slice(0,10);
+}
+function weekStartOf(dateStr){
+  const [y,m,day] = dateStr.split('-').map(Number);
+  const dt = new Date(Date.UTC(y,m-1,day));
+  const dow = dt.getUTCDay();
+  const diff = dt.getUTCDate()-dow+(dow===0?-6:1);
+  dt.setUTCDate(diff);
+  return dt.toISOString().slice(0,10);
+}
+function weekdayOfDateStr(dateStr){
+  const [y,m,day] = dateStr.split('-').map(Number);
+  return DAYS[new Date(Date.UTC(y,m-1,day)).getUTCDay()];
+}
+function pickVersionedRows(rows, day, dateStr){
+  const endOfDay = dateStr+'T23:59:59.999';
+  const dayRows = (rows||[]).filter(r=>r.day===day && (r.version_at||'1970-01-01') <= endOfDay);
+  if(!dayRows.length) return [];
+  const maxV = dayRows.reduce((m,r)=> r.version_at>m?r.version_at:m, dayRows[0].version_at);
+  return dayRows.filter(r=>r.version_at===maxV);
+}
 const weekdayName=d=>DAYS[d.getDay()];
-function todayISO(){return fmtDate(new Date());}
-function addDays(dateStr,n){ const d=new Date(dateStr+'T00:00:00'); d.setDate(d.getDate()+n); return fmtDate(d); }
-function weekStartOf(dateStr){ const d=new Date(dateStr+'T00:00:00'); const day=d.getDay(); const diff=d.getDate()-day+(day===0?-6:1); const ws=new Date(d); ws.setDate(diff); return fmtDate(ws); }
+
+/* ============ MOTIVATIONAL QUOTES ============ */
+const QUOTES = {
+  life:['Don\'t survive your life. Build it.','Every sunrise is permission to start again.','Live intentionally, not accidentally.','Make today worth remembering.','Consistency creates extraordinary lives.','Protect your peace.','You become what you repeatedly do.','You don\'t have to see the whole staircase, just take the first step.','Discipline is choosing what you want most over what you want now.','Give today your full 100% — no half-measures.'],
+  gym:['Discipline is stronger than motivation.','Show up even when you don\'t feel like it.','Strong body. Strong mind.','Every rep builds confidence.','Sweat today. Smile tomorrow.','The hardest workout is the one you skip.','Every workout is a vote for your future.','The body achieves what the mind believes.','You don\'t find willpower, you build it — one rep at a time.'],
+  meals:['Eat to fuel your dreams.','Nourish, don\'t punish.','Energy begins on your plate.','Small healthy choices compound.','Consistency beats crash diets.','Every meal is a fresh start.','Feed your future.','You can\'t out-train a bad diet, but you can out-love a good one.','Cook once, eat proud twice.'],
+  learning:['Learn something every day.','Knowledge compounds.','Every expert was once a beginner.','Practice creates mastery.','Your brain grows through challenge.','Focus beats talent.','Be a student forever.','The expert in anything was once a beginner who didn\'t quit.','Compound interest works on knowledge too.'],
+  expenses:['Spend intentionally.','Save before spending.','Wealth grows quietly.','Track every expense.','Live below your means.','Financial discipline creates options.','A budget is telling your money where to go instead of wondering where it went.'],
+  jobs:['Excellence is a habit.','Focus creates opportunities.','Results speak.','Be valuable.','Show up prepared.','Reputation is earned daily.','Become irreplaceable.','Opportunities favor the prepared, not the lucky.']
+};
+function detectContext(activityText){
+  const t=(activityText||'').toLowerCase();
+  if(/gym|workout|exercise/.test(t)) return 'gym';
+  if(/breakfast|lunch|dinner|snack|meal|cook|eat/.test(t)) return 'meals';
+  if(/work|office/.test(t)) return 'jobs';
+  if(/learn|salesforce|read|study|focus/.test(t)) return 'learning';
+  if(/expense|budget|money/.test(t)) return 'expenses';
+  return 'life';
+}
+function parseTimeToMinutes(raw){
+  if(!raw) return null;
+  let t=raw.trim().toLowerCase().replace(/\s+/g,'');
+  let ap=null;
+  if(t.endsWith('am')){ap='am';t=t.slice(0,-2);}
+  else if(t.endsWith('pm')){ap='pm';t=t.slice(0,-2);}
+  let parts=t.split(':');
+  let h=parseInt(parts[0],10); let mi=parts[1]?parseInt(parts[1],10):0;
+  if(isNaN(h)) return null;
+  if(isNaN(mi)) mi=0;
+  if(ap==='pm' && h<12) h+=12;
+  if(ap==='am' && h===12) h=0;
+  return h*60+mi;
+}
+function hashStr(s){ let h=0; for(let i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))|0;} return Math.abs(h); }
+async function getContextualQuote(){
+  const dateStr=todayISO();
+  const wd=weekdayOfDateStr(dateStr);
+  const {data} = await sb.from('schedule_plans').select('*').eq('day',wd);
+  const items = pickVersionedRows(data||[], wd, dateStr);
+  let category='life';
+  if(items.length){
+    const now=new Date(); const curMin=now.getHours()*60+now.getMinutes();
+    const timed = items.map(i=>({...i, mins:parseTimeToMinutes(i.time_text)})).filter(i=>i.mins!==null).sort((a,b)=>a.mins-b.mins);
+    let current=null;
+    for(const i of timed){ if(i.mins<=curMin) current=i; }
+    if(!current && timed.length) current=timed[timed.length-1];
+    if(current) category=detectContext(current.activity);
+  }
+  const list=QUOTES[category]||QUOTES.life;
+  const idx = hashStr(dateStr+category+Math.floor(new Date().getHours()/3)) % list.length;
+  return {category, quote:list[idx]};
+}
 
 /* THEME */
 function toggleTheme(){
@@ -427,8 +523,8 @@ async function computeStreak(section, planItemKeysForWeekday){
   (data||[]).forEach(c=>{ (byDate[c.date]=byDate[c.date]||new Set()).add(c.item_key); });
   let streak=0; let cur=todayISO();
   for(let i=0;i<35;i++){
-    const wd=weekdayName(new Date(cur+'T00:00:00'));
-    const items=planItemKeysForWeekday(wd);
+    const wd=weekdayOfDateStr(cur);
+    const items=planItemKeysForWeekday(wd,cur);
     if(items.length===0){ cur=addDays(cur,-1); continue; }
     const checkedSet=byDate[cur]||new Set();
     const allDone=items.every(k=>checkedSet.has(k));
@@ -440,12 +536,17 @@ async function computeStreak(section, planItemKeysForWeekday){
 /* ============ HOME ============ */
 async function renderHome(){
   $('homeDateLbl').textContent = new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
+  getContextualQuote().then(({category,quote})=>{
+    const labels={life:'✨ For your day',gym:'💪 Gym time',meals:'🍽️ Meal time',learning:'📚 Learning time',expenses:'💰 Money mindset',jobs:'💼 Career focus'};
+    $('quoteCategory').textContent = labels[category]||'✨ For your day';
+    $('quoteText').textContent = '"'+quote+'"';
+  });
   const [{data:sp},{data:gp},{data:mp}] = await Promise.all([
     sb.from('schedule_plans').select('day,activity,time_text'),
     sb.from('gym_plans').select('day,exercise_name'),
     sb.from('meal_plans').select('day,meal_type')
   ]);
-  const schedByDay=wd=>(sp||[]).filter(r=>r.day===wd).map(r=>r.activity+'|'+r.time_text);
+  const schedByDay=(wd,dateStr)=>pickVersionedRows(sp, wd, dateStr||todayISO()).map(r=>r.activity+'|'+r.time_text);
   const gymByDay=wd=>(gp||[]).filter(r=>r.day===wd).map(r=>r.exercise_name);
   const mealByDay=wd=>(mp||[]).filter(r=>r.day===wd).map(r=>r.meal_type);
   const [schedStreak, gymStreak, mealStreak] = await Promise.all([
@@ -501,14 +602,14 @@ async function renderToday(){
   const isToday = dateStr===todayISO();
   $('todayDatePicker').value = dateStr;
   $('todaySelDate').textContent = new Date(dateStr+'T00:00:00').toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'}) + (isToday?' (Today)':'');
-  const wd = weekdayName(new Date(dateStr+'T00:00:00'));
+  const wd = weekdayOfDateStr(dateStr);
   const [isOffice, {data:plan}, checkedSet] = await Promise.all([
     currentOfficeFlag(dateStr),
-    sb.from('schedule_plans').select('*').eq('day',wd).order('created_at'),
+    sb.from('schedule_plans').select('*').eq('day',wd),
     getChecksForDate('schedule', dateStr)
   ]);
   document.querySelectorAll('#officeToggle button').forEach(b=>b.classList.toggle('active', Number(b.dataset.v)===Number(isOffice)));
-  const items = plan||[];
+  const items = pickVersionedRows(plan, wd, dateStr);
   if(!items.length){
     $('scheduleList').innerHTML = '<div class="empty">No plan set for '+wd+' yet — add one below</div>';
     $('schedProgLbl').textContent=''; $('schedProgBar').style.width='0%';
@@ -534,8 +635,8 @@ const SchedulePlan = {
   async save(){
     const rows = parseWeekly($('schedInput').value, ':', ['activity','time_text']);
     if(!rows.length) return;
-    await sb.from('schedule_plans').delete().neq('id','00000000-0000-0000-0000-000000000000');
-    await sb.from('schedule_plans').insert(rows.map(r=>({day:r.day, activity:r.activity, time_text:r.time_text})));
+    const versionAt = new Date().toISOString();
+    await sb.from('schedule_plans').insert(rows.map(r=>({day:r.day, activity:r.activity, time_text:r.time_text, version_at:versionAt})));
     renderToday();
   }
 };
@@ -865,7 +966,7 @@ async function renderWeekStatus(){
   ]);
   const totalSteps = (steps||[]).reduce((a,s)=>a+s.steps,0);
   $('stepsWeekTotal').textContent = `${totalSteps.toLocaleString()} steps this week`;
-  const schedByDay=wd=>(sp||[]).filter(r=>r.day===wd).map(r=>r.activity+'|'+r.time_text);
+  const schedByDay=(wd,dateStr)=>pickVersionedRows(sp, wd, dateStr||todayISO()).map(r=>r.activity+'|'+r.time_text);
   const gymByDay=wd=>(gp||[]).filter(r=>r.day===wd).map(r=>r.exercise_name);
   const mealByDay=wd=>(mp||[]).filter(r=>r.day===wd).map(r=>r.meal_type);
   const [schedStreak, gymStreak, mealStreak] = await Promise.all([
