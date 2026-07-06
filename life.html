@@ -154,7 +154,7 @@
       <div class="row between"><h3 style="margin:0;">Schedule</h3><span class="pill" id="schedProgLbl"></span></div>
       <div class="progress"><div id="schedProgBar" style="width:0%"></div></div>
       <div id="scheduleList" style="margin-top:10px;"></div>
-      <details class="planner">
+      <details class="planner" ontoggle="if(this.open) SchedulePlan.prefill()">
         <summary>✏️ Edit weekly schedule template</summary>
         <div class="muted">One day per block. Format: <code>Activity : Time</code></div>
         <textarea id="schedInput" placeholder="Monday
@@ -176,7 +176,7 @@ Wake : 5am
       <div class="row between"><h3 style="margin:0;">Today's workout</h3><span class="pill" id="gymProgLbl"></span></div>
       <div class="progress"><div id="gymProgBar" style="width:0%"></div></div>
       <div id="gymTodayList" style="margin-top:10px;"></div>
-      <details class="planner">
+      <details class="planner" ontoggle="if(this.open) GymPlan.prefill()">
         <summary>✏️ Edit weekly gym plan</summary>
         <div class="muted">Format: <code>Monday - Target Area</code> then <code>Exercise | Sets | YouTube link</code></div>
         <textarea id="gymInput" placeholder="Monday - Full Body
@@ -205,7 +205,7 @@ Push-ups | 3x10 | "></textarea>
       <div class="row between"><h3 style="margin:0;">Today's meal plan</h3><span class="pill" id="mealProgLbl"></span></div>
       <div class="progress"><div id="mealProgBar" style="width:0%"></div></div>
       <div id="mealPlanToday" style="margin-top:10px;"></div>
-      <details class="planner">
+      <details class="planner" ontoggle="if(this.open) MealPlan.prefill()">
         <summary>✏️ Plan this week's meals (do Sunday night)</summary>
         <div class="muted">Format: <code>Meal type : description</code></div>
         <textarea id="mealPlanInput" placeholder="Monday
@@ -265,7 +265,7 @@ Tuesday
     <div class="card">
       <h3>This week's tasks</h3>
       <div id="lrnTaskList"><div class="empty">No tasks yet</div></div>
-      <details class="planner">
+      <details class="planner" ontoggle="if(this.open) Learning.prefill()">
         <summary>✏️ Plan this week's Salesforce topics (do Sunday night)</summary>
         <div class="muted">Format: <code>Task | Link | Minutes</code></div>
         <textarea id="lrnInput" placeholder="Monday
@@ -638,6 +638,19 @@ const SchedulePlan = {
     const versionAt = new Date().toISOString();
     await sb.from('schedule_plans').insert(rows.map(r=>({day:r.day, activity:r.activity, time_text:r.time_text, version_at:versionAt})));
     renderToday();
+  },
+  async prefill(){
+    const {data} = await sb.from('schedule_plans').select('*');
+    const today = todayISO();
+    let text='';
+    DAYS.forEach(d=>{
+      const items = pickVersionedRows(data, d, today);
+      text += d+'\n';
+      if(items.length){ items.forEach(i=>{ text += `${i.activity} : ${i.time_text}\n`; }); }
+      else { text += `Wake up : 5am\n`; }
+      text += '\n';
+    });
+    $('schedInput').value = text.trim();
   }
 };
 
@@ -670,6 +683,21 @@ const GymPlan = {
     await sb.from('gym_plans').delete().neq('id','00000000-0000-0000-0000-000000000000');
     await sb.from('gym_plans').insert(rows.map(r=>({day:r.day, target_area:r.meta, exercise_name:r.exercise_name, sets:r.sets, youtube_link:r.youtube_link})));
     renderGymToday();
+  },
+  async prefill(){
+    const {data} = await sb.from('gym_plans').select('*').order('created_at');
+    let text='';
+    DAYS.forEach(d=>{
+      const items = (data||[]).filter(r=>r.day===d);
+      if(items.length){
+        text += `${d} - ${items[0].target_area||''}\n`;
+        items.forEach(i=>{ text += `${i.exercise_name} | ${i.sets||''} | ${i.youtube_link||''}\n`; });
+      } else {
+        text += `${d} - Full Body\nExercise name | 3x12 | \n`;
+      }
+      text += '\n';
+    });
+    $('gymInput').value = text.trim();
   }
 };
 
@@ -701,6 +729,18 @@ const MealPlan = {
     await sb.from('meal_plans').delete().neq('id','00000000-0000-0000-0000-000000000000');
     await sb.from('meal_plans').insert(rows.map(r=>({day:r.day, meal_type:r.meal_type, description:r.description})));
     renderMealPlanToday();
+  },
+  async prefill(){
+    const {data} = await sb.from('meal_plans').select('*').order('created_at');
+    let text='';
+    DAYS.forEach(d=>{
+      const items = (data||[]).filter(r=>r.day===d);
+      text += d+'\n';
+      if(items.length){ items.forEach(i=>{ text += `${i.meal_type} : ${i.description}\n`; }); }
+      else { text += `Breakfast : \nLunch : \nDinner : \n`; }
+      text += '\n';
+    });
+    $('mealPlanInput').value = text.trim();
   }
 };
 let mealPhotoB64=null;
@@ -766,8 +806,24 @@ const Learning = {
     const {tasks} = this.parse($('lrnInput').value);
     const ws = weekStart();
     const rows = tasks.filter(t=>t.name).map(t=>({week_start:ws, day:t.day, task_name:t.name, resource_link:t.link, estimated_minutes:t.minutes, actual_minutes:0, status:'To Do'}));
+    await sb.from('learning_tasks').delete().eq('week_start',ws);
     if(rows.length) await sb.from('learning_tasks').insert(rows);
     renderLearningTasks(); this.preview();
+  },
+  async prefill(){
+    const ws = weekStart();
+    const {data} = await sb.from('learning_tasks').select('*').eq('week_start',ws).order('created_at');
+    let text='';
+    if(data && data.length){
+      let lastDay=null;
+      data.forEach(t=>{
+        if(t.day!==lastDay){ text += (lastDay?'\n':'')+t.day+'\n'; lastDay=t.day; }
+        text += `${t.task_name} | ${t.resource_link||''} | ${t.estimated_minutes||0}\n`;
+      });
+    } else {
+      text = 'Monday\nLearn REST API basics | https://trailhead.salesforce.com/... | 20';
+    }
+    $('lrnInput').value = text.trim();
   },
   async markDone(id){
     const {data} = await sb.from('learning_tasks').select('estimated_minutes').eq('id',id).single();
@@ -803,7 +859,7 @@ async function renderLearningStats(){
     sb.from('learning_sessions').select('minutes').eq('date',todayISO()),
     sb.from('learning_sessions').select('minutes,date').gte('date',ws),
     sb.from('learning_sessions').select('minutes').gte('date',prevWs).lt('date',ws),
-    sb.from('learning_sessions').select('date').gte('date',addDays(todayISO(),-35))
+    sb.from('learning_sessions').select('date,minutes').gte('date',addDays(todayISO(),-35)).gte('minutes',20)
   ]);
   const todayMin = (sessions||[]).reduce((a,s)=>a+(s.minutes||0),0);
   $('lrnTodayMin').textContent = todayMin;
