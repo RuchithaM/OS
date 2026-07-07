@@ -827,6 +827,7 @@ const Estimator = {
       const count = this.selected[key] ? parseInt(this.selected[key].qty)||0 : 0;
       if(f.type==='unit'){
         return `<div class="check-item">
+          <div style="width:20px;flex:0 0 auto;"></div>
           <div style="flex:1;">
             <div class="label">${f.name} <span class="pill">${f.category||''}</span> <span class="muted">per ${f.unit_label||'piece'}</span></div>
           </div>
