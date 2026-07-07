@@ -773,6 +773,7 @@ const Estimator = {
   },
   async browseCategory(cat){
     this.activeCategory = (this.activeCategory===cat) ? null : cat;
+    this._lastQuery = null;
     this.renderCategoryChips();
     $('estSearch').value='';
     $('estAddNew').style.display='none';
@@ -788,6 +789,7 @@ const Estimator = {
   },
   async doSearch(q){
     q=q.trim();
+    this._lastQuery = q;
     $('estAddNew').style.display='none';
     if(!q){ $('estSearchResults').innerHTML=''; return; }
     const all = await this.getAllFoods();
@@ -822,20 +824,44 @@ const Estimator = {
     }
     $('estSearchResults').innerHTML = matches.map(f=>{
       const key=f.name;
+      const count = this.selected[key] ? parseInt(this.selected[key].qty)||0 : 0;
+      if(f.type==='unit'){
+        return `<div class="check-item">
+          <div style="flex:1;">
+            <div class="label">${f.name} <span class="pill">${f.category||''}</span> <span class="muted">per ${f.unit_label||'piece'}</span></div>
+          </div>
+          <div class="row" style="gap:8px;">
+            <button class="btn small ghost" onclick="Estimator.stepUnit('${key.replace(/'/g,"\\'")}',-1)">−</button>
+            <span style="min-width:18px;text-align:center;">${count}</span>
+            <button class="btn small ghost" onclick="Estimator.stepUnit('${key.replace(/'/g,"\\'")}',1)">+</button>
+          </div>
+        </div>`;
+      }
       const checked = !!this.selected[key];
       return `<div class="check-item">
         <input type="checkbox" ${checked?'checked':''} onchange="Estimator.toggle('${key.replace(/'/g,"\\'")}',this.checked)">
         <div style="flex:1;">
-          <div class="label">${f.name} <span class="pill">${f.category||''}</span></div>
-          <input type="text" placeholder="${f.type==='unit'?'e.g. 2':'e.g. 150g'}" value="${this.selected[key]?this.selected[key].qty:''}" style="margin-top:4px;" onchange="Estimator.setQty('${key.replace(/'/g,"\\'")}',this.value)">
+          <div class="label">${f.name} <span class="pill">${f.category||''}</span> <span class="muted">per 100${f.unit_label||'g'}</span></div>
+          <input type="text" placeholder="e.g. 150${f.unit_label||'g'}" value="${this.selected[key]?this.selected[key].qty:''}" style="margin-top:4px;" onchange="Estimator.setQty('${key.replace(/'/g,"\\'")}',this.value)">
         </div>
       </div>`;
     }).join('');
   },
+  stepUnit(key, delta){
+    const all=this.allCache||[];
+    const food=all.find(f=>f.name===key);
+    const current = this.selected[key] ? (parseInt(this.selected[key].qty)||0) : 0;
+    const next = Math.max(0, current+delta);
+    if(next===0){ delete this.selected[key]; }
+    else { this.selected[key] = {...food, qty:String(next)}; }
+    this.renderSelected();
+    if(this.activeCategory){ this.renderResults(all.filter(f=>f.category===this.activeCategory), null); }
+    else if(this._lastQuery){ this.renderResults(all.filter(f=>f.name.toLowerCase().includes(this._lastQuery.toLowerCase())).slice(0,10), this._lastQuery); }
+  },
   toggle(key,checked){
     const all=this.allCache||[];
     const food=all.find(f=>f.name===key);
-    if(checked){ this.selected[key]={...food, qty: food.type==='unit'?'1':'100g'}; }
+    if(checked){ this.selected[key]={...food, qty: food.type==='unit'?'1':'100'+(food.unit_label||'g')}; }
     else { delete this.selected[key]; }
     this.renderSelected();
   },
