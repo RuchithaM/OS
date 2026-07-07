@@ -142,31 +142,12 @@
         <button onclick="TodayView.shiftDate(1)">→</button>
         <button class="btn small ghost" onclick="TodayView.goToday()">Today</button>
       </div>
-      <div class="row between" style="margin-top:8px;">
-        <span class="muted" id="todaySelDate"></span>
-        <div class="toggle" id="officeToggle" style="transform:scale(.9);transform-origin:right;">
-          <button data-v="0" class="active">WFH</button>
-          <button data-v="1">WFO</button>
-        </div>
-      </div>
+      <div class="muted" id="todaySelDate" style="margin-top:8px;"></div>
     </div>
     <div class="card">
       <div class="row between"><h3 style="margin:0;">Schedule</h3><span class="pill" id="schedProgLbl"></span></div>
       <div class="progress"><div id="schedProgBar" style="width:0%"></div></div>
       <div id="scheduleList" style="margin-top:10px;"></div>
-      <details class="planner" ontoggle="if(this.open) SchedulePlan.prefill()">
-        <summary>✏️ Edit weekly schedule template</summary>
-        <div class="muted">One day per block. Format: <code>Activity : Time</code></div>
-        <textarea id="schedInput" placeholder="Monday
-Wake : 5am
-Fresh up : 6am
-Cook breakfast : 7am
-
-Tuesday
-Wake : 5am
-..."></textarea>
-        <button class="btn block" onclick="SchedulePlan.save()">Save weekly template</button>
-      </details>
     </div>
   </div>
 
@@ -423,9 +404,7 @@ function parseTimeToMinutes(raw){
 function hashStr(s){ let h=0; for(let i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))|0;} return Math.abs(h); }
 async function getContextualQuote(){
   const dateStr=todayISO();
-  const wd=weekdayOfDateStr(dateStr);
-  const {data} = await sb.from('schedule_plans').select('*').eq('day',wd);
-  const items = pickVersionedRows(data||[], wd, dateStr);
+  const items = getRoutineForDate(dateStr).map(([time,label])=>({activity:label, time_text:time}));
   let category='life';
   if(items.length){
     const now=new Date(); const curMin=now.getHours()*60+now.getMinutes();
@@ -541,12 +520,11 @@ async function renderHome(){
     $('quoteCategory').textContent = labels[category]||'✨ For your day';
     $('quoteText').textContent = '"'+quote+'"';
   });
-  const [{data:sp},{data:gp},{data:mp}] = await Promise.all([
-    sb.from('schedule_plans').select('day,activity,time_text'),
+  const [{data:gp},{data:mp}] = await Promise.all([
     sb.from('gym_plans').select('day,exercise_name'),
     sb.from('meal_plans').select('day,meal_type')
   ]);
-  const schedByDay=(wd,dateStr)=>pickVersionedRows(sp, wd, dateStr||todayISO()).map(r=>r.activity+'|'+r.time_text);
+  const schedByDay=(wd,dateStr)=>getRoutineForDate(dateStr||todayISO()).map(([t,label])=>label);
   const gymByDay=wd=>(gp||[]).filter(r=>r.day===wd).map(r=>r.exercise_name);
   const mealByDay=wd=>(mp||[]).filter(r=>r.day===wd).map(r=>r.meal_type);
   const [schedStreak, gymStreak, mealStreak] = await Promise.all([
@@ -587,43 +565,66 @@ TodayView.goToday = function(){
   this.date = todayISO();
   renderToday();
 };
-async function currentOfficeFlag(dateStr){
-  const {data} = await sb.from('schedule_overrides').select('is_office_day').eq('date',dateStr).order('created_at',{ascending:false}).limit(1);
-  return (data && data[0]) ? (data[0].is_office_day?1:0) : 0;
+const WEEKDAY_ROUTINE = [
+  ['6:45am','Wake up — brush, water, freshen up'],
+  ['7:00am','Gym — strictly 60 min (10 warm-up / 40 lifting / 10 cardio), no scrolling'],
+  ['8:00am','Shower + get ready'],
+  ['8:30am','Cook all 3 meals — max 1 hour, pack lunch + dinner'],
+  ['9:30am','Breakfast'],
+  ['9:50am','Salesforce learning — 30 min, YouTube only, no coding'],
+  ['10:20am','Get ready for office'],
+  ['11:00am','Work starts — give 100%, no studying, no multitasking'],
+  ['8:00pm','Work ends, travel back'],
+  ['8:30pm','Dinner — already prepped, no cooking'],
+  ['9:00pm','Walk to 10k steps + audiobook'],
+  ['9:45pm','WEEKLY_TASK'],
+  ['10:00pm','Relax — music, stretching, family, no productivity'],
+  ['10:30pm','Sleep'],
+];
+const WEEKEND_ROUTINE = [
+  ['6:45am','Wake up'],
+  ['7:00am','Gym'],
+  ['8:00am','Shower + get ready'],
+  ['8:30am','Cook meals'],
+  ['9:30am','Breakfast'],
+  ['9:30am','WEEKLY_TASK'],
+  ['10:00am','Salesforce integration portfolio project — 2-3 hours'],
+  ['1:00pm','Lunch'],
+  ['6:00pm','Walk + audiobook'],
+  ['9:00pm','Relax'],
+  ['10:30pm','Sleep'],
+];
+const WEEKLY_TASKS = {
+  Monday:'Weekly clean: Bathroom (10 min)',
+  Tuesday:'Weekly clean: Dusting (10 min) + Laundry (20 min)',
+  Wednesday:'Weekly clean: Mop (15 min)',
+  Thursday:'Weekly clean: Organize wardrobe',
+  Friday:'Weekly clean: Kitchen deep clean',
+  Saturday:'Laundry (30 min)',
+  Sunday:'Bedsheet change + room reset',
+};
+function getRoutineForDate(dateStr){
+  const wd = weekdayOfDateStr(dateStr);
+  const isWknd = (wd==='Saturday'||wd==='Sunday');
+  const base = isWknd ? WEEKEND_ROUTINE : WEEKDAY_ROUTINE;
+  return base.map(([time,label])=> label==='WEEKLY_TASK' ? [time, WEEKLY_TASKS[wd]] : [time,label]);
 }
-async function setOfficeFlag(dateStr,v){
-  await sb.from('schedule_overrides').insert({date:dateStr, is_office_day: v===1});
-  renderToday();
-}
-document.querySelectorAll('#officeToggle button').forEach(b=>{ b.onclick=()=>setOfficeFlag(TodayView.date, Number(b.dataset.v)); });
 
 async function renderToday(){
   const dateStr = TodayView.date;
   const isToday = dateStr===todayISO();
   $('todayDatePicker').value = dateStr;
-  $('todaySelDate').textContent = new Date(dateStr+'T00:00:00').toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'}) + (isToday?' (Today)':'');
-  const wd = weekdayOfDateStr(dateStr);
-  const [isOffice, {data:plan}, checkedSet] = await Promise.all([
-    currentOfficeFlag(dateStr),
-    sb.from('schedule_plans').select('*').eq('day',wd),
-    getChecksForDate('schedule', dateStr)
-  ]);
-  document.querySelectorAll('#officeToggle button').forEach(b=>b.classList.toggle('active', Number(b.dataset.v)===Number(isOffice)));
-  const items = pickVersionedRows(plan, wd, dateStr);
-  if(!items.length){
-    $('scheduleList').innerHTML = '<div class="empty">No plan set for '+wd+' yet — add one below</div>';
-    $('schedProgLbl').textContent=''; $('schedProgBar').style.width='0%';
-    return;
-  }
-  const checkedCount = items.filter(i=>checkedSet.has(i.activity+'|'+i.time_text)).length;
+  $('todaySelDate').textContent = new Date(dateStr+'T00:00:00').toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'}) + (isToday?' (Today)':'');
+  const items = getRoutineForDate(dateStr);
+  const checkedSet = await getChecksForDate('schedule', dateStr);
+  const checkedCount = items.filter(([time,label])=>checkedSet.has(label)).length;
   $('schedProgLbl').textContent = checkedCount+'/'+items.length;
   $('schedProgBar').style.width = Math.round(checkedCount/items.length*100)+'%';
-  $('scheduleList').innerHTML = items.map(i=>{
-    const key=i.activity+'|'+i.time_text;
-    const checked=checkedSet.has(key);
+  $('scheduleList').innerHTML = items.map(([time,label])=>{
+    const checked=checkedSet.has(label);
     return `<div class="check-item ${checked?'checked':''}">
-      <input type="checkbox" ${checked?'checked':''} ${isToday?'':'disabled'} onchange="onScheduleCheck('${dateStr}','${key.replace(/'/g,"\\'")}',this.checked)">
-      <div><div class="time">${i.time_text}</div><div class="label">${i.activity}</div></div>
+      <input type="checkbox" ${checked?'checked':''} ${isToday?'':'disabled'} onchange="onScheduleCheck('${dateStr}','${label.replace(/'/g,"\\'")}',this.checked)">
+      <div><div class="time">${time}</div><div class="label">${label}</div></div>
     </div>`;
   }).join('');
 }
@@ -631,28 +632,6 @@ async function onScheduleCheck(dateStr,key,checked){
   await toggleCheck('schedule', key, dateStr, checked);
   renderToday();
 }
-const SchedulePlan = {
-  async save(){
-    const rows = parseWeekly($('schedInput').value, ':', ['activity','time_text']);
-    if(!rows.length) return;
-    const versionAt = new Date().toISOString();
-    await sb.from('schedule_plans').insert(rows.map(r=>({day:r.day, activity:r.activity, time_text:r.time_text, version_at:versionAt})));
-    renderToday();
-  },
-  async prefill(){
-    const {data} = await sb.from('schedule_plans').select('*');
-    const today = todayISO();
-    let text='';
-    DAYS.forEach(d=>{
-      const items = pickVersionedRows(data, d, today);
-      text += d+'\n';
-      if(items.length){ items.forEach(i=>{ text += `${i.activity} : ${i.time_text}\n`; }); }
-      else { text += `Wake up : 5am\n`; }
-      text += '\n';
-    });
-    $('schedInput').value = text.trim();
-  }
-};
 
 /* ============ GYM ============ */
 async function renderGymToday(){
@@ -1005,12 +984,11 @@ async function renderWeekStatus(){
   const ws = weekStart();
   const [
     {data:steps},
-    {data:sp},{data:gp},{data:mp},
+    {data:gp},{data:mp},
     {data:gymChecks},{data:mealChecks},
     {data:lrnSessions},{data:journalWeek},{data:expWeek},{data:jobsWeek}
   ] = await Promise.all([
     sb.from('steps_log').select('steps').gte('date',ws),
-    sb.from('schedule_plans').select('day,activity,time_text'),
     sb.from('gym_plans').select('day,exercise_name'),
     sb.from('meal_plans').select('day,meal_type'),
     sb.from('day_checks').select('date,item_key').eq('section','gym').gte('date',ws),
@@ -1022,7 +1000,7 @@ async function renderWeekStatus(){
   ]);
   const totalSteps = (steps||[]).reduce((a,s)=>a+s.steps,0);
   $('stepsWeekTotal').textContent = `${totalSteps.toLocaleString()} steps this week`;
-  const schedByDay=(wd,dateStr)=>pickVersionedRows(sp, wd, dateStr||todayISO()).map(r=>r.activity+'|'+r.time_text);
+  const schedByDay=(wd,dateStr)=>getRoutineForDate(dateStr||todayISO()).map(([t,label])=>label);
   const gymByDay=wd=>(gp||[]).filter(r=>r.day===wd).map(r=>r.exercise_name);
   const mealByDay=wd=>(mp||[]).filter(r=>r.day===wd).map(r=>r.meal_type);
   const [schedStreak, gymStreak, mealStreak] = await Promise.all([
