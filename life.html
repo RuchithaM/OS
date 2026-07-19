@@ -116,6 +116,7 @@
   <button data-tab="expenses">Expenses</button>
   <button data-tab="jobs">Jobs</button>
   <button data-tab="week">Week</button>
+  <button data-tab="plan">Plan</button>
 </nav>
 
 <div class="app" id="app">
@@ -148,6 +149,7 @@
       <div class="row between"><h3 style="margin:0;">Schedule</h3><span class="pill" id="schedProgLbl"></span></div>
       <div class="progress"><div id="schedProgBar" style="width:0%"></div></div>
       <div id="scheduleList" style="margin-top:10px;"></div>
+      <div class="muted" style="margin-top:8px;">Edit this in the <b>Plan</b> tab.</div>
     </div>
   </div>
 
@@ -157,14 +159,7 @@
       <div class="row between"><h3 style="margin:0;">Today's workout</h3><span class="pill" id="gymProgLbl"></span></div>
       <div class="progress"><div id="gymProgBar" style="width:0%"></div></div>
       <div id="gymTodayList" style="margin-top:10px;"></div>
-      <details class="planner" ontoggle="if(this.open) GymPlan.prefill()">
-        <summary>✏️ Edit weekly gym plan</summary>
-        <div class="muted">Format: <code>Monday - Target Area</code> then <code>Exercise | Sets | YouTube link</code></div>
-        <textarea id="gymInput" placeholder="Monday - Full Body
-Goblet squats | 3x12 | https://youtube.com/...
-Push-ups | 3x10 | "></textarea>
-        <button class="btn block" onclick="GymPlan.save()">Save weekly plan</button>
-      </details>
+      <div class="muted" style="margin-top:8px;">Edit your weekly gym plan in the <b>Plan</b> tab.</div>
     </div>
   </div>
 
@@ -186,33 +181,24 @@ Push-ups | 3x10 | "></textarea>
       <div class="row between"><h3 style="margin:0;">Today's meal plan</h3><span class="pill" id="mealProgLbl"></span></div>
       <div class="progress"><div id="mealProgBar" style="width:0%"></div></div>
       <div id="mealPlanToday" style="margin-top:10px;"></div>
-      <details class="planner" ontoggle="if(this.open) MealPlan.prefill()">
-        <summary>✏️ Plan this week's meals (do Sunday night)</summary>
-        <div class="muted">Format: <code>Meal type : description</code></div>
-        <textarea id="mealPlanInput" placeholder="Monday
-Breakfast : oats + egg whites
-Lunch : paneer + salad + roti
-Dinner : soup + veg
-
-Tuesday
-..."></textarea>
-        <button class="btn block" onclick="MealPlan.save()">Save weekly meal plan</button>
-      </details>
+      <div class="muted" style="margin-top:8px;">Edit this in the <b>Plan</b> tab.</div>
     </div>
     <div class="card">
-      <details class="planner">
-        <summary>📖 Nutrition glossary</summary>
-        <div id="glossaryList" style="margin-top:8px;">
-          <div class="list-item"><div><b>Calories</b><div class="muted">Energy from food. Fat loss needs a small, steady calorie deficit.</div></div></div>
-          <div class="list-item"><div><b>Protein</b><div class="muted">Builds/preserves muscle while losing fat. Aim for a good source at every meal.</div></div></div>
-          <div class="list-item"><div><b>Carbohydrates</b><div class="muted">Main energy source. Complex carbs (oats, millets) digest slower than simple sugars.</div></div></div>
-          <div class="list-item"><div><b>Fat</b><div class="muted">Needed in moderation for hormones — don't eliminate, just portion it.</div></div></div>
-          <div class="list-item"><div><b>Fiber</b><div class="muted">Keeps you full longer, aids digestion — found in veg, whole grains, fruit skins.</div></div></div>
-          <div class="list-item"><div><b>BMR</b><div class="muted">Basal Metabolic Rate — calories your body burns at rest just to function.</div></div></div>
-          <div class="list-item"><div><b>TDEE</b><div class="muted">Total Daily Energy Expenditure — BMR plus activity. Eating below this creates the deficit.</div></div></div>
-          <div class="list-item"><div><b>Deficit</b><div class="muted">Eating less than you burn — the core mechanism behind fat loss.</div></div></div>
+      <h3>Hydration today</h3>
+      <div class="row" style="gap:16px;">
+        <canvas id="waterChart" width="120" height="120" style="max-width:120px;"></canvas>
+        <div>
+          <div class="muted">Goal: <span id="waterGoalLbl"></span> ml</div>
+          <div class="muted">Had: <span id="waterHadLbl"></span> ml</div>
+          <div class="muted">Left: <span id="waterLeftLbl"></span> ml</div>
         </div>
-      </details>
+      </div>
+      <div class="row" style="gap:8px;margin-top:10px;">
+        <button class="btn small ghost" onclick="Hydration.add(250)">+250ml</button>
+        <button class="btn small ghost" onclick="Hydration.add(500)">+500ml</button>
+        <button class="btn small ghost" onclick="Hydration.add(1000)">+1L</button>
+      </div>
+      <div class="muted" style="margin-top:6px;">Set your daily goal in the <b>Plan</b> tab.</div>
     </div>
     <div class="card">
       <h3>Calorie estimator</h3>
@@ -233,11 +219,18 @@ Tuesday
         <div><label>Protein g</label><input id="mealProt" type="number"></div>
         <div><label>Fat g</label><input id="mealFat" type="number"></div>
       </div>
+      <div class="grid2">
+        <div><label>Carbs g</label><input id="mealCarbs" type="number"></div>
+        <div><label>Fibre g</label><input id="mealFibre" type="number"></div>
+      </div>
       <input type="file" id="mealPhoto" accept="image/*">
       <img id="mealPhotoPreview" class="thumb" style="display:none;">
       <button class="btn block" onclick="Meals.log()">Save meal</button>
     </div>
-    <div class="card"><h3>Today's log</h3><div id="mealLogList"><div class="empty">No meals logged yet</div></div></div>
+    <div class="card">
+      <h3>Today's log</h3>
+      <div id="mealLogGrid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;"></div>
+    </div>
   </div>
 
   <!-- LEARNING -->
@@ -256,15 +249,7 @@ Tuesday
     <div class="card">
       <h3>This week's tasks</h3>
       <div id="lrnTaskList"><div class="empty">No tasks yet</div></div>
-      <details class="planner" ontoggle="if(this.open) Learning.prefill()">
-        <summary>✏️ Plan this week's Salesforce topics (do Sunday night)</summary>
-        <div class="muted">Format: <code>Task | Link | Minutes</code></div>
-        <textarea id="lrnInput" placeholder="Monday
-Learn REST API basics | https://trailhead.salesforce.com/... | 20"></textarea>
-        <button class="btn ghost" onclick="Learning.preview()">Preview</button>
-        <button class="btn block" onclick="Learning.save()">Save week plan</button>
-        <div id="lrnPreview"></div>
-      </details>
+      <div class="muted" style="margin-top:8px;">Plan this week's topics in the <b>Plan</b> tab.</div>
     </div>
     <div class="card">
       <h3>Weekend side project · Study Buddy App</h3>
@@ -337,6 +322,52 @@ Learn REST API basics | https://trailhead.salesforce.com/... | 20"></textarea>
     <div class="card"><h3>Journal this week</h3><div id="weekJournal"></div></div>
     <div class="card"><h3>Expenses this week</h3><div id="weekExpenses"></div></div>
     <div class="card"><h3>Jobs this week</h3><div id="weekJobs"></div></div>
+  </div>
+
+  <!-- PLAN -->
+  <div class="view" id="view-plan">
+    <div class="card">
+      <details class="planner" ontoggle="if(this.open) SchedulePlan.prefill()">
+        <summary>📅 Weekly schedule</summary>
+        <div class="muted">One day per block. Format: <code>Activity : Time</code></div>
+        <textarea id="schedInput"></textarea>
+        <button class="btn block" onclick="SchedulePlan.save()">Save weekly schedule</button>
+      </details>
+    </div>
+    <div class="card">
+      <details class="planner" ontoggle="if(this.open) GymPlan.prefill()">
+        <summary>💪 Weekly gym plan</summary>
+        <div class="muted">Format: <code>Monday - Target Area</code> then <code>Exercise | Sets | YouTube link</code></div>
+        <textarea id="gymInput"></textarea>
+        <button class="btn block" onclick="GymPlan.save()">Save weekly gym plan</button>
+      </details>
+    </div>
+    <div class="card">
+      <details class="planner" ontoggle="if(this.open) MealPlan.prefill()">
+        <summary>🍽️ Weekly meal plan (do Sunday night)</summary>
+        <div class="muted">Format: <code>Meal type : description</code></div>
+        <textarea id="mealPlanInput"></textarea>
+        <button class="btn block" onclick="MealPlan.save()">Save weekly meal plan</button>
+      </details>
+    </div>
+    <div class="card">
+      <details class="planner" ontoggle="if(this.open) Learning.prefill()">
+        <summary>📚 Weekly Salesforce topics (do Sunday night)</summary>
+        <div class="muted">Format: <code>Task | Link | Minutes</code></div>
+        <textarea id="lrnInput"></textarea>
+        <button class="btn ghost" onclick="Learning.preview()">Preview</button>
+        <button class="btn block" onclick="Learning.save()">Save weekly topics</button>
+        <div id="lrnPreview"></div>
+      </details>
+    </div>
+    <div class="card">
+      <details class="planner" ontoggle="if(this.open) Hydration.prefillGoal()">
+        <summary>💧 Hydration goal</summary>
+        <label>Daily water target (ml)</label>
+        <input id="waterGoalInput" type="number" placeholder="2000">
+        <button class="btn block" onclick="Hydration.saveGoal()">Save goal</button>
+      </details>
+    </div>
   </div>
 
 </div>
@@ -414,7 +445,8 @@ function parseTimeToMinutes(raw){
 function hashStr(s){ let h=0; for(let i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))|0;} return Math.abs(h); }
 async function getContextualQuote(){
   const dateStr=todayISO();
-  const items = getRoutineForDate(dateStr).map(([time,label])=>({activity:label, time_text:time}));
+  const {data:dbRows} = await sb.from('schedule_plans').select('*');
+  const items = scheduleItemsForDate(dateStr, dbRows).map(([time,label])=>({activity:label, time_text:time}));
   let category='life';
   if(items.length){
     const now=new Date(); const curMin=now.getHours()*60+now.getMinutes();
@@ -530,11 +562,12 @@ async function renderHome(){
     $('quoteCategory').textContent = labels[category]||'✨ For your day';
     $('quoteText').textContent = '"'+quote+'"';
   });
-  const [{data:gp},{data:mp}] = await Promise.all([
+  const [{data:gp},{data:mp},{data:sp}] = await Promise.all([
     sb.from('gym_plans').select('day,exercise_name'),
-    sb.from('meal_plans').select('day,meal_type')
+    sb.from('meal_plans').select('day,meal_type'),
+    sb.from('schedule_plans').select('*')
   ]);
-  const schedByDay=(wd,dateStr)=>getRoutineForDate(dateStr||todayISO()).map(([t,label])=>label);
+  const schedByDay=(wd,dateStr)=>scheduleItemsForDate(dateStr||todayISO(), sp).map(([t,label])=>label);
   const gymByDay=wd=>(gp||[]).filter(r=>r.day===wd).map(r=>r.exercise_name);
   const mealByDay=wd=>(mp||[]).filter(r=>r.day===wd).map(r=>r.meal_type);
   const [schedStreak, gymStreak, mealStreak] = await Promise.all([
@@ -620,21 +653,37 @@ function getRoutineForDate(dateStr){
   return base.map(([time,label])=> label==='WEEKLY_TASK' ? [time, WEEKLY_TASKS[wd]] : [time,label]);
 }
 
+function scheduleItemsForDate(dateStr, dbRows){
+  const wd = weekdayOfDateStr(dateStr);
+  const custom = pickVersionedRows(dbRows||[], wd, dateStr).map(r=>[r.time_text, r.activity]);
+  if(custom.length) return custom;
+  return getRoutineForDate(dateStr);
+}
 async function renderToday(){
   const dateStr = TodayView.date;
   const isToday = dateStr===todayISO();
   $('todayDatePicker').value = dateStr;
   $('todaySelDate').textContent = new Date(dateStr+'T00:00:00').toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'}) + (isToday?' (Today)':'');
-  const items = getRoutineForDate(dateStr);
+  const {data:dbRows} = await sb.from('schedule_plans').select('*');
+  const items = scheduleItemsForDate(dateStr, dbRows);
   const checkedSet = await getChecksForDate('schedule', dateStr);
   const checkedCount = items.filter(([time,label])=>checkedSet.has(label)).length;
   $('schedProgLbl').textContent = checkedCount+'/'+items.length;
   $('schedProgBar').style.width = Math.round(checkedCount/items.length*100)+'%';
-  $('scheduleList').innerHTML = items.map(([time,label])=>{
+  let currentIdx=-1;
+  if(isToday){
+    const now=new Date(); const curMin=now.getHours()*60+now.getMinutes();
+    const timed=items.map(([t],i)=>({i,mins:parseTimeToMinutes(t)})).filter(x=>x.mins!==null).sort((a,b)=>a.mins-b.mins);
+    let cur=null;
+    for(const t of timed){ if(t.mins<=curMin) cur=t; }
+    if(cur) currentIdx=cur.i;
+  }
+  $('scheduleList').innerHTML = items.map(([time,label],i)=>{
     const checked=checkedSet.has(label);
-    return `<div class="check-item ${checked?'checked':''}">
+    const isNow = i===currentIdx;
+    return `<div class="check-item ${checked?'checked':''}" ${isNow?'style="background:var(--panel-2);border-left:3px solid var(--accent);padding-left:8px;margin-left:-8px;border-radius:8px;"':''}>
       <input type="checkbox" ${checked?'checked':''} ${isToday?'':'disabled'} onchange="onScheduleCheck('${dateStr}','${label.replace(/'/g,"\\'")}',this.checked)">
-      <div><div class="time">${time}</div><div class="label">${label}</div></div>
+      <div><div class="time">${time}${isNow?' <span class="pill" style="background:var(--accent);color:#fff;border:none;">now</span>':''}</div><div class="label">${label}</div></div>
     </div>`;
   }).join('');
 }
@@ -642,6 +691,44 @@ async function onScheduleCheck(dateStr,key,checked){
   await toggleCheck('schedule', key, dateStr, checked);
   renderToday();
 }
+const SchedulePlan = {
+  async save(){
+    const rows = parseWeekly($('schedInput').value, ':', ['activity','time_text']);
+    if(!rows.length) return;
+    const {data:existing} = await sb.from('schedule_plans').select('*');
+    const today = todayISO();
+    const changedDays = new Set();
+    const byDay = {};
+    rows.forEach(r=>{ (byDay[r.day]=byDay[r.day]||[]).push(r); });
+    Object.keys(byDay).forEach(d=>{
+      const current = pickVersionedRows(existing, d, today).map(i=>i.activity+'|'+i.time_text).sort().join(',');
+      const incoming = byDay[d].map(r=>r.activity+'|'+r.time_text).sort().join(',');
+      if(current!==incoming) changedDays.add(d);
+    });
+    if(!changedDays.size){ renderToday(); return; }
+    const versionAt = new Date().toISOString();
+    const toInsert = rows.filter(r=>changedDays.has(r.day));
+    await sb.from('schedule_plans').insert(toInsert.map(r=>({day:r.day, activity:r.activity, time_text:r.time_text, version_at:versionAt})));
+    renderToday();
+  },
+  async prefill(){
+    const {data} = await sb.from('schedule_plans').select('*');
+    const today = todayISO();
+    let text='';
+    DAYS.forEach(d=>{
+      const items = pickVersionedRows(data, d, today);
+      text += d+'\n';
+      if(items.length){ items.forEach(i=>{ text += `${i.activity} : ${i.time_text}\n`; }); }
+      else {
+        const isWknd = (d==='Saturday'||d==='Sunday');
+        const base = isWknd ? WEEKEND_ROUTINE : WEEKDAY_ROUTINE;
+        base.forEach(([time,label])=>{ const l = label==='WEEKLY_TASK'?WEEKLY_TASKS[d]:label; text += `${l} : ${time}\n`; });
+      }
+      text += '\n';
+    });
+    $('schedInput').value = text.trim();
+  }
+};
 
 /* ============ GYM ============ */
 async function renderGymToday(){
@@ -916,9 +1003,9 @@ const Estimator = {
 
 const Meals = {
   async log(){
-    const fields={date:todayISO(), meal_type:$('mealType').value, description:$('mealDesc').value, calories:Number($('mealCal').value)||0, protein:Number($('mealProt').value)||0, fat:Number($('mealFat').value)||0, photo_url:mealPhotoB64};
+    const fields={date:todayISO(), meal_type:$('mealType').value, description:$('mealDesc').value, calories:Number($('mealCal').value)||0, protein:Number($('mealProt').value)||0, fat:Number($('mealFat').value)||0, carbs:Number($('mealCarbs').value)||0, fibre:Number($('mealFibre').value)||0, photo_url:mealPhotoB64};
     await sb.from('meal_logs').insert(fields);
-    ['mealDesc','mealCal','mealProt','mealFat'].forEach(id=>$(id).value='');
+    ['mealDesc','mealCal','mealProt','mealFat','mealCarbs','mealFibre'].forEach(id=>$(id).value='');
     $('mealPhotoPreview').style.display='none'; mealPhotoB64=null;
     renderMealLog(); renderCalorieChart();
   },
@@ -932,17 +1019,23 @@ const Meals = {
 async function renderMealLog(){
   const {data} = await sb.from('meal_logs').select('*').eq('date',todayISO()).order('created_at');
   const items = data||[];
-  if(!items.length){$('mealLogList').innerHTML='<div class="empty">No meals logged yet</div>';return;}
-  $('mealLogList').innerHTML = items.map(m=>`
-    <div class="list-item" style="display:block;">
-      <div class="row between"><b>${m.meal_type}</b><span class="pill">${m.calories} kcal</span></div>
-      <div class="muted">${m.description||''} · P${m.protein||0}g F${m.fat||0}g</div>
-      ${m.photo_url?`<img class="thumb" src="${m.photo_url}">`:''}
-      <div style="margin-top:6px;">
-        <input type="file" id="photoAdd_${m.id}" accept="image/*" style="display:none;" onchange="MealPhoto.attach('${m.id}',this)">
-        <button class="btn small ghost" onclick="document.getElementById('photoAdd_${m.id}').click()">${m.photo_url?'Change photo':'📷 Add photo'}</button>
+  if(!items.length){$('mealLogGrid').innerHTML='<div class="empty" style="grid-column:1/-1;">No meals logged yet</div>';return;}
+  $('mealLogGrid').innerHTML = items.map(m=>{
+    const time = new Date(m.created_at).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
+    return `<div>
+      ${m.photo_url?`<img class="thumb" src="${m.photo_url}" style="max-height:110px;">`:`<div style="background:var(--panel-2);border-radius:10px;height:110px;display:flex;align-items:center;justify-content:center;color:var(--ink-dim);font-size:1.6rem;">🍽️</div>`}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 6px;font-size:.72rem;margin-top:6px;">
+        <div class="muted">Meal type</div><div>${m.meal_type}</div>
+        <div class="muted">Logged</div><div>${time}</div>
+        <div class="muted">Calories</div><div>${m.calories||0}</div>
+        <div class="muted">Protein</div><div>${m.protein||0}g</div>
+        <div class="muted">Fibre</div><div>${m.fibre||0}g</div>
+        <div class="muted">Carbs</div><div>${m.carbs||0}g</div>
       </div>
-    </div>`).join('');
+      <input type="file" id="photoAdd_${m.id}" accept="image/*" style="display:none;" onchange="MealPhoto.attach('${m.id}',this)">
+      <button class="btn small ghost" style="width:100%;margin-top:4px;" onclick="document.getElementById('photoAdd_${m.id}').click()">${m.photo_url?'Change photo':'📷 Add photo'}</button>
+    </div>`;
+  }).join('');
 }
 const MealPhoto = {
   attach(id, input){
@@ -955,6 +1048,35 @@ const MealPhoto = {
     reader.readAsDataURL(f);
   }
 };
+const Hydration = {
+  async add(ml){
+    await sb.from('water_log').insert({date:todayISO(), ml});
+    renderWaterChart();
+  },
+  async prefillGoal(){
+    const {data} = await sb.from('user_settings').select('target_water_ml').maybeSingle();
+    $('waterGoalInput').value = data?.target_water_ml || 2000;
+  },
+  async saveGoal(){
+    const val = Number($('waterGoalInput').value)||2000;
+    await sb.from('user_settings').upsert({target_water_ml:val},{onConflict:'user_id'});
+    renderWaterChart();
+  }
+};
+let waterChartInstance=null;
+async function renderWaterChart(){
+  const [{data:settings},{data:logs}] = await Promise.all([
+    sb.from('user_settings').select('target_water_ml').maybeSingle(),
+    sb.from('water_log').select('ml').eq('date',todayISO())
+  ]);
+  const goal = settings?.target_water_ml || 2000;
+  const had = (logs||[]).reduce((a,l)=>a+(l.ml||0),0);
+  const left = Math.max(goal-had,0);
+  $('waterGoalLbl').textContent=goal; $('waterHadLbl').textContent=had; $('waterLeftLbl').textContent=left;
+  const ctx=$('waterChart').getContext('2d');
+  if(waterChartInstance) waterChartInstance.destroy();
+  waterChartInstance = new Chart(ctx,{type:'doughnut',data:{labels:['Had','Left'],datasets:[{data:[had,left],backgroundColor:['#6b8f87','#e0d2ba'],borderWidth:0}]},options:{plugins:{legend:{display:false}},cutout:'65%'}});
+}
 async function renderCalorieChart(){
   const [{data:settings},{data:meals}] = await Promise.all([
     sb.from('user_settings').select('target_calories').maybeSingle(),
@@ -1183,13 +1305,14 @@ async function renderWeekStatus(){
   const ws = weekStart();
   const [
     {data:steps},
-    {data:gp},{data:mp},
+    {data:gp},{data:mp},{data:sp},
     {data:gymChecks},{data:mealChecks},
     {data:lrnSessions},{data:journalWeek},{data:expWeek},{data:jobsWeek}
   ] = await Promise.all([
     sb.from('steps_log').select('steps').gte('date',ws),
     sb.from('gym_plans').select('day,exercise_name'),
     sb.from('meal_plans').select('day,meal_type'),
+    sb.from('schedule_plans').select('*'),
     sb.from('day_checks').select('date,item_key').eq('section','gym').gte('date',ws),
     sb.from('day_checks').select('date,item_key').eq('section','meals').gte('date',ws),
     sb.from('learning_sessions').select('minutes').gte('date',ws),
@@ -1199,7 +1322,7 @@ async function renderWeekStatus(){
   ]);
   const totalSteps = (steps||[]).reduce((a,s)=>a+s.steps,0);
   $('stepsWeekTotal').textContent = `${totalSteps.toLocaleString()} steps this week`;
-  const schedByDay=(wd,dateStr)=>getRoutineForDate(dateStr||todayISO()).map(([t,label])=>label);
+  const schedByDay=(wd,dateStr)=>scheduleItemsForDate(dateStr||todayISO(), sp).map(([t,label])=>label);
   const gymByDay=wd=>(gp||[]).filter(r=>r.day===wd).map(r=>r.exercise_name);
   const mealByDay=wd=>(mp||[]).filter(r=>r.day===wd).map(r=>r.meal_type);
   const [schedStreak, gymStreak, mealStreak] = await Promise.all([
@@ -1238,6 +1361,7 @@ async function initApp(){
     renderMealPlanToday(),
     renderMealLog(),
     renderCalorieChart(),
+    renderWaterChart(),
     renderLearningTasks(),
     renderLearningStats(),
     renderProjectPhases(),
