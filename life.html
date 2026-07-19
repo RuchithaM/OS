@@ -227,9 +227,9 @@
         </div>
       </div>
       <div class="row" style="gap:8px;margin-top:10px;">
-        <button class="btn small ghost" onclick="Hydration.add(250)">+250ml</button>
-        <button class="btn small ghost" onclick="Hydration.add(500)">+500ml</button>
-        <button class="btn small ghost" onclick="Hydration.add(1000)">+1L</button>
+        <button class="btn small ghost" onclick="guardedRun('waterAdd',this,()=>Hydration.add(250))">+250ml</button>
+        <button class="btn small ghost" onclick="guardedRun('waterAdd',this,()=>Hydration.add(500))">+500ml</button>
+        <button class="btn small ghost" onclick="guardedRun('waterAdd',this,()=>Hydration.add(1000))">+1L</button>
       </div>
       <div class="muted" style="margin-top:6px;">Set your daily goal in the <b>Plan</b> tab.</div>
     </div>
@@ -258,7 +258,7 @@
       </div>
       <input type="file" id="mealPhoto" accept="image/*">
       <img id="mealPhotoPreview" class="thumb" style="display:none;">
-      <button class="btn block" onclick="Meals.log()">Save meal</button>
+      <button class="btn block" onclick="guardedRun('mealLog',this,()=>Meals.log())">Save meal</button>
     </div>
     <div class="card">
       <h3>Today's log</h3>
@@ -275,8 +275,8 @@
         <div class="stat"><div class="num" id="lrnVsLast">–</div><div class="lbl">Vs Last Wk</div></div>
       </div>
       <div class="row" style="margin-top:12px;gap:10px;">
-        <button class="btn block" id="checkInBtn" onclick="LearningTimer.checkIn()">▶ Check in</button>
-        <button class="btn block ghost" id="checkOutBtn" onclick="LearningTimer.checkOut()" style="display:none;">⏹ Check out</button>
+        <button class="btn block" id="checkInBtn" onclick="guardedRun('lrnCheckIn',this,()=>LearningTimer.checkIn())">▶ Check in</button>
+        <button class="btn block ghost" id="checkOutBtn" onclick="guardedRun('lrnCheckOut',this,()=>LearningTimer.checkOut())" style="display:none;">⏹ Check out</button>
       </div>
     </div>
     <div class="card">
@@ -295,14 +295,14 @@
     <div class="card">
       <h3 id="journalDateLbl">Today's entry</h3>
       <div id="journalQuestions"></div>
-      <button class="btn block" onclick="Journal.save()">Save entry</button>
+      <button class="btn block" onclick="guardedRun('journalSave',this,()=>Journal.save())">Save entry</button>
     </div>
     <div class="card">
       <h3>📸 Today's moments</h3>
       <div class="muted">Snap whatever catches your eye today — no plan needed.</div>
       <input type="file" id="momentPhoto" accept="image/*" style="margin-top:8px;">
       <input id="momentCaption" placeholder="Caption (optional)">
-      <button class="btn block" onclick="Moments.add()">Save moment</button>
+      <button class="btn block" onclick="guardedRun('momentAdd',this,()=>Moments.add())">Save moment</button>
       <div id="momentGridToday" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px;"></div>
     </div>
     <div class="card">
@@ -336,7 +336,7 @@
       </div>
       <label>Category</label>
       <select id="expCategory"><option>Food</option><option>Groceries</option><option>Transport</option><option>Rent</option><option>Shopping</option><option>Health</option><option>Learning</option><option>Other</option></select>
-      <button class="btn block" onclick="Expenses.add()">Save</button>
+      <button class="btn block" onclick="guardedRun('expAdd',this,()=>Expenses.add())">Save</button>
     </div>
     <div class="card"><h3>By category</h3><div id="expByCategory"><div class="empty">No transactions yet</div></div></div>
     <div class="card"><h3>Recent</h3><div id="expList"><div class="empty">No transactions yet</div></div></div>
@@ -351,7 +351,7 @@
       <label>JD link</label><input id="jobLink">
       <label>Paste JD text (for gap analysis)</label>
       <textarea id="jobJD" placeholder="Paste the job description here..."></textarea>
-      <button class="btn block" onclick="Jobs.add()">Save & analyze gap</button>
+      <button class="btn block" onclick="guardedRun('jobAdd',this,()=>Jobs.add())">Save & analyze gap</button>
     </div>
     <div class="card"><h3>Tracked roles</h3><div id="jobList"><div class="empty">No roles saved yet</div></div></div>
   </div>
@@ -382,7 +382,7 @@
         <summary>📅 Weekly schedule</summary>
         <div class="muted">One day per block. Format: <code>Activity : Time</code></div>
         <textarea id="schedInput"></textarea>
-        <button class="btn block" onclick="SchedulePlan.save()">Save weekly schedule</button>
+        <button class="btn block" onclick="guardedRun('schedSave',this,()=>SchedulePlan.save())">Save weekly schedule</button>
       </details>
     </div>
     <div class="card">
@@ -390,7 +390,7 @@
         <summary>💪 Weekly gym plan</summary>
         <div class="muted">Format: <code>Monday - Target Area</code> then <code>Exercise | Sets | YouTube link</code></div>
         <textarea id="gymInput"></textarea>
-        <button class="btn block" onclick="GymPlan.save()">Save weekly gym plan</button>
+        <button class="btn block" onclick="guardedRun('gymSave',this,()=>GymPlan.save())">Save weekly gym plan</button>
       </details>
     </div>
     <div class="card">
@@ -398,7 +398,7 @@
         <summary>🍽️ Weekly meal plan (do Sunday night)</summary>
         <div class="muted">Format: <code>Meal type : description</code></div>
         <textarea id="mealPlanInput"></textarea>
-        <button class="btn block" onclick="MealPlan.save()">Save weekly meal plan</button>
+        <button class="btn block" onclick="guardedRun('mealPlanSave',this,()=>MealPlan.save())">Save weekly meal plan</button>
       </details>
     </div>
     <div class="card">
@@ -407,7 +407,7 @@
         <div class="muted">Format: <code>Task | Link | Minutes</code></div>
         <textarea id="lrnInput"></textarea>
         <button class="btn ghost" onclick="Learning.preview()">Preview</button>
-        <button class="btn block" onclick="Learning.save()">Save weekly topics</button>
+        <button class="btn block" onclick="guardedRun('lrnSave',this,()=>Learning.save())">Save weekly topics</button>
         <div id="lrnPreview"></div>
       </details>
     </div>
@@ -416,7 +416,7 @@
         <summary>💧 Hydration goal</summary>
         <label>Daily water target (ml)</label>
         <input id="waterGoalInput" type="number" placeholder="2000">
-        <button class="btn block" onclick="Hydration.saveGoal()">Save goal</button>
+        <button class="btn block" onclick="guardedRun('waterGoalSave',this,()=>Hydration.saveGoal())">Save goal</button>
       </details>
     </div>
   </div>
@@ -429,6 +429,19 @@ const SUPABASE_KEY = 'sb_publishable__N_rCfIiNjIMoMwqW9EYlQ_W3l_X2DY';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const $=id=>document.getElementById(id);
+const _busyKeys = new Set();
+async function guardedRun(key, btn, fn){
+  if(_busyKeys.has(key)) return;
+  _busyKeys.add(key);
+  let origText;
+  if(btn){ btn.disabled=true; origText=btn.textContent; btn.textContent='...'; btn.style.opacity='.6'; }
+  try{ await fn(); }
+  catch(e){ console.error(e); }
+  finally{
+    _busyKeys.delete(key);
+    if(btn){ btn.disabled=false; btn.textContent=origText; btn.style.opacity=''; }
+  }
+}
 const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 function todayISO(){
   const d=new Date();
@@ -968,7 +981,7 @@ const Estimator = {
               <div><label>Carbs g</label><input id="newFoodCarbs" type="number"></div>
             </div>
             <label>Fat g</label><input id="newFoodFat" type="number">
-            <button class="btn block" onclick="Estimator.addNewFood('${queryForAdd.replace(/'/g,"\\'")}')">Save to database</button>
+            <button class="btn block" onclick=\"guardedRun('addFood',this,()=>Estimator.addNewFood('${queryForAdd.replace(/'/g,"\\'")}'))\">Save to database</button>
           </div>`;
         document.querySelectorAll('#newFoodType button').forEach(b=>{
           b.onclick=()=>{document.querySelectorAll('#newFoodType button').forEach(x=>x.classList.remove('active'));b.classList.add('active');};
