@@ -134,6 +134,7 @@
   <div class="brand">Planner</div>
   <div class="headerbtns">
     <button class="icon-btn" onclick="toggleTheme()" id="themeBtn">🌙</button>
+    <button class="icon-btn" onclick="ResetData.confirmAndRun()" title="Reset data">↺</button>
     <button class="icon-btn" onclick="Auth.logout()">⏻</button>
   </div>
 </header>
@@ -525,6 +526,22 @@ function toggleTheme(){
 })();
 
 /* AUTH */
+const ResetData = {
+  tables: ['day_checks','meal_logs','expenses','journal_entries','daily_photos','water_log','learning_sessions','steps_log'],
+  async confirmAndRun(){
+    const step1 = confirm(
+      "This permanently deletes:\n\n• Meal logs & photos\n• Expenses\n• Journal entries & moments\n• Water logs\n• Learning check-in sessions\n• Steps\n• All streak checkmarks\n\nYour weekly plans (Schedule/Gym/Meals/Learning), ingredient database, and account stay untouched.\n\nThis cannot be undone. Continue?"
+    );
+    if(!step1) return;
+    const step2 = confirm("Really sure? There's no way to recover this once deleted.");
+    if(!step2) return;
+    for(const t of this.tables){
+      await sb.from(t).delete().neq('id','00000000-0000-0000-0000-000000000000');
+    }
+    alert("Done — your data has been reset.");
+    location.reload();
+  }
+};
 const Auth = {
   async login(){
     $('loginErr').textContent='';
