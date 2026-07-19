@@ -1322,7 +1322,8 @@ const Moments = {
   todayPhotos: [],
   async add(){
     if(!momentPhotoB64){ alert('Pick a photo first'); return; }
-    await sb.from('daily_photos').insert({date:todayISO(), photo_url:momentPhotoB64, caption:$('momentCaption').value});
+    const {error} = await sb.from('daily_photos').insert({date:todayISO(), photo_url:momentPhotoB64, caption:$('momentCaption').value});
+    if(error){ alert('Could not save: '+error.message); return; }
     $('momentPhoto').value=''; $('momentCaption').value=''; momentPhotoB64=null;
     renderMomentsToday();
     if(JournalBrowse.date===todayISO()) JournalBrowse.render();
