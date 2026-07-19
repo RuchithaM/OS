@@ -84,9 +84,41 @@
   .tile .streak{font-size:.72rem;color:var(--accent);margin-top:4px;}
   details.planner{margin-top:10px;}
   details.planner summary{cursor:pointer;color:var(--accent-3);font-size:.82rem;font-weight:600;padding:6px 0;}
+
+  .polaroid{background:#fff;padding:6px 6px 22px;border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.12);cursor:pointer;transition:transform .2s;}
+  .polaroid:nth-child(3n+1){transform:rotate(-2.5deg);}
+  .polaroid:nth-child(3n+2){transform:rotate(1.5deg);}
+  .polaroid:nth-child(3n+3){transform:rotate(-1deg);}
+  .polaroid:active{transform:scale(.96) rotate(0deg);}
+  .polaroid img{width:100%;height:100px;object-fit:cover;border-radius:2px;display:block;}
+  .polaroid .cap{font-family:var(--font-display);font-style:italic;font-size:.7rem;color:#3a2a2f;text-align:center;margin-top:6px;padding:0 2px;}
+  .polaroid-empty{grid-column:1/-1;text-align:center;padding:24px 10px;color:var(--ink-dim);font-size:.85rem;border:1px dashed var(--line);border-radius:12px;}
+
+  .lightbox-bg{position:fixed;inset:0;background:rgba(10,8,9,.92);z-index:80;display:none;align-items:center;justify-content:center;opacity:0;transition:opacity .25s;}
+  .lightbox-bg.show{display:flex;opacity:1;}
+  .lightbox-inner{max-width:92vw;max-height:82vh;display:flex;flex-direction:column;align-items:center;animation:lbPop .28s ease;}
+  @keyframes lbPop{from{transform:scale(.9);opacity:0;}to{transform:scale(1);opacity:1;}}
+  .lightbox-inner img{max-width:92vw;max-height:66vh;border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,.5);}
+  .lightbox-cap{color:#f5eee8;font-family:var(--font-display);font-style:italic;font-size:1rem;margin-top:14px;text-align:center;padding:0 20px;}
+  .lightbox-date{color:rgba(245,238,232,.6);font-size:.75rem;margin-top:4px;letter-spacing:.03em;}
+  .lightbox-close{position:absolute;top:20px;right:20px;background:rgba(255,255,255,.12);color:#fff;border:none;width:38px;height:38px;border-radius:50%;font-size:1.2rem;}
+  .lightbox-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.12);color:#fff;border:none;width:42px;height:42px;border-radius:50%;font-size:1.3rem;}
+  .lightbox-nav.prev{left:14px;}
+  .lightbox-nav.next{right:14px;}
 </style>
 </head>
 <body>
+
+<div class="lightbox-bg" id="lightboxBg" onclick="if(event.target===this) PhotoLightbox.close()">
+  <button class="lightbox-close" onclick="PhotoLightbox.close()">×</button>
+  <button class="lightbox-nav prev" onclick="PhotoLightbox.prev()">‹</button>
+  <button class="lightbox-nav next" onclick="PhotoLightbox.next()">›</button>
+  <div class="lightbox-inner">
+    <img id="lightboxImg" src="">
+    <div class="lightbox-cap" id="lightboxCap"></div>
+    <div class="lightbox-date" id="lightboxDate"></div>
+  </div>
+</div>
 
 <div id="loginScreen">
   <h1>Planner</h1>
@@ -264,7 +296,25 @@
       <div id="journalQuestions"></div>
       <button class="btn block" onclick="Journal.save()">Save entry</button>
     </div>
-    <div class="card"><h3>Past entries</h3><div id="journalHistory"><div class="empty">No entries yet</div></div></div>
+    <div class="card">
+      <h3>📸 Today's moments</h3>
+      <div class="muted">Snap whatever catches your eye today — no plan needed.</div>
+      <input type="file" id="momentPhoto" accept="image/*" style="margin-top:8px;">
+      <input id="momentCaption" placeholder="Caption (optional)">
+      <button class="btn block" onclick="Moments.add()">Save moment</button>
+      <div id="momentGridToday" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px;"></div>
+    </div>
+    <div class="card">
+      <h3>Browse a day</h3>
+      <div class="datenav">
+        <button onclick="JournalBrowse.shift(-1)">←</button>
+        <input type="date" id="journalDatePicker" style="width:auto;margin:0;padding:6px 8px;" onchange="JournalBrowse.setDate(this.value)">
+        <button onclick="JournalBrowse.shift(1)">→</button>
+        <button class="btn small ghost" onclick="JournalBrowse.goToday()">Today</button>
+      </div>
+      <div id="journalBrowseAnswers" style="margin-top:10px;"></div>
+      <div id="momentGridBrowse" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px;"></div>
+    </div>
   </div>
 
   <!-- EXPENSES -->
@@ -1215,22 +1265,87 @@ function renderJournalForm(){
   $('journalDateLbl').textContent = `Today's entry — ${todayISO()}`;
   $('journalQuestions').innerHTML = JOURNAL_QUESTIONS.map((q,i)=>`<label>${q}</label><textarea id="jq${i}" style="min-height:60px;"></textarea>`).join('');
 }
+const PhotoLightbox = {
+  photos: [],
+  index: 0,
+  open(photos, index){
+    this.photos = photos; this.index = index;
+    this.render();
+    $('lightboxBg').classList.add('show');
+  },
+  close(){ $('lightboxBg').classList.remove('show'); },
+  next(){ this.index = (this.index+1) % this.photos.length; this.render(); },
+  prev(){ this.index = (this.index-1+this.photos.length) % this.photos.length; this.render(); },
+  render(){
+    const p = this.photos[this.index];
+    if(!p) return;
+    $('lightboxImg').src = p.photo_url;
+    $('lightboxCap').textContent = p.caption || '';
+    $('lightboxDate').textContent = new Date(p.date+'T00:00:00').toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
+  }
+};
 const Journal = {
   async save(){
     const fields={date:todayISO()};
     JOURNAL_QUESTIONS.forEach((q,i)=>fields['q'+(i+1)]=$('jq'+i).value);
     await sb.from('journal_entries').insert(fields);
     await toggleCheck('journal','entry',todayISO(),true);
-    renderJournalHistory();
     JOURNAL_QUESTIONS.forEach((q,i)=>$('jq'+i).value='');
+    JournalBrowse.render();
   }
 };
-async function renderJournalHistory(){
-  const {data} = await sb.from('journal_entries').select('*').order('date',{ascending:false}).limit(14);
-  const entries=data||[];
-  if(!entries.length){$('journalHistory').innerHTML='<div class="empty">No entries yet</div>';return;}
-  $('journalHistory').innerHTML = entries.map(e=>`<div class="list-item" style="display:block;"><b>${e.date}</b><div class="muted">${e.q1||''}</div></div>`).join('');
+let momentPhotoB64=null;
+$('momentPhoto').onchange=e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{ momentPhotoB64=ev.target.result; };
+  reader.readAsDataURL(f);
+};
+const Moments = {
+  todayPhotos: [],
+  async add(){
+    if(!momentPhotoB64){ alert('Pick a photo first'); return; }
+    await sb.from('daily_photos').insert({date:todayISO(), photo_url:momentPhotoB64, caption:$('momentCaption').value});
+    $('momentPhoto').value=''; $('momentCaption').value=''; momentPhotoB64=null;
+    renderMomentsToday();
+    if(JournalBrowse.date===todayISO()) JournalBrowse.render();
+  }
+};
+async function renderMomentsToday(){
+  const {data} = await sb.from('daily_photos').select('*').eq('date',todayISO()).order('created_at',{ascending:false});
+  const items=data||[];
+  Moments.todayPhotos = items;
+  $('momentGridToday').innerHTML = items.length ? items.map((p,i)=>`
+    <div class="polaroid" onclick="PhotoLightbox.open(Moments.todayPhotos, ${i})">
+      <img src="${p.photo_url}">
+      ${p.caption?`<div class="cap">${p.caption}</div>`:''}
+    </div>
+  `).join('') : '<div class="polaroid-empty">No moments yet today — capture one above</div>';
 }
+const JournalBrowse = {
+  date: todayISO(),
+  shift(n){ this.date = addDays(this.date, n); this.render(); },
+  setDate(d){ this.date = d; this.render(); },
+  goToday(){ this.date = todayISO(); this.render(); },
+  async render(){
+    $('journalDatePicker').value = this.date;
+    const [{data:entries},{data:photos}] = await Promise.all([
+      sb.from('journal_entries').select('*').eq('date',this.date).order('created_at',{ascending:false}),
+      sb.from('daily_photos').select('*').eq('date',this.date).order('created_at',{ascending:false})
+    ]);
+    const e = entries && entries[0];
+    $('journalBrowseAnswers').innerHTML = e
+      ? JOURNAL_QUESTIONS.map((q,i)=>`<div style="margin-bottom:8px;"><div class="muted" style="font-size:.72rem;">${q}</div><div>${e['q'+(i+1)]||'—'}</div></div>`).join('')
+      : '<div class="empty">No journal entry for this day</div>';
+    $('momentGridBrowse').innerHTML = (photos&&photos.length) ? photos.map((p,i)=>`
+      <div class="polaroid" onclick="PhotoLightbox.open(JournalBrowse.photos, ${i})">
+        <img src="${p.photo_url}">
+        ${p.caption?`<div class="cap">${p.caption}</div>`:''}
+      </div>
+    `).join('') : '<div class="polaroid-empty">No photos for this day</div>';
+    this.photos = photos||[];
+  }
+};
 
 /* ============ EXPENSES ============ */
 document.querySelectorAll('#expTypeToggle button').forEach(b=>{
@@ -1365,7 +1480,8 @@ async function initApp(){
     renderLearningTasks(),
     renderLearningStats(),
     renderProjectPhases(),
-    renderJournalHistory(),
+    renderMomentsToday(),
+    JournalBrowse.render(),
     renderExpenses(),
     renderJobs()
   ]);
