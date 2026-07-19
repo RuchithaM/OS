@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Planner</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
@@ -19,7 +19,7 @@
     --accent:#d18f61; --accent-2:#a3b578; --accent-3:#84a89f; --danger:#d97362;
   }
   *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);transition:background .3s,color .3s;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);transition:background .3s,color .3s;touch-action:manipulation;}
   body{padding-bottom:80px;}
   h1,h2,h3{font-family:var(--font-display);font-weight:600;margin:0 0 8px;}
   a{color:var(--accent-3);}
@@ -157,7 +157,7 @@
   <!-- HOME -->
   <div class="view active" id="view-home">
     <div class="card">
-      <h3>Hello Ruchi 🌻</h3>
+      <h3>Hello 🌿</h3>
       <div class="muted" id="homeDateLbl"></div>
     </div>
     <div class="card" id="quoteCard" style="background:linear-gradient(135deg,var(--panel-2),var(--panel));">
@@ -1174,7 +1174,7 @@ async function renderCalorieChart(){
 /* ============ LEARNING ============ */
 function weekStart(){ return weekStartOf(todayISO()); }
 const Learning = {
-  parse(text){ return {tasks: parseWeekly(text,'|',['name','link','minutes']).map(r=>({day:r.day,name:r.name,link:r.link,minutes:Number(r.minutes)||0}))}; },
+  parse(text){ return {tasks: parseWeekly(text,'|',['name','link','minutes']).map(r=>{const m=(r.minutes||'').match(/[\d.]+/); return {day:r.day,name:r.name,link:r.link,minutes: m?Math.round(parseFloat(m[0])*(/hour|hr/i.test(r.minutes)?60:1)):0};})}; },
   preview(){
     const {tasks} = this.parse($('lrnInput').value);
     $('lrnPreview').innerHTML = `<table style="width:100%;font-size:.78rem;margin-top:10px;border-collapse:collapse;">
@@ -1522,6 +1522,17 @@ async function initApp(){
     LearningTimer.activeId = localStorage.getItem('lrn_active_session');
   }
 }
+document.addEventListener('gesturestart', e=>e.preventDefault());
+document.addEventListener('gesturechange', e=>e.preventDefault());
+document.addEventListener('gestureend', e=>e.preventDefault());
+document.addEventListener('touchmove', e=>{ if(e.touches.length>1) e.preventDefault(); }, {passive:false});
+let _lastTouchEnd=0;
+document.addEventListener('touchend', e=>{
+  const now=Date.now();
+  if(now-_lastTouchEnd<=300) e.preventDefault();
+  _lastTouchEnd=now;
+}, {passive:false});
+
 window.onload = async ()=>{
   const {data:{session}} = await sb.auth.getSession();
   if(session){ enterApp(); }
