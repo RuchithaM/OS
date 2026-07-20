@@ -126,7 +126,9 @@
   </div>
 </div>
 
-<div id="loginScreen">
+<div id="loadingScreen" style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:var(--font-display);font-size:1.3rem;color:var(--ink-dim);">Planner</div>
+
+<div id="loginScreen" style="display:none;">
   <h1>Planner</h1>
   <div class="card">
     <label>Email</label><input id="loginEmail" type="email">
@@ -1624,7 +1626,9 @@ document.addEventListener('touchend', e=>{
 
 window.onload = async ()=>{
   const {data:{session}} = await sb.auth.getSession();
+  $('loadingScreen').style.display='none';
   if(session){ enterApp(); }
+  else { $('loginScreen').style.display='block'; }
 };
 </script>
 </body>
