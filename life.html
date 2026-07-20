@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Planner</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Planner">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="data:image/png;base64,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h78yN+4WX/5vAgANaLz/5IlHvjoxcDL1EJY1AYCGMnnhzJlHH7z0/DOph5ABAgANYvzc8TM/+vboyb7UQ8gMAYBsK5cWLz73xMAT35scPJt6CxkjAJBV08MDg4cfGzz8WHHG09yohgBAxsxPjA0fe2ro2R97y88VEgDIhulLF0aOH7507KcT50+l3kKDEABYvhamxi+fOz526sjoyefmJ8dSz6HRCAAsI+XF4tTFgamhsxMDp8b7T8yODadeRCMTAEimtDA3OzY8MzI0Mzo0MzI4fXFgZmSoUvGwNupEAKBmKpVKpVyqlMu5Srm0WCwvzJeK86WFhcWFueLMVHFmsjg7VZyenJ+6PD8xNjcxujg3m3oyoQkAjeb4dx/oP/RI6hWQAU2pBwCQhgAABCUAAEEJAEBQAgAQlAAABCUAAEEJAEBQAgAQlAAABCUAAEEJAEBQAgAQlAAABCUAAEEJAEBQAgAQlAAABCUAAEEJAEBQAgAQlAAABCUAAEEJAEBQAgAQlAAABCUAAEEJAEBQAgAQlAAABCUAAEEJAEBQAgAQlAAABCUAAEEJAEBQAgAQlAAABCUAAEEJAEBQAgAQlAAABCUAAEEJAEBQAgAQlAAABCUAAEEJAEBQAgAQlAAABCUAAEEJAEBQAgAQlAAABCUAAEEJAEBQAgAQlAAABCUAAEEJAEBQAgAQlAAABCUAAEEJAEBQAgAQlAAABCUAAEEJAEBQAgAQlAAABCUAAEEJAEBQ+QMfviv1Bmpv/wc/1tzWkXpFgxs7ffTpL30i9QqonisAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKCcCAYQlCsAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACCo/wbH5eb1toJgcAAAAABJRU5ErkJggg==">
+<link rel="icon" href="data:image/png;base64,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h78yN+4WX/5vAgANaLz/5IlHvjoxcDL1EJY1AYCGMnnhzJlHH7z0/DOph5ABAgANYvzc8TM/+vboyb7UQ8gMAYBsK5cWLz73xMAT35scPJt6CxkjAJBV08MDg4cfGzz8WHHG09yohgBAxsxPjA0fe2ro2R97y88VEgDIhulLF0aOH7507KcT50+l3kKDEABYvhamxi+fOz526sjoyefmJ8dSz6HRCAAsI+XF4tTFgamhsxMDp8b7T8yODadeRCMTAEimtDA3OzY8MzI0Mzo0MzI4fXFgZmSoUvGwNupEAKBmKpVKpVyqlMu5Srm0WCwvzJeK86WFhcWFueLMVHFmsjg7VZyenJ+6PD8xNjcxujg3m3oyoQkAjeb4dx/oP/RI6hWQAU2pBwCQhgAABCUAAEEJAEBQAgAQlAAABCUAAEEJAEBQAgAQlAAABCUAAEEJAEBQAgAQlAAABCUAAEEJAEBQAgAQlAAABCUAAEEJAEBQAgAQlAAABCUAAEEJAEBQAgAQlAAABCUAAEEJAEBQAgAQlAAABCUAAEEJAEBQAgAQlAAABCUAAEEJAEBQAgAQlAAABCUAAEEJAEBQAgAQlAAABCUAAEEJAEBQAgAQlAAABCUAAEEJAEBQAgAQlAAABCUAAEEJAEBQAgAQlAAABCUAAEEJAEBQAgAQlAAABCUAAEEJAEBQAgAQlAAABCUAAEEJAEBQAgAQlAAABCUAAEEJAEBQAgAQlAAABCUAAEEJAEBQ+QMfviv1Bmpv/wc/1tzWkXpFgxs7ffTpL30i9QqonisAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKCcCAYQlCsAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACAoAQAISgAAghIAgKAEACCo/wbH5eb1toJgcAAAAABJRU5ErkJggg==">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
@@ -157,7 +163,7 @@
   <!-- HOME -->
   <div class="view active" id="view-home">
     <div class="card">
-      <h3>Hello 🌿</h3>
+      <h3 id="homeGreeting">Hello</h3>
       <div class="muted" id="homeDateLbl"></div>
     </div>
     <div class="card" id="quoteCard" style="background:linear-gradient(135deg,var(--panel-2),var(--panel));">
@@ -182,7 +188,14 @@
       <div class="row between"><h3 style="margin:0;">Schedule</h3><span class="pill" id="schedProgLbl"></span></div>
       <div class="progress"><div id="schedProgBar" style="width:0%"></div></div>
       <div id="scheduleList" style="margin-top:10px;"></div>
-      <div class="muted" style="margin-top:8px;">Edit this in the <b>Plan</b> tab.</div>
+      <details class="planner">
+        <summary>+ Add for today only</summary>
+        <div class="muted">Just for today.</div>
+        <label>Activity</label><input id="schedAdhocActivity" placeholder="e.g. Dentist appointment">
+        <label>Time</label><input id="schedAdhocTime" placeholder="e.g. 3pm">
+        <button class="btn block" onclick="guardedRun('schedAdhocAdd',this,()=>ScheduleAdhoc.add())">Add for today</button>
+      </details>
+      <div class="muted" style="margin-top:8px;">Edit recurring plan in <b>Plan</b>.</div>
     </div>
   </div>
 
@@ -192,7 +205,15 @@
       <div class="row between"><h3 style="margin:0;">Today's workout</h3><span class="pill" id="gymProgLbl"></span></div>
       <div class="progress"><div id="gymProgBar" style="width:0%"></div></div>
       <div id="gymTodayList" style="margin-top:10px;"></div>
-      <div class="muted" style="margin-top:8px;">Edit your weekly gym plan in the <b>Plan</b> tab.</div>
+      <details class="planner">
+        <summary>+ Add for today only</summary>
+        <div class="muted">Just for today.</div>
+        <label>Exercise</label><input id="gymAdhocName" placeholder="e.g. Extra core set">
+        <label>Sets/reps</label><input id="gymAdhocSets" placeholder="e.g. 3x15">
+        <label>YouTube link (optional)</label><input id="gymAdhocLink" placeholder="https://...">
+        <button class="btn block" onclick="guardedRun('gymAdhocAdd',this,()=>GymAdhoc.add())">Add for today</button>
+      </details>
+      <div class="muted" style="margin-top:8px;">Edit recurring plan in <b>Plan</b>.</div>
     </div>
   </div>
 
@@ -214,7 +235,15 @@
       <div class="row between"><h3 style="margin:0;">Today's meal plan</h3><span class="pill" id="mealProgLbl"></span></div>
       <div class="progress"><div id="mealProgBar" style="width:0%"></div></div>
       <div id="mealPlanToday" style="margin-top:10px;"></div>
-      <div class="muted" style="margin-top:8px;">Edit this in the <b>Plan</b> tab.</div>
+      <details class="planner">
+        <summary>+ Add for today only</summary>
+        <div class="muted">Just for today.</div>
+        <label>Meal type</label>
+        <select id="mealAdhocType"><option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snack</option></select>
+        <label>Description</label><input id="mealAdhocDesc" placeholder="e.g. Ordered biryani">
+        <button class="btn block" onclick="guardedRun('mealAdhocAdd',this,()=>MealAdhoc.add())">Add for today</button>
+      </details>
+      <div class="muted" style="margin-top:8px;">Edit recurring plan in <b>Plan</b>.</div>
     </div>
     <div class="card">
       <h3>Hydration today</h3>
@@ -231,7 +260,7 @@
         <button class="btn small ghost" onclick="guardedRun('waterAdd',this,()=>Hydration.add(500))">+500ml</button>
         <button class="btn small ghost" onclick="guardedRun('waterAdd',this,()=>Hydration.add(1000))">+1L</button>
       </div>
-      <div class="muted" style="margin-top:6px;">Set your daily goal in the <b>Plan</b> tab.</div>
+      <div class="muted" style="margin-top:6px;">Set goal in <b>Plan</b>.</div>
     </div>
     <div class="card">
       <h3>Calorie estimator</h3>
@@ -282,10 +311,10 @@
     <div class="card">
       <h3>This week's tasks</h3>
       <div id="lrnTaskList"><div class="empty">No tasks yet</div></div>
-      <div class="muted" style="margin-top:8px;">Plan this week's topics in the <b>Plan</b> tab.</div>
+      <div class="muted" style="margin-top:8px;">Plan topics in <b>Plan</b>.</div>
     </div>
     <div class="card">
-      <h3>Weekend side project · Study Buddy App</h3>
+      <h3>Weekend Project</h3>
       <div id="projPhases"></div>
     </div>
   </div>
@@ -299,7 +328,7 @@
     </div>
     <div class="card">
       <h3>📸 Today's moments</h3>
-      <div class="muted">Snap whatever catches your eye today — no plan needed.</div>
+      <div class="muted">Capture anything, anytime.</div>
       <input type="file" id="momentPhoto" accept="image/*" style="margin-top:8px;">
       <input id="momentCaption" placeholder="Caption (optional)">
       <button class="btn block" onclick="guardedRun('momentAdd',this,()=>Moments.add())">Save moment</button>
@@ -380,7 +409,7 @@
     <div class="card">
       <details class="planner" ontoggle="if(this.open) SchedulePlan.prefill()">
         <summary>📅 Weekly schedule</summary>
-        <div class="muted">One day per block. Format: <code>Activity : Time</code></div>
+        <div class="muted">Format: <code>Activity : Time</code></div>
         <textarea id="schedInput"></textarea>
         <button class="btn block" onclick="guardedRun('schedSave',this,()=>SchedulePlan.save())">Save weekly schedule</button>
       </details>
@@ -388,14 +417,14 @@
     <div class="card">
       <details class="planner" ontoggle="if(this.open) GymPlan.prefill()">
         <summary>💪 Weekly gym plan</summary>
-        <div class="muted">Format: <code>Monday - Target Area</code> then <code>Exercise | Sets | YouTube link</code></div>
+        <div class="muted">Format: <code>Day - Area</code> then <code>Exercise | Sets | Link</code></div>
         <textarea id="gymInput"></textarea>
         <button class="btn block" onclick="guardedRun('gymSave',this,()=>GymPlan.save())">Save weekly gym plan</button>
       </details>
     </div>
     <div class="card">
       <details class="planner" ontoggle="if(this.open) MealPlan.prefill()">
-        <summary>🍽️ Weekly meal plan (do Sunday night)</summary>
+        <summary>🍽️ Weekly meal plan</summary>
         <div class="muted">Format: <code>Meal type : description</code></div>
         <textarea id="mealPlanInput"></textarea>
         <button class="btn block" onclick="guardedRun('mealPlanSave',this,()=>MealPlan.save())">Save weekly meal plan</button>
@@ -403,7 +432,7 @@
     </div>
     <div class="card">
       <details class="planner" ontoggle="if(this.open) Learning.prefill()">
-        <summary>📚 Weekly Salesforce topics (do Sunday night)</summary>
+        <summary>📚 Weekly SF topics</summary>
         <div class="muted">Format: <code>Task | Link | Minutes</code></div>
         <textarea id="lrnInput"></textarea>
         <button class="btn ghost" onclick="Learning.preview()">Preview</button>
@@ -636,6 +665,17 @@ async function computeStreak(section, planItemKeysForWeekday){
 
 /* ============ HOME ============ */
 async function renderHome(){
+  const GREETING_EMOJIS = ['🌻','🌸','✨','🦋','🌼','☀️','🌷','💫','🍃','🌺'];
+  const [{data:{user}}, {data:settings}] = await Promise.all([
+    sb.auth.getUser(),
+    sb.from('user_settings').select('nickname').maybeSingle()
+  ]);
+  let displayName = settings?.nickname;
+  if(!displayName && user?.email){
+    const local = user.email.split('@')[0].slice(0,5);
+    displayName = local.charAt(0).toUpperCase()+local.slice(1);
+  }
+  $('homeGreeting').innerHTML = `Hello ${displayName||'there'} ${GREETING_EMOJIS[Math.floor(Math.random()*GREETING_EMOJIS.length)]}`;
   $('homeDateLbl').textContent = new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
   getContextualQuote().then(({category,quote})=>{
     const labels={life:'✨ For your day',gym:'💪 Gym time',meals:'🍽️ Meal time',learning:'📚 Learning time',expenses:'💰 Money mindset',jobs:'💼 Career focus'};
@@ -744,8 +784,13 @@ async function renderToday(){
   const isToday = dateStr===todayISO();
   $('todayDatePicker').value = dateStr;
   $('todaySelDate').textContent = new Date(dateStr+'T00:00:00').toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'}) + (isToday?' (Today)':'');
-  const {data:dbRows} = await sb.from('schedule_plans').select('*');
-  const items = scheduleItemsForDate(dateStr, dbRows);
+  const [{data:dbRows},{data:adhoc}] = await Promise.all([
+    sb.from('schedule_plans').select('*'),
+    sb.from('schedule_adhoc').select('*').eq('date',dateStr)
+  ]);
+  const templateItems = scheduleItemsForDate(dateStr, dbRows);
+  const adhocItems = (adhoc||[]).map(a=>[a.time_text, a.activity, a.id]);
+  const items = [...templateItems.map(i=>[...i,null]), ...adhocItems];
   const checkedSet = await getChecksForDate('schedule', dateStr);
   const checkedCount = items.filter(([time,label])=>checkedSet.has(label)).length;
   $('schedProgLbl').textContent = checkedCount+'/'+items.length;
@@ -758,12 +803,13 @@ async function renderToday(){
     for(const t of timed){ if(t.mins<=curMin) cur=t; }
     if(cur) currentIdx=cur.i;
   }
-  $('scheduleList').innerHTML = items.map(([time,label],i)=>{
+  $('scheduleList').innerHTML = items.map(([time,label,adhocId],i)=>{
     const checked=checkedSet.has(label);
     const isNow = i===currentIdx;
     return `<div class="check-item ${checked?'checked':''}" ${isNow?'style="background:var(--panel-2);border-left:3px solid var(--accent);padding-left:8px;margin-left:-8px;border-radius:8px;"':''}>
       <input type="checkbox" ${checked?'checked':''} ${isToday?'':'disabled'} onchange="onScheduleCheck('${dateStr}','${label.replace(/'/g,"\\'")}',this.checked)">
-      <div><div class="time">${time}${isNow?' <span class="pill" style="background:var(--accent);color:#fff;border:none;">now</span>':''}</div><div class="label">${label}</div></div>
+      <div style="flex:1;"><div class="time">${time}${isNow?' <span class="pill" style="background:var(--accent);color:#fff;border:none;">now</span>':''}${adhocId?' <span class="pill">one-off</span>':''}</div><div class="label">${label}</div></div>
+      ${adhocId?`<button class="btn small ghost" onclick="ScheduleAdhoc.remove('${adhocId}')">✕</button>`:''}
     </div>`;
   }).join('');
 }
@@ -771,6 +817,20 @@ async function onScheduleCheck(dateStr,key,checked){
   await toggleCheck('schedule', key, dateStr, checked);
   renderToday();
 }
+const ScheduleAdhoc = {
+  async add(){
+    const activity = $('schedAdhocActivity').value.trim();
+    const time_text = $('schedAdhocTime').value.trim();
+    if(!activity) return;
+    await sb.from('schedule_adhoc').insert({date:TodayView.date, activity, time_text});
+    $('schedAdhocActivity').value=''; $('schedAdhocTime').value='';
+    renderToday();
+  },
+  async remove(id){
+    await sb.from('schedule_adhoc').delete().eq('id',id);
+    renderToday();
+  }
+};
 const SchedulePlan = {
   async save(){
     const rows = parseWeekly($('schedInput').value, ':', ['activity','time_text']);
@@ -813,25 +873,39 @@ const SchedulePlan = {
 /* ============ GYM ============ */
 async function renderGymToday(){
   const wd = weekdayName(new Date());
-  const [{data},checkedSet] = await Promise.all([
+  const [{data},checkedSet,{data:adhoc}] = await Promise.all([
     sb.from('gym_plans').select('*').eq('day',wd).order('created_at'),
-    getChecksForDate('gym', todayISO())
+    getChecksForDate('gym', todayISO()),
+    sb.from('gym_adhoc').select('*').eq('date',todayISO())
   ]);
-  const items = data||[];
+  const templateItems = data||[];
+  const adhocItems = (adhoc||[]).map(a=>({exercise_name:a.exercise_name, sets:a.sets, youtube_link:a.youtube_link, adhocId:a.id}));
+  const items = [...templateItems, ...adhocItems];
   if(!items.length){ $('gymTodayList').innerHTML='<div class="empty">No gym plan for '+wd+' yet</div>'; $('gymProgLbl').textContent=''; $('gymProgBar').style.width='0%'; return; }
   const checkedCount = items.filter(i=>checkedSet.has(i.exercise_name)).length;
   $('gymProgLbl').textContent = checkedCount+'/'+items.length;
   $('gymProgBar').style.width = Math.round(checkedCount/items.length*100)+'%';
-  const target = items[0].target_area ? `<div class="pill" style="margin-bottom:8px;">${items[0].target_area}</div>` : '';
+  const target = templateItems[0]?.target_area ? `<div class="pill" style="margin-bottom:8px;">${templateItems[0].target_area}</div>` : '';
   $('gymTodayList').innerHTML = target + items.map(i=>{
     const checked=checkedSet.has(i.exercise_name);
     return `<div class="check-item ${checked?'checked':''}">
       <input type="checkbox" ${checked?'checked':''} onchange="onGymCheck('${i.exercise_name.replace(/'/g,"\\'")}',this.checked)">
-      <div><div class="label">${i.exercise_name} <span class="muted">${i.sets||''}</span></div>${i.youtube_link?`<a href="${i.youtube_link}" target="_blank" style="font-size:.75rem;">▶ watch</a>`:''}</div>
+      <div style="flex:1;"><div class="label">${i.exercise_name} <span class="muted">${i.sets||''}</span>${i.adhocId?' <span class="pill">one-off</span>':''}</div>${i.youtube_link?`<a href="${i.youtube_link}" target="_blank" style="font-size:.75rem;">▶ watch</a>`:''}</div>
+      ${i.adhocId?`<button class="btn small ghost" onclick="GymAdhoc.remove('${i.adhocId}')">✕</button>`:''}
     </div>`;
   }).join('');
 }
 async function onGymCheck(key,checked){ await toggleCheck('gym', key, todayISO(), checked); renderGymToday(); }
+const GymAdhoc = {
+  async add(){
+    const exercise_name = $('gymAdhocName').value.trim();
+    if(!exercise_name) return;
+    await sb.from('gym_adhoc').insert({date:todayISO(), exercise_name, sets:$('gymAdhocSets').value.trim(), youtube_link:$('gymAdhocLink').value.trim()});
+    $('gymAdhocName').value=''; $('gymAdhocSets').value=''; $('gymAdhocLink').value='';
+    renderGymToday();
+  },
+  async remove(id){ await sb.from('gym_adhoc').delete().eq('id',id); renderGymToday(); }
+};
 const GymPlan = {
   async save(){
     const rows = parseWeekly($('gymInput').value, '|', ['exercise_name','sets','youtube_link']);
@@ -860,11 +934,14 @@ const GymPlan = {
 /* ============ MEALS ============ */
 async function renderMealPlanToday(){
   const wd = weekdayName(new Date());
-  const [{data},checkedSet] = await Promise.all([
+  const [{data},checkedSet,{data:adhoc}] = await Promise.all([
     sb.from('meal_plans').select('*').eq('day',wd).order('created_at'),
-    getChecksForDate('meals', todayISO())
+    getChecksForDate('meals', todayISO()),
+    sb.from('meal_adhoc').select('*').eq('date',todayISO())
   ]);
-  const items = data||[];
+  const templateItems = data||[];
+  const adhocItems = (adhoc||[]).map(a=>({meal_type:a.meal_type, description:a.description, adhocId:a.id}));
+  const items = [...templateItems, ...adhocItems];
   if(!items.length){ $('mealPlanToday').innerHTML='<div class="empty">No meal plan for '+wd+' yet</div>'; $('mealProgLbl').textContent=''; $('mealProgBar').style.width='0%'; return; }
   const checkedCount = items.filter(i=>checkedSet.has(i.meal_type)).length;
   $('mealProgLbl').textContent = checkedCount+'/'+items.length;
@@ -873,11 +950,23 @@ async function renderMealPlanToday(){
     const checked=checkedSet.has(i.meal_type);
     return `<div class="check-item ${checked?'checked':''}">
       <input type="checkbox" ${checked?'checked':''} onchange="onMealCheck('${i.meal_type.replace(/'/g,"\\'")}',this.checked)">
-      <div><b>${i.meal_type}</b><div class="muted">${i.description}</div></div>
+      <div style="flex:1;"><b>${i.meal_type}</b>${i.adhocId?' <span class="pill">one-off</span>':''}<div class="muted">${i.description}</div></div>
+      ${i.adhocId?`<button class="btn small ghost" onclick="MealAdhoc.remove('${i.adhocId}')">✕</button>`:''}
     </div>`;
   }).join('');
 }
 async function onMealCheck(key,checked){ await toggleCheck('meals', key, todayISO(), checked); renderMealPlanToday(); }
+const MealAdhoc = {
+  async add(){
+    const meal_type = $('mealAdhocType').value;
+    const description = $('mealAdhocDesc').value.trim();
+    if(!description) return;
+    await sb.from('meal_adhoc').insert({date:todayISO(), meal_type, description});
+    $('mealAdhocDesc').value='';
+    renderMealPlanToday();
+  },
+  async remove(id){ await sb.from('meal_adhoc').delete().eq('id',id); renderMealPlanToday(); }
+};
 const MealPlan = {
   async save(){
     const rows = parseWeekly($('mealPlanInput').value, ':', ['meal_type','description']);
@@ -970,7 +1059,7 @@ const Estimator = {
         $('estAddNew').style.display='block';
         $('estAddNew').innerHTML = `
           <div class="card" style="background:var(--panel-2);margin-top:8px;">
-            <div class="muted">Add "${queryForAdd}" to your ingredient database</div>
+            <div class="muted">Add "${queryForAdd}" to database</div>
             <div id="newFoodErr" style="color:var(--danger);font-size:.8rem;"></div>
             <label>Category</label>
             <select id="newFoodCat">${CATEGORIES.map(c=>`<option>${c}</option>`).join('')}</select>
@@ -1105,7 +1194,7 @@ async function renderMealLog(){
     return `<div>
       ${m.photo_url?`<img class="thumb" src="${m.photo_url}" style="max-height:110px;">`:`<div style="background:var(--panel-2);border-radius:10px;height:110px;display:flex;align-items:center;justify-content:center;color:var(--ink-dim);font-size:1.6rem;">🍽️</div>`}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 6px;font-size:.72rem;margin-top:6px;">
-        <div class="muted">Meal type</div><div>${m.meal_type}</div>
+        <div class="muted">Type</div><div>${m.meal_type}</div>
         <div class="muted">Logged</div><div>${time}</div>
         <div class="muted">Calories</div><div>${m.calories||0}</div>
         <div class="muted">Protein</div><div>${m.protein||0}g</div>
@@ -1484,17 +1573,17 @@ async function renderWeekStatus(){
   let gymDone=0;
   const gymByDate={}; (gymChecks||[]).forEach(c=>{(gymByDate[c.date]=gymByDate[c.date]||new Set()).add(c.item_key);});
   for(let i=0;i<7;i++){ const d=addDays(ws,i); if(d>todayISO())break; const wd=weekdayName(new Date(d+'T00:00:00')); const items=gymByDay(wd); if(items.length && items.every(k=>(gymByDate[d]||new Set()).has(k))) gymDone++; }
-  $('weekGym').innerHTML = `<div class="muted">${gymDone} full workout days completed this week</div>`;
+  $('weekGym').innerHTML = `<div class="muted">${gymDone} workout days this week</div>`;
   let mealDone=0;
   const mealByDate={}; (mealChecks||[]).forEach(c=>{(mealByDate[c.date]=mealByDate[c.date]||new Set()).add(c.item_key);});
   for(let i=0;i<7;i++){ const d=addDays(ws,i); if(d>todayISO())break; const wd=weekdayName(new Date(d+'T00:00:00')); const items=mealByDay(wd); if(items.length && items.every(k=>(mealByDate[d]||new Set()).has(k))) mealDone++; }
-  $('weekMeals').innerHTML = `<div class="muted">${mealDone} full meal-plan days completed this week</div>`;
+  $('weekMeals').innerHTML = `<div class="muted">${mealDone} meal-plan days this week</div>`;
   const lrnMin = (lrnSessions||[]).reduce((a,s)=>a+(s.minutes||0),0);
-  $('weekLearning').innerHTML = `<div class="muted">${lrnMin} min logged via check-in this week</div>`;
-  $('weekJournal').innerHTML = `<div class="muted">${(journalWeek||[]).length}/7 days journaled this week</div>`;
+  $('weekLearning').innerHTML = `<div class="muted">${lrnMin} min this week</div>`;
+  $('weekJournal').innerHTML = `<div class="muted">${(journalWeek||[]).length}/7 days journaled</div>`;
   const spend = (expWeek||[]).filter(e=>e.transaction_type==='Debit').reduce((a,e)=>a+Number(e.amount),0);
-  $('weekExpenses').innerHTML = `<div class="muted">₹${spend.toFixed(0)} spent this week across ${(expWeek||[]).length} transactions</div>`;
-  $('weekJobs').innerHTML = `<div class="muted">${(jobsWeek||[]).length} new roles tracked this week</div>`;
+  $('weekExpenses').innerHTML = `<div class="muted">₹${spend.toFixed(0)} spent · ${(expWeek||[]).length} txns</div>`;
+  $('weekJobs').innerHTML = `<div class="muted">${(jobsWeek||[]).length} new roles this week</div>`;
 }
 
 /* ============ INIT ============ */
