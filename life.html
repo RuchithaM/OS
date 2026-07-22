@@ -1264,6 +1264,23 @@ async function renderCalorieChart(){
 
 /* ============ LEARNING ============ */
 function weekStart(){ return weekStartOf(todayISO()); }
+async function rolloverOverdueTasks(){
+  const order = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  const {data} = await sb.from('learning_tasks').select('*').eq('status','To Do');
+  const todayStr = todayISO();
+  const todayWd = weekdayOfDateStr(todayStr);
+  const todayWs = weekStartOf(todayStr);
+  const overdue = (data||[]).filter(t=>{
+    const offset = order.indexOf(t.day);
+    if(offset<0 || !t.week_start) return false;
+    const taskDate = addDays(t.week_start, offset);
+    return taskDate < todayStr && !(t.week_start===todayWs && t.day===todayWd);
+  });
+  for(const t of overdue){
+    await sb.from('learning_tasks').update({week_start:todayWs, day:todayWd, carried_over:true}).eq('id',t.id);
+  }
+  return overdue.length;
+}
 const Learning = {
   parse(text){ return {tasks: parseWeekly(text,'|',['name','link','minutes']).map(r=>{const m=(r.minutes||'').match(/[\d.]+/); return {day:r.day,name:r.name,link:r.link,minutes: m?Math.round(parseFloat(m[0])*(/hour|hr/i.test(r.minutes)?60:1)):0};})}; },
   preview(){
@@ -1316,7 +1333,7 @@ async function renderLearningTasks(){
   $('lrnTaskList').innerHTML = tasks.map(t=>`
     <div class="list-item" style="display:block;">
       <div class="row between"><b>${t.day}: ${t.task_name}</b><span class="pill ${t.status==='Done'?'done':''}">${t.status}</span></div>
-      <div class="muted">${t.estimated_minutes} min ${t.resource_link?`· <a href="${t.resource_link}" target="_blank">resource</a>`:''}</div>
+      <div class="muted">${t.estimated_minutes} min ${t.resource_link?`· <a href="${t.resource_link}" target="_blank">resource</a>`:''} ${t.carried_over?' · <span class="pill">carried over</span>':''}</div>
       <div style="margin-top:6px;display:flex;gap:6px;">
         <a class="cal-btn" href="${icsFor(t.task_name, ws, t.estimated_minutes)}" download="task.ics">📅 Add to calendar</a>
         <button class="btn small ghost" onclick="Learning.markDone('${t.id}')">Mark done</button>
@@ -1591,6 +1608,7 @@ async function renderWeekStatus(){
 /* ============ INIT ============ */
 async function initApp(){
   Estimator.renderCategoryChips();
+  const rolledCount = await rolloverOverdueTasks();
   await Promise.all([
     renderHome(),
     renderToday(),
