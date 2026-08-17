@@ -156,7 +156,6 @@
   <button data-tab="journal">Journal</button>
   <button data-tab="expenses">Expenses</button>
   <button data-tab="jobs">Jobs</button>
-  <button data-tab="week">Week</button>
   <button data-tab="plan">Plan</button>
 </nav>
 
@@ -199,70 +198,96 @@
       </details>
       <div class="muted" style="margin-top:8px;">Edit recurring plan in <b>Plan</b>.</div>
     </div>
+    <div class="card">
+      <h3>Office hours tasks</h3>
+      <div id="officeTaskTree"></div>
+      <details class="planner" id="officeTaskAddPanel">
+        <summary>+ Add tasks</summary>
+        <div class="muted">Indent with a tab/space to make a sub-task.</div>
+        <textarea id="officeTaskInput" placeholder="Task 1
+	Subtask 1
+	Subtask 2
+Task 2"></textarea>
+        <button class="btn block" onclick="guardedRun('officeTaskSave',this,()=>OfficeTasks.save())">Save</button>
+      </details>
+    </div>
   </div>
 
   <!-- GYM -->
   <div class="view" id="view-gym">
     <div class="card">
-      <div class="row between"><h3 style="margin:0;">Today's workout</h3><span class="pill" id="gymProgLbl"></span></div>
+      <div class="datenav">
+        <button onclick="GymView.shift(-1)">←</button>
+        <input type="date" id="gymDatePicker" style="width:auto;margin:0;padding:6px 8px;" onchange="GymView.setDate(this.value)">
+        <button onclick="GymView.shift(1)">→</button>
+        <button class="btn small ghost" onclick="GymView.goToday()">Today</button>
+      </div>
+      <div class="muted" id="gymSelDate" style="margin-top:6px;"></div>
+    </div>
+    <div class="card">
+      <div class="row between"><h3 style="margin:0;">Workout</h3><span class="pill" id="gymProgLbl"></span></div>
       <div class="progress"><div id="gymProgBar" style="width:0%"></div></div>
       <div id="gymTodayList" style="margin-top:10px;"></div>
-      <details class="planner">
-        <summary>+ Add for today only</summary>
-        <div class="muted">Just for today.</div>
+      <details class="planner" id="gymAdhocPanel">
+        <summary>+ Add for this day only</summary>
+        <div class="muted">Just for this day.</div>
         <label>Exercise</label><input id="gymAdhocName" placeholder="e.g. Extra core set">
         <label>Sets/reps</label><input id="gymAdhocSets" placeholder="e.g. 3x15">
         <label>YouTube link (optional)</label><input id="gymAdhocLink" placeholder="https://...">
-        <button class="btn block" onclick="guardedRun('gymAdhocAdd',this,()=>GymAdhoc.add())">Add for today</button>
+        <button class="btn block" onclick="guardedRun('gymAdhocAdd',this,()=>GymAdhoc.add())">Add</button>
       </details>
       <div class="muted" style="margin-top:8px;">Edit recurring plan in <b>Plan</b>.</div>
+    </div>
+    <div class="card">
+      <h3>Steps today</h3>
+      <div class="row">
+        <input id="stepsInput" type="number" placeholder="Steps">
+        <button class="btn" onclick="guardedRun('stepsLog',this,()=>Steps.log())">Log</button>
+      </div>
+      <div class="muted" id="stepsTodayLbl" style="margin-top:6px;"></div>
     </div>
   </div>
 
   <!-- MEALS -->
   <div class="view" id="view-meals">
     <div class="card">
-      <h3>Calories today</h3>
+      <h3>Intake today</h3>
       <div class="row" style="gap:16px;">
-        <canvas id="calChart" width="120" height="120" style="max-width:120px;"></canvas>
+        <canvas id="intakeChart" width="130" height="130" style="max-width:130px;"></canvas>
         <div>
-          <div class="muted">Goal: <span id="calGoalLbl"></span> kcal</div>
-          <div class="muted">Eaten: <span id="calEatenLbl"></span> kcal</div>
-          <div class="muted">Left: <span id="calLeftLbl"></span> kcal</div>
-          <button class="btn small ghost" onclick="Meals.editGoal()" style="margin-top:6px;">Set goal</button>
+          <div class="muted" style="color:var(--accent-3);">● Water: <span id="waterHadLbl"></span>/<span id="waterGoalLbl"></span> ml</div>
+          <div class="muted" style="color:var(--accent-2);">● Calories: <span id="calEatenLbl"></span>/<span id="calGoalLbl"></span> kcal</div>
+          <div class="row" style="gap:6px;margin-top:8px;">
+            <button class="btn small ghost" onclick="guardedRun('waterAdd',this,()=>Hydration.add(250))">+250ml</button>
+            <button class="btn small ghost" onclick="guardedRun('waterAdd',this,()=>Hydration.add(500))">+500ml</button>
+          </div>
+          <button class="btn small ghost" onclick="Meals.editGoal()" style="margin-top:6px;">Set calorie goal</button>
         </div>
       </div>
+      <div class="muted" style="margin-top:6px;">Set water goal in <b>Plan</b>. Rings fill outward — exceeding a goal shows red on that ring.</div>
     </div>
     <div class="card">
-      <div class="row between"><h3 style="margin:0;">Today's meal plan</h3><span class="pill" id="mealProgLbl"></span></div>
+      <div class="datenav">
+        <button onclick="MealsView.shift(-1)">←</button>
+        <input type="date" id="mealsDatePicker" style="width:auto;margin:0;padding:6px 8px;" onchange="MealsView.setDate(this.value)">
+        <button onclick="MealsView.shift(1)">→</button>
+        <button class="btn small ghost" onclick="MealsView.goToday()">Today</button>
+      </div>
+      <div class="muted" id="mealsSelDate" style="margin-top:6px;"></div>
+    </div>
+    <div class="card">
+      <div class="row between"><h3 style="margin:0;">Meal plan</h3><span class="pill" id="mealProgLbl"></span></div>
       <div class="progress"><div id="mealProgBar" style="width:0%"></div></div>
       <div id="mealPlanToday" style="margin-top:10px;"></div>
-      <details class="planner">
-        <summary>+ Add for today only</summary>
-        <div class="muted">Just for today.</div>
+      <details class="planner" id="mealAdhocPanel">
+        <summary>+ Add for this day only</summary>
+        <div class="muted">Just for this day.</div>
         <label>Meal type</label>
         <select id="mealAdhocType"><option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snack</option></select>
         <label>Description</label><input id="mealAdhocDesc" placeholder="e.g. Ordered biryani">
-        <button class="btn block" onclick="guardedRun('mealAdhocAdd',this,()=>MealAdhoc.add())">Add for today</button>
+        <button class="btn block" onclick="guardedRun('mealAdhocAdd',this,()=>MealAdhoc.add())">Add</button>
       </details>
       <div class="muted" style="margin-top:8px;">Edit recurring plan in <b>Plan</b>.</div>
-    </div>
-    <div class="card">
-      <h3>Hydration today</h3>
-      <div class="row" style="gap:16px;">
-        <canvas id="waterChart" width="120" height="120" style="max-width:120px;"></canvas>
-        <div>
-          <div class="muted">Goal: <span id="waterGoalLbl"></span> ml</div>
-          <div class="muted">Had: <span id="waterHadLbl"></span> ml</div>
-          <div class="muted">Left: <span id="waterLeftLbl"></span> ml</div>
-        </div>
-      </div>
-      <div class="row" style="gap:8px;margin-top:10px;">
-        <button class="btn small ghost" onclick="guardedRun('waterAdd',this,()=>Hydration.add(250))">+250ml</button>
-        <button class="btn small ghost" onclick="guardedRun('waterAdd',this,()=>Hydration.add(500))">+500ml</button>
-        <button class="btn small ghost" onclick="guardedRun('waterAdd',this,()=>Hydration.add(1000))">+1L</button>
-      </div>
-      <div class="muted" style="margin-top:6px;">Set goal in <b>Plan</b>.</div>
     </div>
     <div class="card">
       <h3>Calorie estimator</h3>
@@ -289,6 +314,7 @@
       </div>
       <input type="file" id="mealPhoto" accept="image/*">
       <img id="mealPhotoPreview" class="thumb" style="display:none;">
+      <button class="btn small ghost" id="mealFlipBtn" style="display:none;margin-top:4px;" onclick="flipImageB64(mealPhotoB64, b=>{mealPhotoB64=b; $('mealPhotoPreview').src=b;})">🔄 Flip photo</button>
       <button class="btn block" onclick="guardedRun('mealLog',this,()=>Meals.log())">Save meal</button>
     </div>
     <div class="card">
@@ -332,6 +358,8 @@
       <h3>📸 Today's moments</h3>
       <div class="muted">Capture anything, anytime.</div>
       <input type="file" id="momentPhoto" accept="image/*" style="margin-top:8px;">
+      <img id="momentPhotoPreview" class="thumb" style="display:none;max-height:140px;">
+      <button class="btn small ghost" id="momentFlipBtn" style="display:none;margin-top:4px;" onclick="flipImageB64(momentPhotoB64, b=>{momentPhotoB64=b; $('momentPhotoPreview').src=b;})">🔄 Flip photo</button>
       <input id="momentCaption" placeholder="Caption (optional)">
       <button class="btn block" onclick="guardedRun('momentAdd',this,()=>Moments.add())">Save moment</button>
       <div id="momentGridToday" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px;"></div>
@@ -385,25 +413,6 @@
       <button class="btn block" onclick="guardedRun('jobAdd',this,()=>Jobs.add())">Save & analyze gap</button>
     </div>
     <div class="card"><h3>Tracked roles</h3><div id="jobList"><div class="empty">No roles saved yet</div></div></div>
-  </div>
-
-  <!-- WEEK STATUS -->
-  <div class="view" id="view-week">
-    <div class="card"><h3>This week at a glance</h3><div id="weekOverview"></div></div>
-    <div class="card">
-      <h3>Steps</h3>
-      <div class="row">
-        <input id="stepsInput" type="number" placeholder="Steps today">
-        <button class="btn" onclick="Steps.log()">Log</button>
-      </div>
-      <div class="muted" id="stepsWeekTotal"></div>
-    </div>
-    <div class="card"><h3>Gym this week</h3><div id="weekGym"></div></div>
-    <div class="card"><h3>Meals this week</h3><div id="weekMeals"></div></div>
-    <div class="card"><h3>Learning this week</h3><div id="weekLearning"></div></div>
-    <div class="card"><h3>Journal this week</h3><div id="weekJournal"></div></div>
-    <div class="card"><h3>Expenses this week</h3><div id="weekExpenses"></div></div>
-    <div class="card"><h3>Jobs this week</h3><div id="weekJobs"></div></div>
   </div>
 
   <!-- PLAN -->
@@ -611,7 +620,6 @@ function switchTab(tab){
   document.querySelectorAll('#tabNav button').forEach(x=>x.classList.toggle('active', x.dataset.tab===tab));
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   $('view-'+tab).classList.add('active');
-  if(tab==='week') renderWeekStatus();
   if(tab==='home') renderHome();
 }
 
@@ -684,28 +692,24 @@ async function renderHome(){
     $('quoteCategory').textContent = labels[category]||'✨ For your day';
     $('quoteText').textContent = '"'+quote+'"';
   });
-  const [{data:gp},{data:mp},{data:sp}] = await Promise.all([
+  const [{data:gp},{data:mp}] = await Promise.all([
     sb.from('gym_plans').select('day,exercise_name'),
-    sb.from('meal_plans').select('day,meal_type'),
-    sb.from('schedule_plans').select('*')
+    sb.from('meal_plans').select('day,meal_type')
   ]);
-  const schedByDay=(wd,dateStr)=>scheduleItemsForDate(dateStr||todayISO(), sp).map(([t,label])=>label);
   const gymByDay=wd=>(gp||[]).filter(r=>r.day===wd).map(r=>r.exercise_name);
   const mealByDay=wd=>(mp||[]).filter(r=>r.day===wd).map(r=>r.meal_type);
-  const [schedStreak, gymStreak, mealStreak] = await Promise.all([
-    computeStreak('schedule', schedByDay),
+  const [gymStreak, mealStreak] = await Promise.all([
     computeStreak('gym', gymByDay),
     computeStreak('meals', mealByDay)
   ]);
   const tiles=[
-    {tab:'today',emoji:'📅',name:'Today',streak:schedStreak},
+    {tab:'today',emoji:'📅',name:'Today',streak:null},
     {tab:'gym',emoji:'💪',name:'Gym',streak:gymStreak},
     {tab:'meals',emoji:'🍽️',name:'Meals',streak:mealStreak},
     {tab:'learning',emoji:'📚',name:'Learning',streak:null},
     {tab:'journal',emoji:'📓',name:'Journal',streak:null},
     {tab:'expenses',emoji:'💸',name:'Expenses',streak:null},
     {tab:'jobs',emoji:'💼',name:'Jobs',streak:null},
-    {tab:'week',emoji:'📊',name:'Week Status',streak:null},
   ];
   $('homeTiles').innerHTML = tiles.map(t=>`
     <div class="tile" onclick="switchTab('${t.tab}')">
@@ -720,15 +724,18 @@ const TodayView = { date: todayISO() };
 TodayView.shiftDate = function(n){
   this.date = addDays(this.date, n);
   renderToday();
+  renderOfficeTasks();
 };
 TodayView.setDate = function(dateStr){
   if(!dateStr) return;
   this.date = dateStr;
   renderToday();
+  renderOfficeTasks();
 };
 TodayView.goToday = function(){
   this.date = todayISO();
   renderToday();
+  renderOfficeTasks();
 };
 const WEEKDAY_ROUTINE = [
   ['6:45am','Wake up — brush, water, freshen up'],
@@ -819,6 +826,75 @@ async function onScheduleCheck(dateStr,key,checked){
   await toggleCheck('schedule', key, dateStr, checked);
   renderToday();
 }
+function parseOfficeTasks(text){
+  const lines = text.split('\n');
+  const tasks=[]; let currentTop=null;
+  lines.forEach(raw=>{
+    if(!raw.trim()) return;
+    const isSub = /^[\t ]+/.test(raw);
+    const label = raw.trim();
+    if(!isSub){ currentTop = {text:label, subs:[]}; tasks.push(currentTop); }
+    else if(currentTop){ currentTop.subs.push(label); }
+  });
+  return tasks;
+}
+async function rolloverOfficeTasks(){
+  const {data} = await sb.from('office_tasks').select('*').lt('date', todayISO());
+  if(!data || !data.length) return;
+  const top = data.filter(t=>!t.parent_id);
+  const byParent = {};
+  data.forEach(t=>{ if(t.parent_id) (byParent[t.parent_id]=byParent[t.parent_id]||[]).push(t); });
+  const todayStr = todayISO();
+  for(const t of top){
+    const children = byParent[t.id]||[];
+    const incomplete = !t.checked || children.some(c=>!c.checked);
+    if(incomplete){
+      await sb.from('office_tasks').update({date:todayStr}).eq('id',t.id);
+      for(const c of children){ await sb.from('office_tasks').update({date:todayStr}).eq('id',c.id); }
+    }
+  }
+}
+function renderOfficeItem(t, indented, editable){
+  const timeStr = t.completed_at ? new Date(t.completed_at).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}) : '';
+  return `<div class="check-item ${t.checked?'checked':''}" style="${indented?'padding-left:28px;':''}">
+    <input type="checkbox" ${t.checked?'checked':''} ${editable?'':'disabled'} onchange="OfficeTasks.toggle('${t.id}',this.checked)">
+    <div><div class="label">${t.text}</div>${t.completed_at?`<div class="muted" style="font-size:.68rem;">✓ ${timeStr}</div>`:''}</div>
+  </div>`;
+}
+async function renderOfficeTasks(){
+  const dateStr = TodayView.date;
+  const isToday = dateStr===todayISO();
+  const isPast = dateStr < todayISO();
+  $('officeTaskAddPanel').style.display = isPast ? 'none' : 'block';
+  const {data} = await sb.from('office_tasks').select('*').eq('date',dateStr).order('created_at');
+  const top = (data||[]).filter(t=>!t.parent_id);
+  const byParent = {};
+  (data||[]).forEach(t=>{ if(t.parent_id) (byParent[t.parent_id]=byParent[t.parent_id]||[]).push(t); });
+  if(!top.length){ $('officeTaskTree').innerHTML='<div class="empty">No office tasks for this day</div>'; return; }
+  $('officeTaskTree').innerHTML = top.map(t=>{
+    const children = byParent[t.id]||[];
+    return renderOfficeItem(t,false,isToday) + children.map(c=>renderOfficeItem(c,true,isToday)).join('');
+  }).join('');
+}
+const OfficeTasks = {
+  async save(){
+    const parsed = parseOfficeTasks($('officeTaskInput').value);
+    if(!parsed.length) return;
+    const dateStr = TodayView.date;
+    for(const t of parsed){
+      const {data:topRow} = await sb.from('office_tasks').insert({date:dateStr, text:t.text, parent_id:null}).select().single();
+      if(t.subs.length && topRow){
+        await sb.from('office_tasks').insert(t.subs.map(s=>({date:dateStr, text:s, parent_id:topRow.id})));
+      }
+    }
+    $('officeTaskInput').value='';
+    renderOfficeTasks();
+  },
+  async toggle(id, checked){
+    await sb.from('office_tasks').update({checked, completed_at: checked ? new Date().toISOString() : null}).eq('id',id);
+    renderOfficeTasks();
+  }
+};
 const ScheduleAdhoc = {
   async add(){
     const activity = $('schedAdhocActivity').value.trim();
@@ -873,12 +949,23 @@ const SchedulePlan = {
 };
 
 /* ============ GYM ============ */
+const GymView = { date: todayISO() };
+GymView.shift = function(n){ this.date = addDays(this.date, n); renderGymToday(); };
+GymView.setDate = function(d){ this.date = d; renderGymToday(); };
+GymView.goToday = function(){ this.date = todayISO(); renderGymToday(); };
+
 async function renderGymToday(){
-  const wd = weekdayName(new Date());
+  const dateStr = GymView.date;
+  const isToday = dateStr===todayISO();
+  const isPast = dateStr < todayISO();
+  $('gymDatePicker').value = dateStr;
+  $('gymSelDate').textContent = new Date(dateStr+'T00:00:00').toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'}) + (isToday?' (Today)':isPast?' · read only':'');
+  $('gymAdhocPanel').style.display = isPast ? 'none' : 'block';
+  const wd = weekdayOfDateStr(dateStr);
   const [{data},checkedSet,{data:adhoc}] = await Promise.all([
     sb.from('gym_plans').select('*').eq('day',wd).order('created_at'),
-    getChecksForDate('gym', todayISO()),
-    sb.from('gym_adhoc').select('*').eq('date',todayISO())
+    getChecksForDate('gym', dateStr),
+    sb.from('gym_adhoc').select('*').eq('date',dateStr)
   ]);
   const templateItems = data||[];
   const adhocItems = (adhoc||[]).map(a=>({exercise_name:a.exercise_name, sets:a.sets, youtube_link:a.youtube_link, adhocId:a.id}));
@@ -891,18 +978,18 @@ async function renderGymToday(){
   $('gymTodayList').innerHTML = target + items.map(i=>{
     const checked=checkedSet.has(i.exercise_name);
     return `<div class="check-item ${checked?'checked':''}">
-      <input type="checkbox" ${checked?'checked':''} onchange="onGymCheck('${i.exercise_name.replace(/'/g,"\\'")}',this.checked)">
+      <input type="checkbox" ${checked?'checked':''} ${isToday?'':'disabled'} onchange="onGymCheck('${dateStr}','${i.exercise_name.replace(/'/g,"\\'")}',this.checked)">
       <div style="flex:1;"><div class="label">${i.exercise_name} <span class="muted">${i.sets||''}</span>${i.adhocId?' <span class="pill">one-off</span>':''}</div>${i.youtube_link?`<a href="${i.youtube_link}" target="_blank" style="font-size:.75rem;">▶ watch</a>`:''}</div>
-      ${i.adhocId?`<button class="btn small ghost" onclick="GymAdhoc.remove('${i.adhocId}')">✕</button>`:''}
+      ${(i.adhocId && !isPast)?`<button class="btn small ghost" onclick="GymAdhoc.remove('${i.adhocId}')">✕</button>`:''}
     </div>`;
   }).join('');
 }
-async function onGymCheck(key,checked){ await toggleCheck('gym', key, todayISO(), checked); renderGymToday(); }
+async function onGymCheck(dateStr,key,checked){ await toggleCheck('gym', key, dateStr, checked); renderGymToday(); }
 const GymAdhoc = {
   async add(){
     const exercise_name = $('gymAdhocName').value.trim();
     if(!exercise_name) return;
-    await sb.from('gym_adhoc').insert({date:todayISO(), exercise_name, sets:$('gymAdhocSets').value.trim(), youtube_link:$('gymAdhocLink').value.trim()});
+    await sb.from('gym_adhoc').insert({date:GymView.date, exercise_name, sets:$('gymAdhocSets').value.trim(), youtube_link:$('gymAdhocLink').value.trim()});
     $('gymAdhocName').value=''; $('gymAdhocSets').value=''; $('gymAdhocLink').value='';
     renderGymToday();
   },
@@ -934,12 +1021,23 @@ const GymPlan = {
 };
 
 /* ============ MEALS ============ */
+const MealsView = { date: todayISO() };
+MealsView.shift = function(n){ this.date = addDays(this.date, n); renderMealPlanToday(); };
+MealsView.setDate = function(d){ this.date = d; renderMealPlanToday(); };
+MealsView.goToday = function(){ this.date = todayISO(); renderMealPlanToday(); };
+
 async function renderMealPlanToday(){
-  const wd = weekdayName(new Date());
+  const dateStr = MealsView.date;
+  const isToday = dateStr===todayISO();
+  const isPast = dateStr < todayISO();
+  $('mealsDatePicker').value = dateStr;
+  $('mealsSelDate').textContent = new Date(dateStr+'T00:00:00').toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'}) + (isToday?' (Today)':isPast?' · read only':'');
+  $('mealAdhocPanel').style.display = isPast ? 'none' : 'block';
+  const wd = weekdayOfDateStr(dateStr);
   const [{data},checkedSet,{data:adhoc}] = await Promise.all([
     sb.from('meal_plans').select('*').eq('day',wd).order('created_at'),
-    getChecksForDate('meals', todayISO()),
-    sb.from('meal_adhoc').select('*').eq('date',todayISO())
+    getChecksForDate('meals', dateStr),
+    sb.from('meal_adhoc').select('*').eq('date',dateStr)
   ]);
   const templateItems = data||[];
   const adhocItems = (adhoc||[]).map(a=>({meal_type:a.meal_type, description:a.description, adhocId:a.id}));
@@ -951,19 +1049,19 @@ async function renderMealPlanToday(){
   $('mealPlanToday').innerHTML = items.map(i=>{
     const checked=checkedSet.has(i.meal_type);
     return `<div class="check-item ${checked?'checked':''}">
-      <input type="checkbox" ${checked?'checked':''} onchange="onMealCheck('${i.meal_type.replace(/'/g,"\\'")}',this.checked)">
+      <input type="checkbox" ${checked?'checked':''} ${isToday?'':'disabled'} onchange="onMealCheck('${dateStr}','${i.meal_type.replace(/'/g,"\\'")}',this.checked)">
       <div style="flex:1;"><b>${i.meal_type}</b>${i.adhocId?' <span class="pill">one-off</span>':''}<div class="muted">${i.description}</div></div>
-      ${i.adhocId?`<button class="btn small ghost" onclick="MealAdhoc.remove('${i.adhocId}')">✕</button>`:''}
+      ${(i.adhocId && !isPast)?`<button class="btn small ghost" onclick="MealAdhoc.remove('${i.adhocId}')">✕</button>`:''}
     </div>`;
   }).join('');
 }
-async function onMealCheck(key,checked){ await toggleCheck('meals', key, todayISO(), checked); renderMealPlanToday(); }
+async function onMealCheck(dateStr,key,checked){ await toggleCheck('meals', key, dateStr, checked); renderMealPlanToday(); }
 const MealAdhoc = {
   async add(){
     const meal_type = $('mealAdhocType').value;
     const description = $('mealAdhocDesc').value.trim();
     if(!description) return;
-    await sb.from('meal_adhoc').insert({date:todayISO(), meal_type, description});
+    await sb.from('meal_adhoc').insert({date:MealsView.date, meal_type, description});
     $('mealAdhocDesc').value='';
     renderMealPlanToday();
   },
@@ -990,11 +1088,24 @@ const MealPlan = {
     $('mealPlanInput').value = text.trim();
   }
 };
+function flipImageB64(b64, callback){
+  if(!b64) return;
+  const img = new Image();
+  img.onload = ()=>{
+    const canvas = document.createElement('canvas');
+    canvas.width = img.width; canvas.height = img.height;
+    const ctx = canvas.getContext('2d');
+    ctx.translate(canvas.width,0); ctx.scale(-1,1);
+    ctx.drawImage(img,0,0);
+    callback(canvas.toDataURL('image/jpeg',0.9));
+  };
+  img.src = b64;
+}
 let mealPhotoB64=null;
 $('mealPhoto').onchange=e=>{
   const f=e.target.files[0]; if(!f) return;
   const reader=new FileReader();
-  reader.onload=ev=>{$('mealPhotoPreview').src=ev.target.result;$('mealPhotoPreview').style.display='block';mealPhotoB64=ev.target.result;};
+  reader.onload=ev=>{$('mealPhotoPreview').src=ev.target.result;$('mealPhotoPreview').style.display='block';mealPhotoB64=ev.target.result;$('mealFlipBtn').style.display='inline-block';};
   reader.readAsDataURL(f);
 };
 let calChartInstance=null;
@@ -1177,14 +1288,14 @@ const Meals = {
     const fields={date:todayISO(), meal_type:$('mealType').value, description:$('mealDesc').value, calories:Number($('mealCal').value)||0, protein:Number($('mealProt').value)||0, fat:Number($('mealFat').value)||0, carbs:Number($('mealCarbs').value)||0, fibre:Number($('mealFibre').value)||0, photo_url:mealPhotoB64};
     await sb.from('meal_logs').insert(fields);
     ['mealDesc','mealCal','mealProt','mealFat','mealCarbs','mealFibre'].forEach(id=>$(id).value='');
-    $('mealPhotoPreview').style.display='none'; mealPhotoB64=null;
-    renderMealLog(); renderCalorieChart();
+    $('mealPhotoPreview').style.display='none'; mealPhotoB64=null; $('mealFlipBtn').style.display='none';
+    renderMealLog(); renderIntakeChart();
   },
   async editGoal(){
     const val = prompt('Daily calorie goal (kcal):', $('calGoalLbl').textContent||'1500');
     if(!val) return;
     await sb.from('user_settings').upsert({target_calories:Number(val)},{onConflict:'user_id'});
-    renderCalorieChart();
+    renderIntakeChart();
   }
 };
 async function renderMealLog(){
@@ -1222,7 +1333,7 @@ const MealPhoto = {
 const Hydration = {
   async add(ml){
     await sb.from('water_log').insert({date:todayISO(), ml});
-    renderWaterChart();
+    renderIntakeChart();
   },
   async prefillGoal(){
     const {data} = await sb.from('user_settings').select('target_water_ml').maybeSingle();
@@ -1231,35 +1342,45 @@ const Hydration = {
   async saveGoal(){
     const val = Number($('waterGoalInput').value)||2000;
     await sb.from('user_settings').upsert({target_water_ml:val},{onConflict:'user_id'});
-    renderWaterChart();
+    renderIntakeChart();
   }
 };
-let waterChartInstance=null;
-async function renderWaterChart(){
-  const [{data:settings},{data:logs}] = await Promise.all([
-    sb.from('user_settings').select('target_water_ml').maybeSingle(),
+let intakeChartInstance=null;
+function ringSlices(value, goal){
+  if(value<=goal){
+    const filled = goal>0 ? (value/goal)*100 : 0;
+    return [filled, 100-filled];
+  }
+  const overPct = Math.min(((value-goal)/goal)*100, 100);
+  return [100-overPct, overPct];
+}
+async function renderIntakeChart(){
+  const [{data:settings},{data:meals},{data:waterLogs}] = await Promise.all([
+    sb.from('user_settings').select('target_calories,target_water_ml').maybeSingle(),
+    sb.from('meal_logs').select('calories').eq('date',todayISO()),
     sb.from('water_log').select('ml').eq('date',todayISO())
   ]);
-  const goal = settings?.target_water_ml || 2000;
-  const had = (logs||[]).reduce((a,l)=>a+(l.ml||0),0);
-  const left = Math.max(goal-had,0);
-  $('waterGoalLbl').textContent=goal; $('waterHadLbl').textContent=had; $('waterLeftLbl').textContent=left;
-  const ctx=$('waterChart').getContext('2d');
-  if(waterChartInstance) waterChartInstance.destroy();
-  waterChartInstance = new Chart(ctx,{type:'doughnut',data:{labels:['Had','Left'],datasets:[{data:[had,left],backgroundColor:['#6b8f87','#e0d2ba'],borderWidth:0}]},options:{plugins:{legend:{display:false}},cutout:'65%'}});
-}
-async function renderCalorieChart(){
-  const [{data:settings},{data:meals}] = await Promise.all([
-    sb.from('user_settings').select('target_calories').maybeSingle(),
-    sb.from('meal_logs').select('calories').eq('date',todayISO())
-  ]);
-  const goal = settings?.target_calories || 1500;
+  const calGoal = settings?.target_calories || 1500;
+  const waterGoal = settings?.target_water_ml || 2000;
   const eaten = (meals||[]).reduce((a,m)=>a+(m.calories||0),0);
-  const left = Math.max(goal-eaten,0);
-  $('calGoalLbl').textContent=goal; $('calEatenLbl').textContent=eaten; $('calLeftLbl').textContent=left;
-  const ctx=$('calChart').getContext('2d');
-  if(calChartInstance) calChartInstance.destroy();
-  calChartInstance = new Chart(ctx,{type:'doughnut',data:{labels:['Eaten','Left'],datasets:[{data:[eaten,left],backgroundColor:['#b5764f','#e0d2ba'],borderWidth:0}]},options:{plugins:{legend:{display:false}},cutout:'65%'}});
+  const had = (waterLogs||[]).reduce((a,l)=>a+(l.ml||0),0);
+  $('calGoalLbl').textContent=calGoal; $('calEatenLbl').textContent=eaten;
+  $('waterGoalLbl').textContent=waterGoal; $('waterHadLbl').textContent=had;
+  const calSlices = ringSlices(eaten, calGoal);
+  const waterSlices = ringSlices(had, waterGoal);
+  const ctx=$('intakeChart').getContext('2d');
+  if(intakeChartInstance) intakeChartInstance.destroy();
+  intakeChartInstance = new Chart(ctx,{
+    type:'doughnut',
+    data:{
+      labels:['Calories','Calories over'],
+      datasets:[
+        {data:calSlices, backgroundColor:['#e2a45f','#c25b4a'], borderWidth:0, weight:1},
+        {data:waterSlices, backgroundColor:['#5b8dbd','#c25b4a'], borderWidth:0, weight:1}
+      ]
+    },
+    options:{plugins:{legend:{display:false}, tooltip:{enabled:false}}, cutout:'40%'}
+  });
 }
 
 /* ============ LEARNING ============ */
@@ -1436,7 +1557,7 @@ let momentPhotoB64=null;
 $('momentPhoto').onchange=e=>{
   const f=e.target.files[0]; if(!f) return;
   const reader=new FileReader();
-  reader.onload=ev=>{ momentPhotoB64=ev.target.result; };
+  reader.onload=ev=>{ momentPhotoB64=ev.target.result; $('momentPhotoPreview').src=ev.target.result; $('momentPhotoPreview').style.display='block'; $('momentFlipBtn').style.display='inline-block'; };
   reader.readAsDataURL(f);
 };
 const Moments = {
@@ -1446,6 +1567,7 @@ const Moments = {
     const {error} = await sb.from('daily_photos').insert({date:todayISO(), photo_url:momentPhotoB64, caption:$('momentCaption').value});
     if(error){ alert('Could not save: '+error.message); return; }
     $('momentPhoto').value=''; $('momentCaption').value=''; momentPhotoB64=null;
+    $('momentPhotoPreview').style.display='none'; $('momentFlipBtn').style.display='none';
     renderMomentsToday();
     if(JournalBrowse.date===todayISO()) JournalBrowse.render();
   }
@@ -1550,73 +1672,29 @@ const Steps = {
     if(!v) return;
     await sb.from('steps_log').insert({date:todayISO(), steps:v});
     $('stepsInput').value='';
-    renderWeekStatus();
+    renderStepsToday();
   }
 };
-
-/* ============ WEEK STATUS ============ */
-async function renderWeekStatus(){
-  const ws = weekStart();
-  const [
-    {data:steps},
-    {data:gp},{data:mp},{data:sp},
-    {data:gymChecks},{data:mealChecks},
-    {data:lrnSessions},{data:journalWeek},{data:expWeek},{data:jobsWeek}
-  ] = await Promise.all([
-    sb.from('steps_log').select('steps').gte('date',ws),
-    sb.from('gym_plans').select('day,exercise_name'),
-    sb.from('meal_plans').select('day,meal_type'),
-    sb.from('schedule_plans').select('*'),
-    sb.from('day_checks').select('date,item_key').eq('section','gym').gte('date',ws),
-    sb.from('day_checks').select('date,item_key').eq('section','meals').gte('date',ws),
-    sb.from('learning_sessions').select('minutes').gte('date',ws),
-    sb.from('journal_entries').select('date').gte('date',ws),
-    sb.from('expenses').select('amount,transaction_type').gte('date',ws),
-    sb.from('job_applications').select('id').gte('created_at',ws)
-  ]);
-  const totalSteps = (steps||[]).reduce((a,s)=>a+s.steps,0);
-  $('stepsWeekTotal').textContent = `${totalSteps.toLocaleString()} steps this week`;
-  const schedByDay=(wd,dateStr)=>scheduleItemsForDate(dateStr||todayISO(), sp).map(([t,label])=>label);
-  const gymByDay=wd=>(gp||[]).filter(r=>r.day===wd).map(r=>r.exercise_name);
-  const mealByDay=wd=>(mp||[]).filter(r=>r.day===wd).map(r=>r.meal_type);
-  const [schedStreak, gymStreak, mealStreak] = await Promise.all([
-    computeStreak('schedule', schedByDay),
-    computeStreak('gym', gymByDay),
-    computeStreak('meals', mealByDay)
-  ]);
-  $('weekOverview').innerHTML = `<div class="grid3">
-    <div class="stat"><div class="num">🔥${schedStreak}</div><div class="lbl">Schedule</div></div>
-    <div class="stat"><div class="num">🔥${gymStreak}</div><div class="lbl">Gym</div></div>
-    <div class="stat"><div class="num">🔥${mealStreak}</div><div class="lbl">Meals</div></div>
-  </div>`;
-  let gymDone=0;
-  const gymByDate={}; (gymChecks||[]).forEach(c=>{(gymByDate[c.date]=gymByDate[c.date]||new Set()).add(c.item_key);});
-  for(let i=0;i<7;i++){ const d=addDays(ws,i); if(d>todayISO())break; const wd=weekdayName(new Date(d+'T00:00:00')); const items=gymByDay(wd); if(items.length && items.every(k=>(gymByDate[d]||new Set()).has(k))) gymDone++; }
-  $('weekGym').innerHTML = `<div class="muted">${gymDone} workout days this week</div>`;
-  let mealDone=0;
-  const mealByDate={}; (mealChecks||[]).forEach(c=>{(mealByDate[c.date]=mealByDate[c.date]||new Set()).add(c.item_key);});
-  for(let i=0;i<7;i++){ const d=addDays(ws,i); if(d>todayISO())break; const wd=weekdayName(new Date(d+'T00:00:00')); const items=mealByDay(wd); if(items.length && items.every(k=>(mealByDate[d]||new Set()).has(k))) mealDone++; }
-  $('weekMeals').innerHTML = `<div class="muted">${mealDone} meal-plan days this week</div>`;
-  const lrnMin = (lrnSessions||[]).reduce((a,s)=>a+(s.minutes||0),0);
-  $('weekLearning').innerHTML = `<div class="muted">${lrnMin} min this week</div>`;
-  $('weekJournal').innerHTML = `<div class="muted">${(journalWeek||[]).length}/7 days journaled</div>`;
-  const spend = (expWeek||[]).filter(e=>e.transaction_type==='Debit').reduce((a,e)=>a+Number(e.amount),0);
-  $('weekExpenses').innerHTML = `<div class="muted">₹${spend.toFixed(0)} spent · ${(expWeek||[]).length} txns</div>`;
-  $('weekJobs').innerHTML = `<div class="muted">${(jobsWeek||[]).length} new roles this week</div>`;
+async function renderStepsToday(){
+  const {data} = await sb.from('steps_log').select('steps').eq('date',todayISO());
+  const total = (data||[]).reduce((a,s)=>a+s.steps,0);
+  $('stepsTodayLbl').textContent = total ? `${total.toLocaleString()} steps logged today` : 'No steps logged yet today';
 }
 
 /* ============ INIT ============ */
 async function initApp(){
   Estimator.renderCategoryChips();
   const rolledCount = await rolloverOverdueTasks();
+  await rolloverOfficeTasks();
   await Promise.all([
     renderHome(),
     renderToday(),
+    renderOfficeTasks(),
     renderGymToday(),
+    renderStepsToday(),
     renderMealPlanToday(),
     renderMealLog(),
-    renderCalorieChart(),
-    renderWaterChart(),
+    renderIntakeChart(),
     renderLearningTasks(),
     renderLearningStats(),
     renderProjectPhases(),
