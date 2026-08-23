@@ -83,11 +83,6 @@
   .check-item.checked .label{text-decoration:line-through;color:var(--ink-dim);}
   .datenav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
   .datenav button{background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:6px 10px;color:var(--ink);}
-  .tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-  .tile{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;text-align:left;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.03);}
-  .tile .emoji{font-size:1.6rem;}
-  .tile .tname{font-family:var(--font-display);font-size:1rem;margin-top:6px;}
-  .tile .streak{font-size:.72rem;color:var(--accent);margin-top:4px;}
   details.planner{margin-top:10px;}
   details.planner summary{cursor:pointer;color:var(--accent-3);font-size:.82rem;font-weight:600;padding:6px 0;}
 
@@ -139,7 +134,10 @@
 </div>
 
 <header class="top" style="display:none;" id="topHeader">
-  <div class="brand">Planner</div>
+  <div>
+    <div class="brand">Planner</div>
+    <div class="muted" id="headerDateTime" style="font-size:.7rem;margin-top:-2px;"></div>
+  </div>
   <div class="headerbtns">
     <button class="icon-btn" onclick="toggleTheme()" id="themeBtn">🌙</button>
     <button class="icon-btn" onclick="ResetData.confirmAndRun()" title="Reset data">↺</button>
@@ -148,7 +146,7 @@
 </header>
 
 <nav class="tabs" id="tabNav" style="display:none;">
-  <button data-tab="home" class="active">Home</button>
+  <button data-tab="home" class="active">Todo</button>
   <button data-tab="today">Today</button>
   <button data-tab="gym">Gym</button>
   <button data-tab="meals">Meals</button>
@@ -161,42 +159,16 @@
 
 <div class="app" id="app">
 
-  <!-- HOME -->
+  <!-- HOME / TODO -->
   <div class="view active" id="view-home">
     <div class="card">
-      <h3 id="homeGreeting">Hello</h3>
-      <div class="muted" id="homeDateLbl"></div>
-    </div>
-    <div class="card" id="quoteCard" style="background:linear-gradient(135deg,var(--panel-2),var(--panel));">
-      <div class="pill" id="quoteCategory" style="margin-bottom:8px;"></div>
-      <div style="font-family:var(--font-display);font-size:1.1rem;font-style:italic;" id="quoteText">Loading...</div>
-    </div>
-    <div class="tiles" id="homeTiles"></div>
-  </div>
-
-  <!-- TODAY -->
-  <div class="view" id="view-today">
-    <div class="card">
       <div class="datenav">
-        <button onclick="TodayView.shiftDate(-1)">←</button>
-        <input type="date" id="todayDatePicker" style="width:auto;margin:0;padding:6px 8px;" onchange="TodayView.setDate(this.value)">
-        <button onclick="TodayView.shiftDate(1)">→</button>
-        <button class="btn small ghost" onclick="TodayView.goToday()">Today</button>
+        <button onclick="TodoView.shift(-1)">←</button>
+        <input type="date" id="todoDatePicker" style="width:auto;margin:0;padding:6px 8px;" onchange="TodoView.setDate(this.value)">
+        <button onclick="TodoView.shift(1)">→</button>
+        <button class="btn small ghost" onclick="TodoView.goToday()">Today</button>
       </div>
-      <div class="muted" id="todaySelDate" style="margin-top:8px;"></div>
-    </div>
-    <div class="card">
-      <div class="row between"><h3 style="margin:0;">Schedule</h3><span class="pill" id="schedProgLbl"></span></div>
-      <div class="progress"><div id="schedProgBar" style="width:0%"></div></div>
-      <div id="scheduleList" style="margin-top:10px;"></div>
-      <details class="planner">
-        <summary>+ Add for today only</summary>
-        <div class="muted">Just for today.</div>
-        <label>Activity</label><input id="schedAdhocActivity" placeholder="e.g. Dentist appointment">
-        <label>Time</label><input id="schedAdhocTime" placeholder="e.g. 3pm">
-        <button class="btn block" onclick="guardedRun('schedAdhocAdd',this,()=>ScheduleAdhoc.add())">Add for today</button>
-      </details>
-      <div class="muted" style="margin-top:8px;">Edit recurring plan in <b>Plan</b>.</div>
+      <div class="muted" id="todoSelDate" style="margin-top:8px;"></div>
     </div>
     <div class="card">
       <h3>Office hours tasks</h3>
@@ -213,6 +185,36 @@ Task 2"></textarea>
     </div>
   </div>
 
+  <!-- TODAY -->
+  <div class="view" id="view-today">
+    <div class="card">
+      <div class="datenav">
+        <button onclick="TodayView.shiftDate(-1)">←</button>
+        <input type="date" id="todayDatePicker" style="width:auto;margin:0;padding:6px 8px;" onchange="TodayView.setDate(this.value)">
+        <button onclick="TodayView.shiftDate(1)">→</button>
+        <button class="btn small ghost" onclick="TodayView.goToday()">Today</button>
+      </div>
+      <div class="muted" id="todaySelDate" style="margin-top:8px;"></div>
+    </div>
+    <div class="card" id="quoteCard" style="background:linear-gradient(135deg,var(--panel-2),var(--panel));">
+      <div class="pill" id="quoteCategory" style="margin-bottom:8px;"></div>
+      <div style="font-family:var(--font-display);font-size:1.1rem;font-style:italic;" id="quoteText">Loading...</div>
+    </div>
+    <div class="card">
+      <div class="row between"><h3 style="margin:0;">Schedule</h3><span class="pill" id="schedProgLbl"></span></div>
+      <div class="progress"><div id="schedProgBar" style="width:0%"></div></div>
+      <div id="scheduleList" style="margin-top:10px;"></div>
+      <details class="planner" id="schedAdhocPanel">
+        <summary>+ Add for today only</summary>
+        <div class="muted">Just for today.</div>
+        <label>Activity</label><input id="schedAdhocActivity" placeholder="e.g. Dentist appointment">
+        <label>Time</label><input id="schedAdhocTime" placeholder="e.g. 3pm">
+        <button class="btn block" onclick="guardedRun('schedAdhocAdd',this,()=>ScheduleAdhoc.add())">Add for today</button>
+      </details>
+      <div class="muted" style="margin-top:8px;">Edit recurring plan in <b>Plan</b>.</div>
+    </div>
+  </div>
+
   <!-- GYM -->
   <div class="view" id="view-gym">
     <div class="card">
@@ -223,6 +225,7 @@ Task 2"></textarea>
         <button class="btn small ghost" onclick="GymView.goToday()">Today</button>
       </div>
       <div class="muted" id="gymSelDate" style="margin-top:6px;"></div>
+      <div class="muted" id="gymStreakLbl" style="margin-top:4px;"></div>
     </div>
     <div class="card">
       <div class="row between"><h3 style="margin:0;">Workout</h3><span class="pill" id="gymProgLbl"></span></div>
@@ -255,8 +258,8 @@ Task 2"></textarea>
       <div class="row" style="gap:16px;">
         <canvas id="intakeChart" width="130" height="130" style="max-width:130px;"></canvas>
         <div>
-          <div class="muted" style="color:var(--accent-3);">● Water: <span id="waterHadLbl"></span>/<span id="waterGoalLbl"></span> ml</div>
-          <div class="muted" style="color:var(--accent-2);">● Calories: <span id="calEatenLbl"></span>/<span id="calGoalLbl"></span> kcal</div>
+          <div class="muted" style="color:#5b8dbd;">● Water: <span id="waterHadLbl"></span>/<span id="waterGoalLbl"></span> ml</div>
+          <div class="muted" style="color:#e2a45f;">● Calories: <span id="calEatenLbl"></span>/<span id="calGoalLbl"></span> kcal</div>
           <div class="row" style="gap:6px;margin-top:8px;">
             <button class="btn small ghost" onclick="guardedRun('waterAdd',this,()=>Hydration.add(250))">+250ml</button>
             <button class="btn small ghost" onclick="guardedRun('waterAdd',this,()=>Hydration.add(500))">+500ml</button>
@@ -341,19 +344,10 @@ Task 2"></textarea>
       <div id="lrnTaskList"><div class="empty">No tasks yet</div></div>
       <div class="muted" style="margin-top:8px;">Plan topics in <b>Plan</b>.</div>
     </div>
-    <div class="card">
-      <h3>Weekend Project</h3>
-      <div id="projPhases"></div>
-    </div>
   </div>
 
   <!-- JOURNAL -->
   <div class="view" id="view-journal">
-    <div class="card">
-      <h3 id="journalDateLbl">Today's entry</h3>
-      <div id="journalQuestions"></div>
-      <button class="btn block" onclick="guardedRun('journalSave',this,()=>Journal.save())">Save entry</button>
-    </div>
     <div class="card">
       <h3>📸 Today's moments</h3>
       <div class="muted">Capture anything, anytime.</div>
@@ -372,7 +366,6 @@ Task 2"></textarea>
         <button onclick="JournalBrowse.shift(1)">→</button>
         <button class="btn small ghost" onclick="JournalBrowse.goToday()">Today</button>
       </div>
-      <div id="journalBrowseAnswers" style="margin-top:10px;"></div>
       <div id="momentGridBrowse" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px;"></div>
     </div>
   </div>
@@ -620,7 +613,7 @@ function switchTab(tab){
   document.querySelectorAll('#tabNav button').forEach(x=>x.classList.toggle('active', x.dataset.tab===tab));
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   $('view-'+tab).classList.add('active');
-  if(tab==='home') renderHome();
+  if(tab==='home') renderOfficeTasks();
 }
 
 /* GENERIC WEEKLY PLAN PARSER */
@@ -674,49 +667,12 @@ async function computeStreak(section, planItemKeysForWeekday){
 }
 
 /* ============ HOME ============ */
-async function renderHome(){
-  const GREETING_EMOJIS = ['🌻','🌸','✨','🦋','🌼','☀️','🌷','💫','🍃','🌺'];
-  const [{data:{user}}, {data:settings}] = await Promise.all([
-    sb.auth.getUser(),
-    sb.from('user_settings').select('nickname').maybeSingle()
-  ]);
-  let displayName = settings?.nickname;
-  if(!displayName && user?.email){
-    const local = user.email.split('@')[0].slice(0,5);
-    displayName = local.charAt(0).toUpperCase()+local.slice(1);
-  }
-  $('homeGreeting').innerHTML = `Hello ${displayName||'there'} ${GREETING_EMOJIS[Math.floor(Math.random()*GREETING_EMOJIS.length)]}`;
-  $('homeDateLbl').textContent = new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
+async function renderTodayQuote(){
   getContextualQuote().then(({category,quote})=>{
     const labels={life:'✨ For your day',gym:'💪 Gym time',meals:'🍽️ Meal time',learning:'📚 Learning time',expenses:'💰 Money mindset',jobs:'💼 Career focus'};
     $('quoteCategory').textContent = labels[category]||'✨ For your day';
     $('quoteText').textContent = '"'+quote+'"';
   });
-  const [{data:gp},{data:mp}] = await Promise.all([
-    sb.from('gym_plans').select('day,exercise_name'),
-    sb.from('meal_plans').select('day,meal_type')
-  ]);
-  const gymByDay=wd=>(gp||[]).filter(r=>r.day===wd).map(r=>r.exercise_name);
-  const mealByDay=wd=>(mp||[]).filter(r=>r.day===wd).map(r=>r.meal_type);
-  const [gymStreak, mealStreak] = await Promise.all([
-    computeStreak('gym', gymByDay),
-    computeStreak('meals', mealByDay)
-  ]);
-  const tiles=[
-    {tab:'today',emoji:'📅',name:'Today',streak:null},
-    {tab:'gym',emoji:'💪',name:'Gym',streak:gymStreak},
-    {tab:'meals',emoji:'🍽️',name:'Meals',streak:mealStreak},
-    {tab:'learning',emoji:'📚',name:'Learning',streak:null},
-    {tab:'journal',emoji:'📓',name:'Journal',streak:null},
-    {tab:'expenses',emoji:'💸',name:'Expenses',streak:null},
-    {tab:'jobs',emoji:'💼',name:'Jobs',streak:null},
-  ];
-  $('homeTiles').innerHTML = tiles.map(t=>`
-    <div class="tile" onclick="switchTab('${t.tab}')">
-      <div class="emoji">${t.emoji}</div>
-      <div class="tname">${t.name}</div>
-      ${t.streak!==null?`<div class="streak">🔥 ${t.streak} day streak</div>`:''}
-    </div>`).join('');
 }
 
 /* ============ TODAY / SCHEDULE ============ */
@@ -724,18 +680,15 @@ const TodayView = { date: todayISO() };
 TodayView.shiftDate = function(n){
   this.date = addDays(this.date, n);
   renderToday();
-  renderOfficeTasks();
 };
 TodayView.setDate = function(dateStr){
   if(!dateStr) return;
   this.date = dateStr;
   renderToday();
-  renderOfficeTasks();
 };
 TodayView.goToday = function(){
   this.date = todayISO();
   renderToday();
-  renderOfficeTasks();
 };
 const WEEKDAY_ROUTINE = [
   ['6:45am','Wake up — brush, water, freshen up'],
@@ -791,8 +744,10 @@ function scheduleItemsForDate(dateStr, dbRows){
 async function renderToday(){
   const dateStr = TodayView.date;
   const isToday = dateStr===todayISO();
+  const isPast = dateStr < todayISO();
   $('todayDatePicker').value = dateStr;
-  $('todaySelDate').textContent = new Date(dateStr+'T00:00:00').toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'}) + (isToday?' (Today)':'');
+  $('todaySelDate').textContent = new Date(dateStr+'T00:00:00').toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'}) + (isToday?' (Today)':isPast?' · read only':'');
+  $('schedAdhocPanel').style.display = isPast ? 'none' : 'block';
   const [{data:dbRows},{data:adhoc}] = await Promise.all([
     sb.from('schedule_plans').select('*'),
     sb.from('schedule_adhoc').select('*').eq('date',dateStr)
@@ -818,7 +773,7 @@ async function renderToday(){
     return `<div class="check-item ${checked?'checked':''}" ${isNow?'style="background:var(--panel-2);border-left:3px solid var(--accent);padding-left:8px;margin-left:-8px;border-radius:8px;"':''}>
       <input type="checkbox" ${checked?'checked':''} ${isToday?'':'disabled'} onchange="onScheduleCheck('${dateStr}','${label.replace(/'/g,"\\'")}',this.checked)">
       <div style="flex:1;"><div class="time">${time}${isNow?' <span class="pill" style="background:var(--accent);color:#fff;border:none;">now</span>':''}${adhocId?' <span class="pill">one-off</span>':''}</div><div class="label">${label}</div></div>
-      ${adhocId?`<button class="btn small ghost" onclick="ScheduleAdhoc.remove('${adhocId}')">✕</button>`:''}
+      ${(adhocId && !isPast)?`<button class="btn small ghost" onclick="ScheduleAdhoc.remove('${adhocId}')">✕</button>`:''}
     </div>`;
   }).join('');
 }
@@ -826,6 +781,10 @@ async function onScheduleCheck(dateStr,key,checked){
   await toggleCheck('schedule', key, dateStr, checked);
   renderToday();
 }
+const TodoView = { date: todayISO() };
+TodoView.shift = function(n){ this.date = addDays(this.date, n); renderOfficeTasks(); };
+TodoView.setDate = function(d){ this.date = d; renderOfficeTasks(); };
+TodoView.goToday = function(){ this.date = todayISO(); renderOfficeTasks(); };
 function parseOfficeTasks(text){
   const lines = text.split('\n');
   const tasks=[]; let currentTop=null;
@@ -862,9 +821,11 @@ function renderOfficeItem(t, indented, editable){
   </div>`;
 }
 async function renderOfficeTasks(){
-  const dateStr = TodayView.date;
+  const dateStr = TodoView.date;
   const isToday = dateStr===todayISO();
   const isPast = dateStr < todayISO();
+  $('todoSelDate').textContent = new Date(dateStr+'T00:00:00').toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'}) + (isToday?' (Today)':isPast?' · read only':'');
+  $('todoDatePicker').value = dateStr;
   $('officeTaskAddPanel').style.display = isPast ? 'none' : 'block';
   const {data} = await sb.from('office_tasks').select('*').eq('date',dateStr).order('created_at');
   const top = (data||[]).filter(t=>!t.parent_id);
@@ -880,7 +841,7 @@ const OfficeTasks = {
   async save(){
     const parsed = parseOfficeTasks($('officeTaskInput').value);
     if(!parsed.length) return;
-    const dateStr = TodayView.date;
+    const dateStr = TodoView.date;
     for(const t of parsed){
       const {data:topRow} = await sb.from('office_tasks').insert({date:dateStr, text:t.text, parent_id:null}).select().single();
       if(t.subs.length && topRow){
@@ -962,6 +923,12 @@ async function renderGymToday(){
   $('gymSelDate').textContent = new Date(dateStr+'T00:00:00').toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'}) + (isToday?' (Today)':isPast?' · read only':'');
   $('gymAdhocPanel').style.display = isPast ? 'none' : 'block';
   const wd = weekdayOfDateStr(dateStr);
+  sb.from('gym_plans').select('day,exercise_name').then(({data:allPlans})=>{
+    const byDay = w=>(allPlans||[]).filter(r=>r.day===w).map(r=>r.exercise_name);
+    computeStreak('gym', byDay).then(streak=>{
+      $('gymStreakLbl').textContent = `🔥 ${streak} day streak`;
+    });
+  });
   const [{data},checkedSet,{data:adhoc}] = await Promise.all([
     sb.from('gym_plans').select('*').eq('day',wd).order('created_at'),
     getChecksForDate('gym', dateStr),
@@ -1499,31 +1466,7 @@ const LearningTimer = {
     renderLearningStats();
   }
 };
-const PROJECT_PHASES=['1. Data model — objects, fields, validation','2. Planner + Home widget (core to-do loop)','3. Dashboard + buddy comparison','4. Mobile polish'];
-async function renderProjectPhases(){
-  const {data} = await sb.from('project_milestones').select('*').order('updated_at',{ascending:false});
-  const latest={};
-  (data||[]).forEach(m=>{ if(!(m.phase in latest)) latest[m.phase]=m.percent_complete; });
-  $('projPhases').innerHTML = PROJECT_PHASES.map((p,i)=>{
-    const pct = latest[p]||0;
-    return `<div style="margin-bottom:12px;">
-      <div class="row between"><span style="font-size:.85rem;">${p}</span><span class="muted" id="projPct${i}">${pct}%</span></div>
-      <div class="progress"><div id="projBar${i}" style="width:${pct}%"></div></div>
-      <input type="range" min="0" max="100" value="${pct}" style="margin-top:4px;" oninput="updateProjectPct(${i},this.value)">
-    </div>`;
-  }).join('');
-}
-async function updateProjectPct(i,val){
-  $('projPct'+i).textContent=val+'%'; $('projBar'+i).style.width=val+'%';
-  await sb.from('project_milestones').insert({phase:PROJECT_PHASES[i], percent_complete:Number(val), weekend_date:todayISO()});
-}
-
 /* ============ JOURNAL ============ */
-const JOURNAL_QUESTIONS=['Energy today (1-10) and why','Biggest win today','What derailed you or felt hard','Did you stick to the schedule? What slipped','Tomorrow\'s one key focus'];
-function renderJournalForm(){
-  $('journalDateLbl').textContent = `Today's entry — ${todayISO()}`;
-  $('journalQuestions').innerHTML = JOURNAL_QUESTIONS.map((q,i)=>`<label>${q}</label><textarea id="jq${i}" style="min-height:60px;"></textarea>`).join('');
-}
 const PhotoLightbox = {
   photos: [],
   index: 0,
@@ -1541,16 +1484,6 @@ const PhotoLightbox = {
     $('lightboxImg').src = p.photo_url;
     $('lightboxCap').textContent = p.caption || '';
     $('lightboxDate').textContent = new Date(p.date+'T00:00:00').toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
-  }
-};
-const Journal = {
-  async save(){
-    const fields={date:todayISO()};
-    JOURNAL_QUESTIONS.forEach((q,i)=>fields['q'+(i+1)]=$('jq'+i).value);
-    await sb.from('journal_entries').insert(fields);
-    await toggleCheck('journal','entry',todayISO(),true);
-    JOURNAL_QUESTIONS.forEach((q,i)=>$('jq'+i).value='');
-    JournalBrowse.render();
   }
 };
 let momentPhotoB64=null;
@@ -1590,14 +1523,7 @@ const JournalBrowse = {
   goToday(){ this.date = todayISO(); this.render(); },
   async render(){
     $('journalDatePicker').value = this.date;
-    const [{data:entries},{data:photos}] = await Promise.all([
-      sb.from('journal_entries').select('*').eq('date',this.date).order('created_at',{ascending:false}),
-      sb.from('daily_photos').select('*').eq('date',this.date).order('created_at',{ascending:false})
-    ]);
-    const e = entries && entries[0];
-    $('journalBrowseAnswers').innerHTML = e
-      ? JOURNAL_QUESTIONS.map((q,i)=>`<div style="margin-bottom:8px;"><div class="muted" style="font-size:.72rem;">${q}</div><div>${e['q'+(i+1)]||'—'}</div></div>`).join('')
-      : '<div class="empty">No journal entry for this day</div>';
+    const {data:photos} = await sb.from('daily_photos').select('*').eq('date',this.date).order('created_at',{ascending:false});
     $('momentGridBrowse').innerHTML = (photos&&photos.length) ? photos.map((p,i)=>`
       <div class="polaroid" onclick="PhotoLightbox.open(JournalBrowse.photos, ${i})">
         <img src="${p.photo_url}">
@@ -1682,12 +1608,18 @@ async function renderStepsToday(){
 }
 
 /* ============ INIT ============ */
+function updateHeaderDateTime(){
+  const now = new Date();
+  $('headerDateTime').textContent = now.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'}) + ' · ' + now.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
+}
 async function initApp(){
   Estimator.renderCategoryChips();
+  updateHeaderDateTime();
+  setInterval(updateHeaderDateTime, 60000);
   const rolledCount = await rolloverOverdueTasks();
   await rolloverOfficeTasks();
   await Promise.all([
-    renderHome(),
+    renderTodayQuote(),
     renderToday(),
     renderOfficeTasks(),
     renderGymToday(),
@@ -1697,13 +1629,11 @@ async function initApp(){
     renderIntakeChart(),
     renderLearningTasks(),
     renderLearningStats(),
-    renderProjectPhases(),
     renderMomentsToday(),
     JournalBrowse.render(),
     renderExpenses(),
     renderJobs()
   ]);
-  renderJournalForm();
   if(localStorage.getItem('lrn_active_session')){
     $('checkInBtn').style.display='none'; $('checkOutBtn').style.display='block';
     LearningTimer.activeId = localStorage.getItem('lrn_active_session');
