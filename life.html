@@ -330,13 +330,9 @@ Task 2"></textarea>
   <div class="view" id="view-learning">
     <div class="card">
       <div class="grid3">
-        <div class="stat"><div class="num" id="lrnTodayMin">0</div><div class="lbl">Min Today</div></div>
         <div class="stat"><div class="num" id="lrnStreak">0</div><div class="lbl">Day Streak</div></div>
-        <div class="stat"><div class="num" id="lrnVsLast">–</div><div class="lbl">Vs Last Wk</div></div>
-      </div>
-      <div class="row" style="margin-top:12px;gap:10px;">
-        <button class="btn block" id="checkInBtn" onclick="guardedRun('lrnCheckIn',this,()=>LearningTimer.checkIn())">▶ Check in</button>
-        <button class="btn block ghost" id="checkOutBtn" onclick="guardedRun('lrnCheckOut',this,()=>LearningTimer.checkOut())" style="display:none;">⏹ Check out</button>
+        <div class="stat"><div class="num" id="lrnDoneToday">0</div><div class="lbl">Done Today</div></div>
+        <div class="stat"><div class="num" id="lrnMinToday">0</div><div class="lbl">Est Min Done</div></div>
       </div>
     </div>
     <div class="card">
@@ -665,6 +661,22 @@ async function computeStreak(section, planItemKeysForWeekday){
   }
   return streak;
 }
+async function computeStreakAny(section, planItemKeysForWeekday){
+  const start = addDays(todayISO(),-35);
+  const {data} = await sb.from('day_checks').select('date,item_key').eq('section',section).gte('date',start);
+  const byDate={};
+  (data||[]).forEach(c=>{ (byDate[c.date]=byDate[c.date]||new Set()).add(c.item_key); });
+  let streak=0; let cur=todayISO();
+  for(let i=0;i<35;i++){
+    const wd=weekdayOfDateStr(cur);
+    const items=planItemKeysForWeekday(wd,cur);
+    if(items.length===0){ cur=addDays(cur,-1); continue; }
+    const checkedSet=byDate[cur]||new Set();
+    const anyDone=items.some(k=>checkedSet.has(k));
+    if(anyDone){ streak++; cur=addDays(cur,-1); } else break;
+  }
+  return streak;
+}
 
 /* ============ HOME ============ */
 async function renderTodayQuote(){
@@ -840,12 +852,14 @@ async function renderOfficeTasks(){
 const OfficeTasks = {
   async save(){
     const parsed = parseOfficeTasks($('officeTaskInput').value);
-    if(!parsed.length) return;
+    if(!parsed.length){ alert('Type at least one task first.'); return; }
     const dateStr = TodoView.date;
     for(const t of parsed){
-      const {data:topRow} = await sb.from('office_tasks').insert({date:dateStr, text:t.text, parent_id:null}).select().single();
+      const {data:topRow, error} = await sb.from('office_tasks').insert({date:dateStr, text:t.text, parent_id:null}).select().single();
+      if(error){ alert('Could not save: '+error.message); return; }
       if(t.subs.length && topRow){
-        await sb.from('office_tasks').insert(t.subs.map(s=>({date:dateStr, text:s, parent_id:topRow.id})));
+        const {error:subErr} = await sb.from('office_tasks').insert(t.subs.map(s=>({date:dateStr, text:s, parent_id:topRow.id})));
+        if(subErr){ alert('Could not save subtasks: '+subErr.message); return; }
       }
     }
     $('officeTaskInput').value='';
@@ -925,7 +939,7 @@ async function renderGymToday(){
   const wd = weekdayOfDateStr(dateStr);
   sb.from('gym_plans').select('day,exercise_name').then(({data:allPlans})=>{
     const byDay = w=>(allPlans||[]).filter(r=>r.day===w).map(r=>r.exercise_name);
-    computeStreak('gym', byDay).then(streak=>{
+    computeStreakAny('gym', byDay).then(streak=>{
       $('gymStreakLbl').textContent = `🔥 ${streak} day streak`;
     });
   });
@@ -1428,44 +1442,35 @@ async function renderLearningTasks(){
       </div>
     </div>`).join('');
 }
-async function renderLearningStats(){
-  const ws=weekStart();
-  const prevWs = addDays(ws,-7);
-  const [{data:sessions},{data:weekSessions},{data:prevSessions},{data:allSessions}] = await Promise.all([
-    sb.from('learning_sessions').select('minutes').eq('date',todayISO()),
-    sb.from('learning_sessions').select('minutes,date').gte('date',ws),
-    sb.from('learning_sessions').select('minutes').gte('date',prevWs).lt('date',ws),
-    sb.from('learning_sessions').select('date,minutes').gte('date',addDays(todayISO(),-35)).gte('minutes',20)
-  ]);
-  const todayMin = (sessions||[]).reduce((a,s)=>a+(s.minutes||0),0);
-  $('lrnTodayMin').textContent = todayMin;
-  const weekMin = (weekSessions||[]).reduce((a,s)=>a+(s.minutes||0),0);
-  const prevMin = (prevSessions||[]).reduce((a,s)=>a+(s.minutes||0),0);
-  $('lrnVsLast').textContent = prevSessions&&prevSessions.length ? (weekMin>=prevMin?'+':'')+(weekMin-prevMin) : '–';
+async function computeLearningStreak(){
+  const lookback = addDays(todayISO(), -40);
+  const {data} = await sb.from('learning_tasks').select('week_start,day,status').gte('week_start', weekStartOf(lookback));
+  const byDate = {};
+  (data||[]).forEach(t=>{
+    const offset = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'].indexOf(t.day);
+    if(offset<0 || !t.week_start) return;
+    const d = addDays(t.week_start, offset);
+    (byDate[d]=byDate[d]||[]).push(t.status==='Done');
+  });
   let streak=0, cur=todayISO();
-  const daysWithSession = new Set((allSessions||[]).map(s=>s.date));
-  for(let i=0;i<35;i++){ if(daysWithSession.has(cur)){streak++; cur=addDays(cur,-1);} else break; }
-  $('lrnStreak').textContent = streak;
-}
-const LearningTimer = {
-  activeId: null,
-  async checkIn(){
-    const {data} = await sb.from('learning_sessions').insert({date:todayISO(), check_in:new Date().toISOString()}).select().single();
-    this.activeId = data.id;
-    $('checkInBtn').style.display='none'; $('checkOutBtn').style.display='block';
-    localStorage.setItem('lrn_active_session', data.id);
-  },
-  async checkOut(){
-    const id = this.activeId || localStorage.getItem('lrn_active_session');
-    if(!id) return;
-    const {data} = await sb.from('learning_sessions').select('check_in').eq('id',id).single();
-    const mins = Math.max(1, Math.round((Date.now()-new Date(data.check_in).getTime())/60000));
-    await sb.from('learning_sessions').update({check_out:new Date().toISOString(), minutes:mins}).eq('id',id);
-    localStorage.removeItem('lrn_active_session');
-    $('checkInBtn').style.display='block'; $('checkOutBtn').style.display='none';
-    renderLearningStats();
+  for(let i=0;i<40;i++){
+    const tasks = byDate[cur];
+    if(!tasks || !tasks.length){ cur=addDays(cur,-1); continue; }
+    if(tasks.every(done=>done)){ streak++; cur=addDays(cur,-1); } else break;
   }
-};
+  return streak;
+}
+async function renderLearningStats(){
+  const streak = await computeLearningStreak();
+  $('lrnStreak').textContent = streak;
+  const ws=weekStart();
+  const {data:tasks} = await sb.from('learning_tasks').select('day,status,estimated_minutes').eq('week_start',ws);
+  const todayWd = weekdayOfDateStr(todayISO());
+  const todayTasks = (tasks||[]).filter(t=>t.day===todayWd);
+  const doneToday = todayTasks.filter(t=>t.status==='Done');
+  $('lrnDoneToday').textContent = `${doneToday.length}/${todayTasks.length}`;
+  $('lrnMinToday').textContent = doneToday.reduce((a,t)=>a+(t.estimated_minutes||0),0);
+}
 /* ============ JOURNAL ============ */
 const PhotoLightbox = {
   photos: [],
@@ -1634,10 +1639,6 @@ async function initApp(){
     renderExpenses(),
     renderJobs()
   ]);
-  if(localStorage.getItem('lrn_active_session')){
-    $('checkInBtn').style.display='none'; $('checkOutBtn').style.display='block';
-    LearningTimer.activeId = localStorage.getItem('lrn_active_session');
-  }
 }
 document.addEventListener('gesturestart', e=>e.preventDefault());
 document.addEventListener('gesturechange', e=>e.preventDefault());
