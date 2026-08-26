@@ -118,6 +118,7 @@
     <img id="lightboxImg" src="">
     <div class="lightbox-cap" id="lightboxCap"></div>
     <div class="lightbox-date" id="lightboxDate"></div>
+    <button class="btn small ghost" style="margin-top:12px;" onclick="PhotoLightbox.remove()">✕ Delete photo</button>
   </div>
 </div>
 
@@ -749,9 +750,9 @@ function getRoutineForDate(dateStr){
 
 function scheduleItemsForDate(dateStr, dbRows){
   const wd = weekdayOfDateStr(dateStr);
-  const custom = pickVersionedRows(dbRows||[], wd, dateStr).map(r=>[r.time_text, r.activity]);
-  if(custom.length) return custom;
-  return getRoutineForDate(dateStr);
+  const rows = pickVersionedRows(dbRows||[], wd, dateStr);
+  if(rows.length) return rows.map(r=>[r.time_text, r.activity, r.id]);
+  return getRoutineForDate(dateStr).map(([t,l])=>[t,l,null]);
 }
 async function renderToday(){
   const dateStr = TodayView.date;
@@ -765,8 +766,8 @@ async function renderToday(){
     sb.from('schedule_adhoc').select('*').eq('date',dateStr)
   ]);
   const templateItems = scheduleItemsForDate(dateStr, dbRows);
-  const adhocItems = (adhoc||[]).map(a=>[a.time_text, a.activity, a.id]);
-  const items = [...templateItems.map(i=>[...i,null]), ...adhocItems];
+  const adhocItems = (adhoc||[]).map(a=>[a.time_text, a.activity, null, a.id]);
+  const items = [...templateItems.map(i=>[i[0],i[1],i[2],null]), ...adhocItems];
   const checkedSet = await getChecksForDate('schedule', dateStr);
   const checkedCount = items.filter(([time,label])=>checkedSet.has(label)).length;
   $('schedProgLbl').textContent = checkedCount+'/'+items.length;
@@ -779,13 +780,14 @@ async function renderToday(){
     for(const t of timed){ if(t.mins<=curMin) cur=t; }
     if(cur) currentIdx=cur.i;
   }
-  $('scheduleList').innerHTML = items.map(([time,label,adhocId],i)=>{
+  $('scheduleList').innerHTML = items.map(([time,label,templateId,adhocId],i)=>{
     const checked=checkedSet.has(label);
     const isNow = i===currentIdx;
     return `<div class="check-item ${checked?'checked':''}" ${isNow?'style="background:var(--panel-2);border-left:3px solid var(--accent);padding-left:8px;margin-left:-8px;border-radius:8px;"':''}>
       <input type="checkbox" ${checked?'checked':''} ${isToday?'':'disabled'} onchange="onScheduleCheck('${dateStr}','${label.replace(/'/g,"\\'")}',this.checked)">
       <div style="flex:1;"><div class="time">${time}${isNow?' <span class="pill" style="background:var(--accent);color:#fff;border:none;">now</span>':''}${adhocId?' <span class="pill">one-off</span>':''}</div><div class="label">${label}</div></div>
       ${(adhocId && !isPast)?`<button class="btn small ghost" onclick="ScheduleAdhoc.remove('${adhocId}')">✕</button>`:''}
+      ${(templateId && !isPast)?`<button class="btn small ghost" onclick="SchedulePlan.removeItem('${templateId}')">✕</button>`:''}
     </div>`;
   }).join('');
 }
@@ -885,6 +887,11 @@ const ScheduleAdhoc = {
   }
 };
 const SchedulePlan = {
+  async removeItem(id){
+    if(!confirm('Remove this from your recurring plan?')) return;
+    await sb.from('schedule_plans').delete().eq('id',id);
+    renderToday();
+  },
   async save(){
     const rows = parseWeekly($('schedInput').value, ':', ['activity','time_text']);
     if(!rows.length) return;
@@ -962,6 +969,7 @@ async function renderGymToday(){
       <input type="checkbox" ${checked?'checked':''} ${isToday?'':'disabled'} onchange="onGymCheck('${dateStr}','${i.exercise_name.replace(/'/g,"\\'")}',this.checked)">
       <div style="flex:1;"><div class="label">${i.exercise_name} <span class="muted">${i.sets||''}</span>${i.adhocId?' <span class="pill">one-off</span>':''}</div>${i.youtube_link?`<a href="${i.youtube_link}" target="_blank" style="font-size:.75rem;">▶ watch</a>`:''}</div>
       ${(i.adhocId && !isPast)?`<button class="btn small ghost" onclick="GymAdhoc.remove('${i.adhocId}')">✕</button>`:''}
+      ${(i.id && !i.adhocId && !isPast)?`<button class="btn small ghost" onclick="GymPlan.removeItem('${i.id}')">✕</button>`:''}
     </div>`;
   }).join('');
 }
@@ -977,6 +985,11 @@ const GymAdhoc = {
   async remove(id){ await sb.from('gym_adhoc').delete().eq('id',id); renderGymToday(); }
 };
 const GymPlan = {
+  async removeItem(id){
+    if(!confirm('Remove this from your recurring gym plan?')) return;
+    await sb.from('gym_plans').delete().eq('id',id);
+    renderGymToday();
+  },
   async save(){
     const rows = parseWeekly($('gymInput').value, '|', ['exercise_name','sets','youtube_link']);
     if(!rows.length) return;
@@ -1033,6 +1046,7 @@ async function renderMealPlanToday(){
       <input type="checkbox" ${checked?'checked':''} ${isToday?'':'disabled'} onchange="onMealCheck('${dateStr}','${i.meal_type.replace(/'/g,"\\'")}',this.checked)">
       <div style="flex:1;"><b>${i.meal_type}</b>${i.adhocId?' <span class="pill">one-off</span>':''}<div class="muted">${i.description}</div></div>
       ${(i.adhocId && !isPast)?`<button class="btn small ghost" onclick="MealAdhoc.remove('${i.adhocId}')">✕</button>`:''}
+      ${(i.id && !i.adhocId && !isPast)?`<button class="btn small ghost" onclick="MealPlan.removeItem('${i.id}')">✕</button>`:''}
     </div>`;
   }).join('');
 }
@@ -1049,6 +1063,11 @@ const MealAdhoc = {
   async remove(id){ await sb.from('meal_adhoc').delete().eq('id',id); renderMealPlanToday(); }
 };
 const MealPlan = {
+  async removeItem(id){
+    if(!confirm('Remove this from your recurring meal plan?')) return;
+    await sb.from('meal_plans').delete().eq('id',id);
+    renderMealPlanToday();
+  },
   async save(){
     const rows = parseWeekly($('mealPlanInput').value, ':', ['meal_type','description']);
     if(!rows.length) return;
@@ -1279,6 +1298,13 @@ const Meals = {
     renderIntakeChart();
   }
 };
+const MealLog = {
+  async remove(id){
+    if(!confirm('Remove this meal log?')) return;
+    await sb.from('meal_logs').delete().eq('id',id);
+    renderMealLog(); renderIntakeChart();
+  }
+};
 async function renderMealLog(){
   const {data} = await sb.from('meal_logs').select('*').eq('date',todayISO()).order('created_at');
   const items = data||[];
@@ -1297,6 +1323,7 @@ async function renderMealLog(){
       </div>
       <input type="file" id="photoAdd_${m.id}" accept="image/*" style="display:none;" onchange="MealPhoto.attach('${m.id}',this)">
       <button class="btn small ghost" style="width:100%;margin-top:4px;" onclick="document.getElementById('photoAdd_${m.id}').click()">${m.photo_url?'Change photo':'📷 Add photo'}</button>
+      <button class="btn small ghost" style="width:100%;margin-top:4px;" onclick="MealLog.remove('${m.id}')">✕ Remove</button>
     </div>`;
   }).join('');
 }
@@ -1419,6 +1446,11 @@ const Learning = {
     const {data} = await sb.from('learning_tasks').select('estimated_minutes').eq('id',id).single();
     await sb.from('learning_tasks').update({status:'Done', actual_minutes:data.estimated_minutes}).eq('id',id);
     renderLearningTasks(); renderLearningStats();
+  },
+  async removeItem(id){
+    if(!confirm('Remove this task?')) return;
+    await sb.from('learning_tasks').delete().eq('id',id);
+    renderLearningTasks(); renderLearningStats();
   }
 };
 function icsFor(title, dateISO, minutes){
@@ -1439,6 +1471,7 @@ async function renderLearningTasks(){
       <div style="margin-top:6px;display:flex;gap:6px;">
         <a class="cal-btn" href="${icsFor(t.task_name, ws, t.estimated_minutes)}" download="task.ics">📅 Add to calendar</a>
         <button class="btn small ghost" onclick="Learning.markDone('${t.id}')">Mark done</button>
+        <button class="btn small ghost" onclick="Learning.removeItem('${t.id}')">✕</button>
       </div>
     </div>`).join('');
 }
@@ -1489,6 +1522,14 @@ const PhotoLightbox = {
     $('lightboxImg').src = p.photo_url;
     $('lightboxCap').textContent = p.caption || '';
     $('lightboxDate').textContent = new Date(p.date+'T00:00:00').toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
+  },
+  async remove(){
+    const p = this.photos[this.index];
+    if(!p || !confirm('Delete this photo?')) return;
+    await sb.from('daily_photos').delete().eq('id',p.id);
+    this.close();
+    renderMomentsToday();
+    JournalBrowse.render();
   }
 };
 let momentPhotoB64=null;
@@ -1544,6 +1585,11 @@ document.querySelectorAll('#expTypeToggle button').forEach(b=>{
   b.onclick=()=>{document.querySelectorAll('#expTypeToggle button').forEach(x=>x.classList.remove('active'));b.classList.add('active');};
 });
 const Expenses = {
+  async remove(id){
+    if(!confirm('Remove this transaction?')) return;
+    await sb.from('expenses').delete().eq('id',id);
+    renderExpenses();
+  },
   async add(){
     const type = document.querySelector('#expTypeToggle button.active').dataset.v;
     const fields={date:todayISO(), amount:Number($('expAmt').value)||0, transaction_type:type, source:$('expSource').value, target:$('expTarget').value, category:$('expCategory').value};
@@ -1566,11 +1612,16 @@ async function renderExpenses(){
   const catEntries=Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
   $('expByCategory').innerHTML = catEntries.length? catEntries.map(([c,v])=>`<div class="list-item"><span>${c}</span><b>₹${v.toFixed(0)}</b></div>`).join(''): '<div class="empty">No transactions yet</div>';
   const recent=items.slice(0,15);
-  $('expList').innerHTML = recent.length? recent.map(e=>`<div class="list-item"><div><b>${e.target||e.source}</b><div class="muted">${e.category} · ${e.date}</div></div><b style="color:${e.transaction_type==='Credit'?'var(--accent)':'var(--danger)'}">${e.transaction_type==='Credit'?'+':'-'}₹${e.amount}</b></div>`).join(''): '<div class="empty">No transactions yet</div>';
+  $('expList').innerHTML = recent.length? recent.map(e=>`<div class="list-item"><div><b>${e.target||e.source}</b><div class="muted">${e.category} · ${e.date}</div></div><div class="row" style="gap:6px;"><b style="color:${e.transaction_type==='Credit'?'var(--accent)':'var(--danger)'}">${e.transaction_type==='Credit'?'+':'-'}₹${e.amount}</b>${e.date===todayISO()?`<button class="btn small ghost" onclick="Expenses.remove('${e.id}')">✕</button>`:''}</div></div>`).join(''): '<div class="empty">No transactions yet</div>';
 }
 
 /* ============ JOBS ============ */
 const Jobs = {
+  async remove(id){
+    if(!confirm('Remove this role?')) return;
+    await sb.from('job_applications').delete().eq('id',id);
+    renderJobs();
+  },
   async add(){
     const jd = $('jobJD').value;
     const skills=['integration','apex','lwc','data cloud','platform events','rest','soap','bulk api','flow','mulesoft','einstein'];
@@ -1593,6 +1644,7 @@ async function renderJobs(){
       <div class="row between"><b>${j.job_title} @ ${j.company}</b><span class="pill">${j.match_percent}% match</span></div>
       <div class="muted">${j.gap_notes}</div>
       ${j.jd_link?`<a href="${j.jd_link}" target="_blank" style="font-size:.8rem;">View JD</a>`:''}
+      <button class="btn small ghost" style="margin-top:6px;" onclick="Jobs.remove('${j.id}')">✕ Remove</button>
     </div>`).join('');
 }
 
