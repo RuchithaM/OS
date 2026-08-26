@@ -176,9 +176,10 @@
       <div id="officeTaskTree"></div>
       <details class="planner" id="officeTaskAddPanel">
         <summary>+ Add tasks</summary>
-        <div class="muted">Indent with a tab/space to make a sub-task.</div>
+        <div class="muted">Each extra level of indent (tab or spaces) nests one level deeper.</div>
         <textarea id="officeTaskInput" placeholder="Task 1
 	Subtask 1
+		Sub-subtask 1a
 	Subtask 2
 Task 2"></textarea>
         <button class="btn block" onclick="guardedRun('officeTaskSave',this,()=>OfficeTasks.save())">Save</button>
@@ -799,40 +800,67 @@ const TodoView = { date: todayISO() };
 TodoView.shift = function(n){ this.date = addDays(this.date, n); renderOfficeTasks(); };
 TodoView.setDate = function(d){ this.date = d; renderOfficeTasks(); };
 TodoView.goToday = function(){ this.date = todayISO(); renderOfficeTasks(); };
-function parseOfficeTasks(text){
+function parseOfficeTasksTree(text){
   const lines = text.split('\n');
-  const tasks=[]; let currentTop=null;
+  const root = [];
+  const stack = []; // {indent, node}
   lines.forEach(raw=>{
     if(!raw.trim()) return;
-    const isSub = /^[\t ]+/.test(raw);
-    const label = raw.trim();
-    if(!isSub){ currentTop = {text:label, subs:[]}; tasks.push(currentTop); }
-    else if(currentTop){ currentTop.subs.push(label); }
+    const indent = raw.match(/^[\t ]*/)[0].length;
+    const node = {text:raw.trim(), children:[]};
+    while(stack.length && stack[stack.length-1].indent >= indent){ stack.pop(); }
+    if(stack.length){ stack[stack.length-1].node.children.push(node); }
+    else { root.push(node); }
+    stack.push({indent, node});
   });
-  return tasks;
+  return root;
+}
+async function saveTaskTree(nodes, dateStr, parentId){
+  for(const n of nodes){
+    const {data:row, error} = await sb.from('office_tasks').insert({date:dateStr, text:n.text, parent_id:parentId}).select().single();
+    if(error){ alert('Could not save: '+error.message); return false; }
+    if(n.children.length){
+      const ok = await saveTaskTree(n.children, dateStr, row.id);
+      if(!ok) return false;
+    }
+  }
+  return true;
 }
 async function rolloverOfficeTasks(){
   const {data} = await sb.from('office_tasks').select('*').lt('date', todayISO());
   if(!data || !data.length) return;
-  const top = data.filter(t=>!t.parent_id);
   const byParent = {};
   data.forEach(t=>{ if(t.parent_id) (byParent[t.parent_id]=byParent[t.parent_id]||[]).push(t); });
+  const top = data.filter(t=>!t.parent_id);
   const todayStr = todayISO();
+  function collectDescendants(node, acc){
+    const kids = byParent[node.id]||[];
+    kids.forEach(k=>{ acc.push(k); collectDescendants(k, acc); });
+    return acc;
+  }
+  function isSubtreeComplete(node){
+    const kids = byParent[node.id]||[];
+    return node.checked && kids.every(isSubtreeComplete);
+  }
   for(const t of top){
-    const children = byParent[t.id]||[];
-    const incomplete = !t.checked || children.some(c=>!c.checked);
-    if(incomplete){
-      await sb.from('office_tasks').update({date:todayStr}).eq('id',t.id);
-      for(const c of children){ await sb.from('office_tasks').update({date:todayStr}).eq('id',c.id); }
+    if(!isSubtreeComplete(t)){
+      const all = [t, ...collectDescendants(t,[])];
+      for(const n of all){ await sb.from('office_tasks').update({date:todayStr}).eq('id',n.id); }
     }
   }
 }
-function renderOfficeItem(t, indented, editable){
+function renderOfficeItem(t, depth, editable){
   const timeStr = t.completed_at ? new Date(t.completed_at).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}) : '';
-  return `<div class="check-item ${t.checked?'checked':''}" style="${indented?'padding-left:28px;':''}">
+  return `<div class="check-item ${t.checked?'checked':''}" style="padding-left:${depth*24}px;">
     <input type="checkbox" ${t.checked?'checked':''} ${editable?'':'disabled'} onchange="OfficeTasks.toggle('${t.id}',this.checked)">
     <div><div class="label">${t.text}</div>${t.completed_at?`<div class="muted" style="font-size:.68rem;">✓ ${timeStr}</div>`:''}</div>
   </div>`;
+}
+function renderOfficeTree(items, byParent, editable, depth){
+  return items.map(t=>{
+    const children = byParent[t.id]||[];
+    return renderOfficeItem(t, depth, editable) + (children.length ? renderOfficeTree(children, byParent, editable, depth+1) : '');
+  }).join('');
 }
 async function renderOfficeTasks(){
   const dateStr = TodoView.date;
@@ -846,29 +874,55 @@ async function renderOfficeTasks(){
   const byParent = {};
   (data||[]).forEach(t=>{ if(t.parent_id) (byParent[t.parent_id]=byParent[t.parent_id]||[]).push(t); });
   if(!top.length){ $('officeTaskTree').innerHTML='<div class="empty">No office tasks for this day</div>'; return; }
-  $('officeTaskTree').innerHTML = top.map(t=>{
-    const children = byParent[t.id]||[];
-    return renderOfficeItem(t,false,isToday) + children.map(c=>renderOfficeItem(c,true,isToday)).join('');
-  }).join('');
+  $('officeTaskTree').innerHTML = renderOfficeTree(top, byParent, isToday, 0);
 }
 const OfficeTasks = {
   async save(){
-    const parsed = parseOfficeTasks($('officeTaskInput').value);
-    if(!parsed.length){ alert('Type at least one task first.'); return; }
+    const tree = parseOfficeTasksTree($('officeTaskInput').value);
+    if(!tree.length){ alert('Type at least one task first.'); return; }
     const dateStr = TodoView.date;
-    for(const t of parsed){
-      const {data:topRow, error} = await sb.from('office_tasks').insert({date:dateStr, text:t.text, parent_id:null}).select().single();
-      if(error){ alert('Could not save: '+error.message); return; }
-      if(t.subs.length && topRow){
-        const {error:subErr} = await sb.from('office_tasks').insert(t.subs.map(s=>({date:dateStr, text:s, parent_id:topRow.id})));
-        if(subErr){ alert('Could not save subtasks: '+subErr.message); return; }
-      }
-    }
-    $('officeTaskInput').value='';
-    renderOfficeTasks();
+    const ok = await saveTaskTree(tree, dateStr, null);
+    if(ok){ $('officeTaskInput').value=''; renderOfficeTasks(); }
   },
   async toggle(id, checked){
-    await sb.from('office_tasks').update({checked, completed_at: checked ? new Date().toISOString() : null}).eq('id',id);
+    const dateStr = TodoView.date;
+    const {data} = await sb.from('office_tasks').select('*').eq('date',dateStr);
+    const byId = {}; (data||[]).forEach(t=>byId[t.id]=t);
+    const byParent = {}; (data||[]).forEach(t=>{ if(t.parent_id) (byParent[t.parent_id]=byParent[t.parent_id]||[]).push(t); });
+    const now = new Date().toISOString();
+    const updates = [];
+    const node = byId[id];
+    if(!node) return;
+    node.checked = checked;
+    node.completed_at = checked ? now : null;
+    updates.push({id, checked, completed_at: node.completed_at});
+
+    function cascadeDown(nodeId){
+      const kids = byParent[nodeId]||[];
+      kids.forEach(k=>{
+        if(!k.checked){ k.checked=true; k.completed_at=now; updates.push({id:k.id, checked:true, completed_at:now}); }
+        cascadeDown(k.id);
+      });
+    }
+    if(checked) cascadeDown(id);
+
+    let cur = node;
+    while(cur.parent_id){
+      const parent = byId[cur.parent_id];
+      if(!parent) break;
+      const kids = byParent[parent.id]||[];
+      const allDone = kids.length>0 && kids.every(k=>k.checked);
+      if(parent.checked !== allDone){
+        parent.checked = allDone;
+        parent.completed_at = allDone ? now : null;
+        updates.push({id:parent.id, checked:allDone, completed_at:parent.completed_at});
+      }
+      cur = parent;
+    }
+
+    for(const u of updates){
+      await sb.from('office_tasks').update({checked:u.checked, completed_at:u.completed_at}).eq('id',u.id);
+    }
     renderOfficeTasks();
   }
 };
@@ -1101,6 +1155,14 @@ function flipImageB64(b64, callback){
   };
   img.src = b64;
 }
+$('officeTaskInput').addEventListener('keydown', e=>{
+  if(e.key==='Tab'){
+    e.preventDefault();
+    const el=e.target, start=el.selectionStart, end=el.selectionEnd;
+    el.value = el.value.slice(0,start)+'\t'+el.value.slice(end);
+    el.selectionStart = el.selectionEnd = start+1;
+  }
+});
 let mealPhotoB64=null;
 $('mealPhoto').onchange=e=>{
   const f=e.target.files[0]; if(!f) return;
