@@ -122,6 +122,17 @@
   </div>
 </div>
 
+<div class="lightbox-bg" id="tabCustomizerBg" onclick="if(event.target===this) TabCustomizer.close()" style="align-items:flex-end;">
+  <div style="background:var(--panel);border-radius:16px 16px 0 0;padding:20px 16px;width:100%;max-width:640px;max-height:80vh;overflow-y:auto;">
+    <h3>Customize tabs</h3>
+    <div id="tabCustomizerList"></div>
+    <div class="row" style="gap:8px;margin-top:12px;">
+      <button class="btn ghost" style="flex:1;" onclick="TabCustomizer.resetDefault()">Show all (default)</button>
+      <button class="btn" style="flex:1;" onclick="TabCustomizer.close()">Done</button>
+    </div>
+  </div>
+</div>
+
 <div id="loadingScreen" style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:var(--font-display);font-size:1.3rem;color:var(--ink-dim);">Planner</div>
 
 <div id="loginScreen" style="display:none;">
@@ -142,9 +153,17 @@
   <div class="headerbtns">
     <button class="icon-btn" onclick="toggleTheme()" id="themeBtn">🌙</button>
     <button class="icon-btn" onclick="ResetData.confirmAndRun()" title="Reset data">↺</button>
-    <button class="icon-btn" onclick="Auth.logout()">⏻</button>
+    <button class="icon-btn" onclick="TabCustomizer.open()" title="Customize tabs">⚙️</button>
   </div>
 </header>
+<div id="globalDateBar" style="display:none;padding:8px 16px;background:var(--panel);border-bottom:1px solid var(--line);">
+  <div class="datenav">
+    <button onclick="GlobalView.shift(-1)">←</button>
+    <input type="date" id="globalDatePicker" style="width:auto;margin:0;padding:6px 8px;" onchange="GlobalView.setDate(this.value)">
+    <button onclick="GlobalView.shift(1)">→</button>
+    <button class="btn small ghost" onclick="GlobalView.goToday()">Today</button>
+  </div>
+</div>
 
 <nav class="tabs" id="tabNav" style="display:none;">
   <button data-tab="home" class="active">Todo</button>
@@ -162,17 +181,15 @@
 
   <!-- HOME / TODO -->
   <div class="view active" id="view-home">
-    <div class="card">
-      <div class="datenav">
-        <button onclick="TodoView.shift(-1)">←</button>
-        <input type="date" id="todoDatePicker" style="width:auto;margin:0;padding:6px 8px;" onchange="TodoView.setDate(this.value)">
-        <button onclick="TodoView.shift(1)">→</button>
-        <button class="btn small ghost" onclick="TodoView.goToday()">Today</button>
-      </div>
-      <div class="muted" id="todoSelDate" style="margin-top:8px;"></div>
+    <div class="card" id="quoteCard" style="background:linear-gradient(135deg,var(--panel-2),var(--panel));">
+      <div class="pill" id="quoteCategory" style="margin-bottom:8px;"></div>
+      <div style="font-family:var(--font-display);font-size:1.1rem;font-style:italic;" id="quoteText">Loading...</div>
     </div>
     <div class="card">
-      <h3>Office hours tasks</h3>
+      <div class="muted" id="todoSelDate"></div>
+    </div>
+    <div class="card">
+      <div class="row between"><h3 style="margin:0;">Office hours tasks</h3><button class="btn small ghost" id="officeTaskClearBtn" onclick="OfficeTasks.clearDay()">Clear all</button></div>
       <div id="officeTaskTree"></div>
       <details class="planner" id="officeTaskAddPanel">
         <summary>+ Add tasks</summary>
@@ -190,17 +207,7 @@ Task 2"></textarea>
   <!-- TODAY -->
   <div class="view" id="view-today">
     <div class="card">
-      <div class="datenav">
-        <button onclick="TodayView.shiftDate(-1)">←</button>
-        <input type="date" id="todayDatePicker" style="width:auto;margin:0;padding:6px 8px;" onchange="TodayView.setDate(this.value)">
-        <button onclick="TodayView.shiftDate(1)">→</button>
-        <button class="btn small ghost" onclick="TodayView.goToday()">Today</button>
-      </div>
-      <div class="muted" id="todaySelDate" style="margin-top:8px;"></div>
-    </div>
-    <div class="card" id="quoteCard" style="background:linear-gradient(135deg,var(--panel-2),var(--panel));">
-      <div class="pill" id="quoteCategory" style="margin-bottom:8px;"></div>
-      <div style="font-family:var(--font-display);font-size:1.1rem;font-style:italic;" id="quoteText">Loading...</div>
+      <div class="muted" id="todaySelDate"></div>
     </div>
     <div class="card">
       <div class="row between"><h3 style="margin:0;">Schedule</h3><span class="pill" id="schedProgLbl"></span></div>
@@ -220,13 +227,7 @@ Task 2"></textarea>
   <!-- GYM -->
   <div class="view" id="view-gym">
     <div class="card">
-      <div class="datenav">
-        <button onclick="GymView.shift(-1)">←</button>
-        <input type="date" id="gymDatePicker" style="width:auto;margin:0;padding:6px 8px;" onchange="GymView.setDate(this.value)">
-        <button onclick="GymView.shift(1)">→</button>
-        <button class="btn small ghost" onclick="GymView.goToday()">Today</button>
-      </div>
-      <div class="muted" id="gymSelDate" style="margin-top:6px;"></div>
+      <div class="muted" id="gymSelDate"></div>
       <div class="muted" id="gymStreakLbl" style="margin-top:4px;"></div>
     </div>
     <div class="card">
@@ -272,13 +273,7 @@ Task 2"></textarea>
       <div class="muted" style="margin-top:6px;">Set water goal in <b>Plan</b>. Rings fill outward — exceeding a goal shows red on that ring.</div>
     </div>
     <div class="card">
-      <div class="datenav">
-        <button onclick="MealsView.shift(-1)">←</button>
-        <input type="date" id="mealsDatePicker" style="width:auto;margin:0;padding:6px 8px;" onchange="MealsView.setDate(this.value)">
-        <button onclick="MealsView.shift(1)">→</button>
-        <button class="btn small ghost" onclick="MealsView.goToday()">Today</button>
-      </div>
-      <div class="muted" id="mealsSelDate" style="margin-top:6px;"></div>
+      <div class="muted" id="mealsSelDate"></div>
     </div>
     <div class="card">
       <div class="row between"><h3 style="margin:0;">Meal plan</h3><span class="pill" id="mealProgLbl"></span></div>
@@ -331,13 +326,6 @@ Task 2"></textarea>
   <!-- LEARNING -->
   <div class="view" id="view-learning">
     <div class="card">
-      <div class="grid3">
-        <div class="stat"><div class="num" id="lrnStreak">0</div><div class="lbl">Day Streak</div></div>
-        <div class="stat"><div class="num" id="lrnDoneToday">0</div><div class="lbl">Done Today</div></div>
-        <div class="stat"><div class="num" id="lrnMinToday">0</div><div class="lbl">Est Min Done</div></div>
-      </div>
-    </div>
-    <div class="card">
       <h3>This week's tasks</h3>
       <div id="lrnTaskList"><div class="empty">No tasks yet</div></div>
       <div class="muted" style="margin-top:8px;">Plan topics in <b>Plan</b>.</div>
@@ -358,12 +346,6 @@ Task 2"></textarea>
     </div>
     <div class="card">
       <h3>Browse a day</h3>
-      <div class="datenav">
-        <button onclick="JournalBrowse.shift(-1)">←</button>
-        <input type="date" id="journalDatePicker" style="width:auto;margin:0;padding:6px 8px;" onchange="JournalBrowse.setDate(this.value)">
-        <button onclick="JournalBrowse.shift(1)">→</button>
-        <button class="btn small ghost" onclick="JournalBrowse.goToday()">Today</button>
-      </div>
       <div id="momentGridBrowse" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px;"></div>
     </div>
   </div>
@@ -599,14 +581,61 @@ const Auth = {
 async function enterApp(){
   $('loginScreen').style.display='none';
   $('topHeader').style.display='flex';
+  $('globalDateBar').style.display='block';
   $('tabNav').style.display='flex';
   $('app').classList.add('show');
   if(localStorage.getItem('planner_theme')==='dark') $('themeBtn').textContent='☀️';
+  TabCustomizer.applyVisibility();
   await initApp();
 }
 document.querySelectorAll('#tabNav button').forEach(b=>{
   b.onclick=()=>switchTab(b.dataset.tab);
 });
+const ALL_TABS = [
+  {key:'home',label:'Todo'}, {key:'today',label:'Today'}, {key:'gym',label:'Gym'},
+  {key:'meals',label:'Meals'}, {key:'learning',label:'Learning'}, {key:'journal',label:'Journal'},
+  {key:'expenses',label:'Expenses'}, {key:'jobs',label:'Jobs'}, {key:'plan',label:'Plan'}
+];
+const TabCustomizer = {
+  getVisible(){
+    const saved = localStorage.getItem('planner_visible_tabs');
+    return saved ? JSON.parse(saved) : ALL_TABS.map(t=>t.key);
+  },
+  applyVisibility(){
+    const visible = this.getVisible();
+    document.querySelectorAll('#tabNav button').forEach(b=>{
+      b.style.display = visible.includes(b.dataset.tab) ? '' : 'none';
+    });
+    const activeBtn = document.querySelector('#tabNav button.active');
+    if(activeBtn && activeBtn.style.display==='none'){
+      const firstVisible = document.querySelector('#tabNav button:not([style*="display: none"])');
+      if(firstVisible) switchTab(firstVisible.dataset.tab);
+    }
+  },
+  open(){
+    const visible = this.getVisible();
+    $('tabCustomizerList').innerHTML = ALL_TABS.map(t=>`
+      <div class="check-item">
+        <input type="checkbox" ${visible.includes(t.key)?'checked':''} onchange="TabCustomizer.toggle('${t.key}',this.checked)">
+        <div class="label">${t.label}</div>
+      </div>`).join('');
+    $('tabCustomizerBg').classList.add('show');
+  },
+  close(){
+    $('tabCustomizerBg').classList.remove('show');
+    this.applyVisibility();
+  },
+  toggle(key, checked){
+    let visible = this.getVisible();
+    if(checked){ if(!visible.includes(key)) visible.push(key); }
+    else { visible = visible.filter(k=>k!==key); if(!visible.length) visible=[key]; }
+    localStorage.setItem('planner_visible_tabs', JSON.stringify(visible));
+  },
+  resetDefault(){
+    localStorage.removeItem('planner_visible_tabs');
+    this.open();
+  }
+};
 function switchTab(tab){
   document.querySelectorAll('#tabNav button').forEach(x=>x.classList.toggle('active', x.dataset.tab===tab));
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
@@ -690,19 +719,27 @@ async function renderTodayQuote(){
 }
 
 /* ============ TODAY / SCHEDULE ============ */
-const TodayView = { date: todayISO() };
-TodayView.shiftDate = function(n){
-  this.date = addDays(this.date, n);
+const GlobalView = { date: todayISO() };
+function refreshAllDateViews(){
+  $('globalDatePicker').value = GlobalView.date;
   renderToday();
+  renderOfficeTasks();
+  renderGymToday();
+  renderMealPlanToday();
+  JournalBrowse.render();
+}
+GlobalView.shift = function(n){
+  this.date = addDays(this.date, n);
+  refreshAllDateViews();
 };
-TodayView.setDate = function(dateStr){
+GlobalView.setDate = function(dateStr){
   if(!dateStr) return;
   this.date = dateStr;
-  renderToday();
+  refreshAllDateViews();
 };
-TodayView.goToday = function(){
+GlobalView.goToday = function(){
   this.date = todayISO();
-  renderToday();
+  refreshAllDateViews();
 };
 const WEEKDAY_ROUTINE = [
   ['6:45am','Wake up — brush, water, freshen up'],
@@ -756,10 +793,9 @@ function scheduleItemsForDate(dateStr, dbRows){
   return getRoutineForDate(dateStr).map(([t,l])=>[t,l,null]);
 }
 async function renderToday(){
-  const dateStr = TodayView.date;
+  const dateStr = GlobalView.date;
   const isToday = dateStr===todayISO();
   const isPast = dateStr < todayISO();
-  $('todayDatePicker').value = dateStr;
   $('todaySelDate').textContent = new Date(dateStr+'T00:00:00').toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'}) + (isToday?' (Today)':isPast?' · read only':'');
   $('schedAdhocPanel').style.display = isPast ? 'none' : 'block';
   const [{data:dbRows},{data:adhoc}] = await Promise.all([
@@ -796,10 +832,6 @@ async function onScheduleCheck(dateStr,key,checked){
   await toggleCheck('schedule', key, dateStr, checked);
   renderToday();
 }
-const TodoView = { date: todayISO() };
-TodoView.shift = function(n){ this.date = addDays(this.date, n); renderOfficeTasks(); };
-TodoView.setDate = function(d){ this.date = d; renderOfficeTasks(); };
-TodoView.goToday = function(){ this.date = todayISO(); renderOfficeTasks(); };
 function parseOfficeTasksTree(text){
   const lines = text.split('\n');
   const root = [];
@@ -853,7 +885,8 @@ function renderOfficeItem(t, depth, editable){
   const timeStr = t.completed_at ? new Date(t.completed_at).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}) : '';
   return `<div class="check-item ${t.checked?'checked':''}" style="padding-left:${depth*24}px;">
     <input type="checkbox" ${t.checked?'checked':''} ${editable?'':'disabled'} onchange="OfficeTasks.toggle('${t.id}',this.checked)">
-    <div><div class="label">${t.text}</div>${t.completed_at?`<div class="muted" style="font-size:.68rem;">✓ ${timeStr}</div>`:''}</div>
+    <div style="flex:1;"><div class="label">${t.text}</div>${t.completed_at?`<div class="muted" style="font-size:.68rem;">✓ ${timeStr}</div>`:''}</div>
+    ${editable?`<button class="btn small ghost" onclick="OfficeTasks.remove('${t.id}')">✕</button>`:''}
   </div>`;
 }
 function renderOfficeTree(items, byParent, editable, depth){
@@ -863,12 +896,12 @@ function renderOfficeTree(items, byParent, editable, depth){
   }).join('');
 }
 async function renderOfficeTasks(){
-  const dateStr = TodoView.date;
+  const dateStr = GlobalView.date;
   const isToday = dateStr===todayISO();
   const isPast = dateStr < todayISO();
   $('todoSelDate').textContent = new Date(dateStr+'T00:00:00').toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'}) + (isToday?' (Today)':isPast?' · read only':'');
-  $('todoDatePicker').value = dateStr;
   $('officeTaskAddPanel').style.display = isPast ? 'none' : 'block';
+  $('officeTaskClearBtn').style.display = isPast ? 'none' : 'inline-block';
   const {data} = await sb.from('office_tasks').select('*').eq('date',dateStr).order('created_at');
   const top = (data||[]).filter(t=>!t.parent_id);
   const byParent = {};
@@ -877,15 +910,25 @@ async function renderOfficeTasks(){
   $('officeTaskTree').innerHTML = renderOfficeTree(top, byParent, isToday, 0);
 }
 const OfficeTasks = {
+  async remove(id){
+    if(!confirm('Remove this task (and any sub-tasks under it)?')) return;
+    await sb.from('office_tasks').delete().eq('id',id);
+    renderOfficeTasks();
+  },
+  async clearDay(){
+    if(!confirm('Clear ALL tasks for this day? This cannot be undone.')) return;
+    await sb.from('office_tasks').delete().eq('date', GlobalView.date);
+    renderOfficeTasks();
+  },
   async save(){
     const tree = parseOfficeTasksTree($('officeTaskInput').value);
     if(!tree.length){ alert('Type at least one task first.'); return; }
-    const dateStr = TodoView.date;
+    const dateStr = GlobalView.date;
     const ok = await saveTaskTree(tree, dateStr, null);
     if(ok){ $('officeTaskInput').value=''; renderOfficeTasks(); }
   },
   async toggle(id, checked){
-    const dateStr = TodoView.date;
+    const dateStr = GlobalView.date;
     const {data} = await sb.from('office_tasks').select('*').eq('date',dateStr);
     const byId = {}; (data||[]).forEach(t=>byId[t.id]=t);
     const byParent = {}; (data||[]).forEach(t=>{ if(t.parent_id) (byParent[t.parent_id]=byParent[t.parent_id]||[]).push(t); });
@@ -931,7 +974,7 @@ const ScheduleAdhoc = {
     const activity = $('schedAdhocActivity').value.trim();
     const time_text = $('schedAdhocTime').value.trim();
     if(!activity) return;
-    await sb.from('schedule_adhoc').insert({date:TodayView.date, activity, time_text});
+    await sb.from('schedule_adhoc').insert({date:GlobalView.date, activity, time_text});
     $('schedAdhocActivity').value=''; $('schedAdhocTime').value='';
     renderToday();
   },
@@ -985,16 +1028,11 @@ const SchedulePlan = {
 };
 
 /* ============ GYM ============ */
-const GymView = { date: todayISO() };
-GymView.shift = function(n){ this.date = addDays(this.date, n); renderGymToday(); };
-GymView.setDate = function(d){ this.date = d; renderGymToday(); };
-GymView.goToday = function(){ this.date = todayISO(); renderGymToday(); };
 
 async function renderGymToday(){
-  const dateStr = GymView.date;
+  const dateStr = GlobalView.date;
   const isToday = dateStr===todayISO();
   const isPast = dateStr < todayISO();
-  $('gymDatePicker').value = dateStr;
   $('gymSelDate').textContent = new Date(dateStr+'T00:00:00').toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'}) + (isToday?' (Today)':isPast?' · read only':'');
   $('gymAdhocPanel').style.display = isPast ? 'none' : 'block';
   const wd = weekdayOfDateStr(dateStr);
@@ -1032,7 +1070,7 @@ const GymAdhoc = {
   async add(){
     const exercise_name = $('gymAdhocName').value.trim();
     if(!exercise_name) return;
-    await sb.from('gym_adhoc').insert({date:GymView.date, exercise_name, sets:$('gymAdhocSets').value.trim(), youtube_link:$('gymAdhocLink').value.trim()});
+    await sb.from('gym_adhoc').insert({date:GlobalView.date, exercise_name, sets:$('gymAdhocSets').value.trim(), youtube_link:$('gymAdhocLink').value.trim()});
     $('gymAdhocName').value=''; $('gymAdhocSets').value=''; $('gymAdhocLink').value='';
     renderGymToday();
   },
@@ -1069,16 +1107,11 @@ const GymPlan = {
 };
 
 /* ============ MEALS ============ */
-const MealsView = { date: todayISO() };
-MealsView.shift = function(n){ this.date = addDays(this.date, n); renderMealPlanToday(); };
-MealsView.setDate = function(d){ this.date = d; renderMealPlanToday(); };
-MealsView.goToday = function(){ this.date = todayISO(); renderMealPlanToday(); };
 
 async function renderMealPlanToday(){
-  const dateStr = MealsView.date;
+  const dateStr = GlobalView.date;
   const isToday = dateStr===todayISO();
   const isPast = dateStr < todayISO();
-  $('mealsDatePicker').value = dateStr;
   $('mealsSelDate').textContent = new Date(dateStr+'T00:00:00').toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'}) + (isToday?' (Today)':isPast?' · read only':'');
   $('mealAdhocPanel').style.display = isPast ? 'none' : 'block';
   const wd = weekdayOfDateStr(dateStr);
@@ -1110,7 +1143,7 @@ const MealAdhoc = {
     const meal_type = $('mealAdhocType').value;
     const description = $('mealAdhocDesc').value.trim();
     if(!description) return;
-    await sb.from('meal_adhoc').insert({date:MealsView.date, meal_type, description});
+    await sb.from('meal_adhoc').insert({date:GlobalView.date, meal_type, description});
     $('mealAdhocDesc').value='';
     renderMealPlanToday();
   },
@@ -1507,12 +1540,12 @@ const Learning = {
   async markDone(id){
     const {data} = await sb.from('learning_tasks').select('estimated_minutes').eq('id',id).single();
     await sb.from('learning_tasks').update({status:'Done', actual_minutes:data.estimated_minutes}).eq('id',id);
-    renderLearningTasks(); renderLearningStats();
+    renderLearningTasks();
   },
   async removeItem(id){
     if(!confirm('Remove this task?')) return;
     await sb.from('learning_tasks').delete().eq('id',id);
-    renderLearningTasks(); renderLearningStats();
+    renderLearningTasks();
   }
 };
 function icsFor(title, dateISO, minutes){
@@ -1536,35 +1569,6 @@ async function renderLearningTasks(){
         <button class="btn small ghost" onclick="Learning.removeItem('${t.id}')">✕</button>
       </div>
     </div>`).join('');
-}
-async function computeLearningStreak(){
-  const lookback = addDays(todayISO(), -40);
-  const {data} = await sb.from('learning_tasks').select('week_start,day,status').gte('week_start', weekStartOf(lookback));
-  const byDate = {};
-  (data||[]).forEach(t=>{
-    const offset = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'].indexOf(t.day);
-    if(offset<0 || !t.week_start) return;
-    const d = addDays(t.week_start, offset);
-    (byDate[d]=byDate[d]||[]).push(t.status==='Done');
-  });
-  let streak=0, cur=todayISO();
-  for(let i=0;i<40;i++){
-    const tasks = byDate[cur];
-    if(!tasks || !tasks.length){ cur=addDays(cur,-1); continue; }
-    if(tasks.every(done=>done)){ streak++; cur=addDays(cur,-1); } else break;
-  }
-  return streak;
-}
-async function renderLearningStats(){
-  const streak = await computeLearningStreak();
-  $('lrnStreak').textContent = streak;
-  const ws=weekStart();
-  const {data:tasks} = await sb.from('learning_tasks').select('day,status,estimated_minutes').eq('week_start',ws);
-  const todayWd = weekdayOfDateStr(todayISO());
-  const todayTasks = (tasks||[]).filter(t=>t.day===todayWd);
-  const doneToday = todayTasks.filter(t=>t.status==='Done');
-  $('lrnDoneToday').textContent = `${doneToday.length}/${todayTasks.length}`;
-  $('lrnMinToday').textContent = doneToday.reduce((a,t)=>a+(t.estimated_minutes||0),0);
 }
 /* ============ JOURNAL ============ */
 const PhotoLightbox = {
@@ -1610,7 +1614,7 @@ const Moments = {
     $('momentPhoto').value=''; $('momentCaption').value=''; momentPhotoB64=null;
     $('momentPhotoPreview').style.display='none'; $('momentFlipBtn').style.display='none';
     renderMomentsToday();
-    if(JournalBrowse.date===todayISO()) JournalBrowse.render();
+    if(GlobalView.date===todayISO()) JournalBrowse.render();
   }
 };
 async function renderMomentsToday(){
@@ -1625,13 +1629,10 @@ async function renderMomentsToday(){
   `).join('') : '<div class="polaroid-empty">No moments yet today — capture one above</div>';
 }
 const JournalBrowse = {
-  date: todayISO(),
-  shift(n){ this.date = addDays(this.date, n); this.render(); },
-  setDate(d){ this.date = d; this.render(); },
-  goToday(){ this.date = todayISO(); this.render(); },
+  photos: [],
   async render(){
-    $('journalDatePicker').value = this.date;
-    const {data:photos} = await sb.from('daily_photos').select('*').eq('date',this.date).order('created_at',{ascending:false});
+    const dateStr = GlobalView.date;
+    const {data:photos} = await sb.from('daily_photos').select('*').eq('date',dateStr).order('created_at',{ascending:false});
     $('momentGridBrowse').innerHTML = (photos&&photos.length) ? photos.map((p,i)=>`
       <div class="polaroid" onclick="PhotoLightbox.open(JournalBrowse.photos, ${i})">
         <img src="${p.photo_url}">
@@ -1747,7 +1748,6 @@ async function initApp(){
     renderMealLog(),
     renderIntakeChart(),
     renderLearningTasks(),
-    renderLearningStats(),
     renderMomentsToday(),
     JournalBrowse.render(),
     renderExpenses(),
