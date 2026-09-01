@@ -122,6 +122,18 @@
   </div>
 </div>
 
+<div class="lightbox-bg" id="dayPlanModalBg" onclick="if(event.target===this) DayPlanPopup.close()">
+  <div class="modal" style="background:var(--panel);border-radius:16px;padding:20px;max-width:92vw;width:420px;max-height:80vh;overflow-y:auto;">
+    <h3 id="dayPlanModalTitle" style="margin-top:0;">Edit day</h3>
+    <div class="muted" id="dayPlanModalHint" style="margin-bottom:8px;"></div>
+    <textarea id="dayPlanModalInput" style="min-height:220px;"></textarea>
+    <div class="row" style="gap:8px;margin-top:8px;">
+      <button class="btn ghost" style="flex:1;" onclick="DayPlanPopup.close()">Cancel</button>
+      <button class="btn" style="flex:1;" onclick="guardedRun('dayPlanSave',this,()=>DayPlanPopup.save())">Save</button>
+    </div>
+  </div>
+</div>
+
 <div class="lightbox-bg" id="tabCustomizerBg" onclick="if(event.target===this) TabCustomizer.close()" style="align-items:flex-end;">
   <div style="background:var(--panel);border-radius:16px 16px 0 0;padding:20px 16px;width:100%;max-width:640px;max-height:80vh;overflow-y:auto;">
     <h3>Customize tabs</h3>
@@ -149,6 +161,7 @@
   <div>
     <div class="brand">Planner</div>
     <div class="muted" id="headerDateTime" style="font-size:.7rem;margin-top:-2px;"></div>
+    <div class="muted" id="headerSummary" style="font-size:.72rem;margin-top:2px;"></div>
   </div>
   <div class="headerbtns">
     <button class="icon-btn" onclick="toggleTheme()" id="themeBtn">🌙</button>
@@ -181,13 +194,6 @@
 
   <!-- HOME / TODO -->
   <div class="view active" id="view-home">
-    <div class="card" id="quoteCard" style="background:linear-gradient(135deg,var(--panel-2),var(--panel));">
-      <div class="pill" id="quoteCategory" style="margin-bottom:8px;"></div>
-      <div style="font-family:var(--font-display);font-size:1.1rem;font-style:italic;" id="quoteText">Loading...</div>
-    </div>
-    <div class="card">
-      <div class="muted" id="todoSelDate"></div>
-    </div>
     <div class="card">
       <div class="row between"><h3 style="margin:0;">Office hours tasks</h3><button class="btn small ghost" id="officeTaskClearBtn" onclick="OfficeTasks.clearDay()">Clear all</button></div>
       <div id="officeTaskTree"></div>
@@ -207,19 +213,12 @@ Task 2"></textarea>
   <!-- TODAY -->
   <div class="view" id="view-today">
     <div class="card">
-      <div class="muted" id="todaySelDate"></div>
     </div>
     <div class="card">
       <div class="row between"><h3 style="margin:0;">Schedule</h3><span class="pill" id="schedProgLbl"></span></div>
       <div class="progress"><div id="schedProgBar" style="width:0%"></div></div>
       <div id="scheduleList" style="margin-top:10px;"></div>
-      <details class="planner" id="schedAdhocPanel">
-        <summary>+ Add for today only</summary>
-        <div class="muted">Just for today.</div>
-        <label>Activity</label><input id="schedAdhocActivity" placeholder="e.g. Dentist appointment">
-        <label>Time</label><input id="schedAdhocTime" placeholder="e.g. 3pm">
-        <button class="btn block" onclick="guardedRun('schedAdhocAdd',this,()=>ScheduleAdhoc.add())">Add for today</button>
-      </details>
+      <button class="btn block ghost" id="schedAdhocPanel" onclick="DayPlanPopup.open('schedule')">+ Add for today only</button>
       <div class="muted" style="margin-top:8px;">Edit recurring plan in <b>Plan</b>.</div>
     </div>
   </div>
@@ -227,21 +226,13 @@ Task 2"></textarea>
   <!-- GYM -->
   <div class="view" id="view-gym">
     <div class="card">
-      <div class="muted" id="gymSelDate"></div>
       <div class="muted" id="gymStreakLbl" style="margin-top:4px;"></div>
     </div>
     <div class="card">
       <div class="row between"><h3 style="margin:0;">Workout</h3><span class="pill" id="gymProgLbl"></span></div>
       <div class="progress"><div id="gymProgBar" style="width:0%"></div></div>
       <div id="gymTodayList" style="margin-top:10px;"></div>
-      <details class="planner" id="gymAdhocPanel">
-        <summary>+ Add for this day only</summary>
-        <div class="muted">Just for this day.</div>
-        <label>Exercise</label><input id="gymAdhocName" placeholder="e.g. Extra core set">
-        <label>Sets/reps</label><input id="gymAdhocSets" placeholder="e.g. 3x15">
-        <label>YouTube link (optional)</label><input id="gymAdhocLink" placeholder="https://...">
-        <button class="btn block" onclick="guardedRun('gymAdhocAdd',this,()=>GymAdhoc.add())">Add</button>
-      </details>
+      <button class="btn block ghost" id="gymAdhocPanel" onclick="DayPlanPopup.open('gym')">+ Add for this day only</button>
       <div class="muted" style="margin-top:8px;">Edit recurring plan in <b>Plan</b>.</div>
     </div>
     <div class="card">
@@ -267,26 +258,17 @@ Task 2"></textarea>
             <button class="btn small ghost" onclick="guardedRun('waterAdd',this,()=>Hydration.add(250))">+250ml</button>
             <button class="btn small ghost" onclick="guardedRun('waterAdd',this,()=>Hydration.add(500))">+500ml</button>
           </div>
-          <button class="btn small ghost" onclick="Meals.editGoal()" style="margin-top:6px;">Set calorie goal</button>
         </div>
       </div>
       <div class="muted" style="margin-top:6px;">Set water goal in <b>Plan</b>. Rings fill outward — exceeding a goal shows red on that ring.</div>
     </div>
     <div class="card">
-      <div class="muted" id="mealsSelDate"></div>
     </div>
     <div class="card">
       <div class="row between"><h3 style="margin:0;">Meal plan</h3><span class="pill" id="mealProgLbl"></span></div>
       <div class="progress"><div id="mealProgBar" style="width:0%"></div></div>
       <div id="mealPlanToday" style="margin-top:10px;"></div>
-      <details class="planner" id="mealAdhocPanel">
-        <summary>+ Add for this day only</summary>
-        <div class="muted">Just for this day.</div>
-        <label>Meal type</label>
-        <select id="mealAdhocType"><option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snack</option></select>
-        <label>Description</label><input id="mealAdhocDesc" placeholder="e.g. Ordered biryani">
-        <button class="btn block" onclick="guardedRun('mealAdhocAdd',this,()=>MealAdhoc.add())">Add</button>
-      </details>
+      <button class="btn block ghost" id="mealAdhocPanel" onclick="DayPlanPopup.open('meals')">+ Add for this day only</button>
       <div class="muted" style="margin-top:8px;">Edit recurring plan in <b>Plan</b>.</div>
     </div>
     <div class="card">
@@ -328,6 +310,7 @@ Task 2"></textarea>
     <div class="card">
       <h3>This week's tasks</h3>
       <div id="lrnTaskList"><div class="empty">No tasks yet</div></div>
+      <button class="btn block ghost" onclick="DayPlanPopup.open('learning')">+ Add for this day only</button>
       <div class="muted" style="margin-top:8px;">Plan topics in <b>Plan</b>.</div>
     </div>
   </div>
@@ -422,14 +405,6 @@ Task 2"></textarea>
         <button class="btn ghost" onclick="Learning.preview()">Preview</button>
         <button class="btn block" onclick="guardedRun('lrnSave',this,()=>Learning.save())">Save weekly topics</button>
         <div id="lrnPreview"></div>
-      </details>
-    </div>
-    <div class="card">
-      <details class="planner" ontoggle="if(this.open) Hydration.prefillGoal()">
-        <summary>💧 Hydration goal</summary>
-        <label>Daily water target (ml)</label>
-        <input id="waterGoalInput" type="number" placeholder="2000">
-        <button class="btn block" onclick="guardedRun('waterGoalSave',this,()=>Hydration.saveGoal())">Save goal</button>
       </details>
     </div>
   </div>
@@ -579,6 +554,7 @@ const Auth = {
   async logout(){ await sb.auth.signOut(); location.reload(); }
 };
 async function enterApp(){
+  await renderTodayQuote();
   $('loginScreen').style.display='none';
   $('topHeader').style.display='flex';
   $('globalDateBar').style.display='block';
@@ -587,6 +563,7 @@ async function enterApp(){
   if(localStorage.getItem('planner_theme')==='dark') $('themeBtn').textContent='☀️';
   TabCustomizer.applyVisibility();
   await initApp();
+  $('loadingScreen').style.display='none';
 }
 document.querySelectorAll('#tabNav button').forEach(b=>{
   b.onclick=()=>switchTab(b.dataset.tab);
@@ -711,11 +688,9 @@ async function computeStreakAny(section, planItemKeysForWeekday){
 
 /* ============ HOME ============ */
 async function renderTodayQuote(){
-  getContextualQuote().then(({category,quote})=>{
-    const labels={life:'✨ For your day',gym:'💪 Gym time',meals:'🍽️ Meal time',learning:'📚 Learning time',expenses:'💰 Money mindset',jobs:'💼 Career focus'};
-    $('quoteCategory').textContent = labels[category]||'✨ For your day';
-    $('quoteText').textContent = '"'+quote+'"';
-  });
+  const {category,quote} = await getContextualQuote();
+  const labels={life:'✨ For your day',gym:'💪 Gym time',meals:'🍽️ Meal time',learning:'📚 Learning time',expenses:'💰 Money mindset',jobs:'💼 Career focus'};
+  $('loadingScreen').innerHTML = `<div style="padding:0 28px;text-align:center;"><div class="pill" style="margin-bottom:10px;">${labels[category]||'✨ For your day'}</div><div style="font-style:italic;">"${quote}"</div></div>`;
 }
 
 /* ============ TODAY / SCHEDULE ============ */
@@ -796,7 +771,6 @@ async function renderToday(){
   const dateStr = GlobalView.date;
   const isToday = dateStr===todayISO();
   const isPast = dateStr < todayISO();
-  $('todaySelDate').textContent = new Date(dateStr+'T00:00:00').toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'}) + (isToday?' (Today)':isPast?' · read only':'');
   $('schedAdhocPanel').style.display = isPast ? 'none' : 'block';
   const [{data:dbRows},{data:adhoc}] = await Promise.all([
     sb.from('schedule_plans').select('*'),
@@ -882,10 +856,11 @@ async function rolloverOfficeTasks(){
   }
 }
 function renderOfficeItem(t, depth, editable){
-  const timeStr = t.completed_at ? new Date(t.completed_at).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}) : '';
+  const addedStr = t.created_at ? new Date(t.created_at).toLocaleDateString(undefined,{month:'short',day:'numeric'}) : '';
+  const completedStr = t.completed_at ? new Date(t.completed_at).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}) : '';
   return `<div class="check-item ${t.checked?'checked':''}" style="padding-left:${depth*24}px;">
     <input type="checkbox" ${t.checked?'checked':''} ${editable?'':'disabled'} onchange="OfficeTasks.toggle('${t.id}',this.checked)">
-    <div style="flex:1;"><div class="label">${t.text}</div>${t.completed_at?`<div class="muted" style="font-size:.68rem;">✓ ${timeStr}</div>`:''}</div>
+    <div style="flex:1;"><div class="label">${t.text}</div><div class="muted" style="font-size:.65rem;">Added ${addedStr}${t.completed_at?` · ✓ Completed ${completedStr}`:''}</div></div>
     ${editable?`<button class="btn small ghost" onclick="OfficeTasks.remove('${t.id}')">✕</button>`:''}
   </div>`;
 }
@@ -899,7 +874,6 @@ async function renderOfficeTasks(){
   const dateStr = GlobalView.date;
   const isToday = dateStr===todayISO();
   const isPast = dateStr < todayISO();
-  $('todoSelDate').textContent = new Date(dateStr+'T00:00:00').toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'}) + (isToday?' (Today)':isPast?' · read only':'');
   $('officeTaskAddPanel').style.display = isPast ? 'none' : 'block';
   $('officeTaskClearBtn').style.display = isPast ? 'none' : 'inline-block';
   const {data} = await sb.from('office_tasks').select('*').eq('date',dateStr).order('created_at');
@@ -969,6 +943,113 @@ const OfficeTasks = {
     renderOfficeTasks();
   }
 };
+const DayPlanPopup = {
+  kind: null,
+  async open(kind){
+    this.kind = kind;
+    const dateStr = GlobalView.date;
+    let title='', hint='', text='';
+    if(kind==='schedule'){
+      title='Schedule for this day'; hint='Format: Activity : Time';
+      const {data:dbRows} = await sb.from('schedule_plans').select('*');
+      const items = scheduleItemsForDate(dateStr, dbRows);
+      const {data:adhoc} = await sb.from('schedule_adhoc').select('*').eq('date',dateStr);
+      text = [...items.map(i=>`${i[1]} : ${i[0]}`), ...(adhoc||[]).map(a=>`${a.activity} : ${a.time_text}`)].join('\n');
+    } else if(kind==='gym'){
+      title='Workout for this day'; hint='Format: Exercise | Sets | Link';
+      const wd = weekdayOfDateStr(dateStr);
+      const [{data:gp},{data:adhoc}] = await Promise.all([
+        sb.from('gym_plans').select('*').eq('day',wd),
+        sb.from('gym_adhoc').select('*').eq('date',dateStr)
+      ]);
+      text = [...(gp||[]).map(g=>`${g.exercise_name} | ${g.sets||''} | ${g.youtube_link||''}`), ...(adhoc||[]).map(a=>`${a.exercise_name} | ${a.sets||''} | ${a.youtube_link||''}`)].join('\n');
+    } else if(kind==='meals'){
+      title='Meals for this day'; hint='Format: Meal type : description';
+      const wd = weekdayOfDateStr(dateStr);
+      const [{data:mp},{data:adhoc}] = await Promise.all([
+        sb.from('meal_plans').select('*').eq('day',wd),
+        sb.from('meal_adhoc').select('*').eq('date',dateStr)
+      ]);
+      text = [...(mp||[]).map(m=>`${m.meal_type} : ${m.description}`), ...(adhoc||[]).map(a=>`${a.meal_type} : ${a.description}`)].join('\n');
+    } else if(kind==='learning'){
+      title='Learning task for this day'; hint='Format: Task | Link | Minutes';
+      const ws = weekStartOf(dateStr);
+      const wd = weekdayOfDateStr(dateStr);
+      const {data:tasks} = await sb.from('learning_tasks').select('*').eq('week_start',ws).eq('day',wd);
+      text = (tasks||[]).map(t=>`${t.task_name} | ${t.resource_link||''} | ${t.estimated_minutes||0}`).join('\n');
+    }
+    $('dayPlanModalTitle').textContent = title;
+    $('dayPlanModalHint').textContent = hint;
+    $('dayPlanModalInput').value = text;
+    $('dayPlanModalBg').classList.add('show');
+  },
+  close(){ $('dayPlanModalBg').classList.remove('show'); },
+  async save(){
+    const dateStr = GlobalView.date;
+    const lines = $('dayPlanModalInput').value.split('\n').map(l=>l.trim()).filter(Boolean);
+    if(this.kind==='schedule'){
+      const {data:dbRows} = await sb.from('schedule_plans').select('*');
+      const items = scheduleItemsForDate(dateStr, dbRows);
+      const {data:adhoc} = await sb.from('schedule_adhoc').select('*').eq('date',dateStr);
+      const existing = new Set([...items.map(i=>`${i[1]} : ${i[0]}`), ...(adhoc||[]).map(a=>`${a.activity} : ${a.time_text}`)]);
+      const newRows=[];
+      lines.forEach(line=>{
+        if(existing.has(line)) return;
+        const idx=line.indexOf(':');
+        if(idx===-1) return;
+        newRows.push({date:dateStr, activity:line.slice(0,idx).trim(), time_text:line.slice(idx+1).trim()});
+      });
+      if(newRows.length) await sb.from('schedule_adhoc').insert(newRows);
+      this.close(); renderToday();
+    } else if(this.kind==='gym'){
+      const wd = weekdayOfDateStr(dateStr);
+      const [{data:gp},{data:adhoc}] = await Promise.all([
+        sb.from('gym_plans').select('*').eq('day',wd),
+        sb.from('gym_adhoc').select('*').eq('date',dateStr)
+      ]);
+      const existing = new Set([...(gp||[]).map(g=>`${g.exercise_name} | ${g.sets||''} | ${g.youtube_link||''}`), ...(adhoc||[]).map(a=>`${a.exercise_name} | ${a.sets||''} | ${a.youtube_link||''}`)]);
+      const newRows=[];
+      lines.forEach(line=>{
+        if(existing.has(line)) return;
+        const parts=line.split('|').map(s=>s.trim());
+        if(!parts[0]) return;
+        newRows.push({date:dateStr, exercise_name:parts[0], sets:parts[1]||'', youtube_link:parts[2]||''});
+      });
+      if(newRows.length) await sb.from('gym_adhoc').insert(newRows);
+      this.close(); renderGymToday();
+    } else if(this.kind==='meals'){
+      const wd = weekdayOfDateStr(dateStr);
+      const [{data:mp},{data:adhoc}] = await Promise.all([
+        sb.from('meal_plans').select('*').eq('day',wd),
+        sb.from('meal_adhoc').select('*').eq('date',dateStr)
+      ]);
+      const existing = new Set([...(mp||[]).map(m=>`${m.meal_type} : ${m.description}`), ...(adhoc||[]).map(a=>`${a.meal_type} : ${a.description}`)]);
+      const newRows=[];
+      lines.forEach(line=>{
+        if(existing.has(line)) return;
+        const idx=line.indexOf(':');
+        if(idx===-1) return;
+        newRows.push({date:dateStr, meal_type:line.slice(0,idx).trim(), description:line.slice(idx+1).trim()});
+      });
+      if(newRows.length) await sb.from('meal_adhoc').insert(newRows);
+      this.close(); renderMealPlanToday();
+    } else if(this.kind==='learning'){
+      const ws = weekStartOf(dateStr);
+      const wd = weekdayOfDateStr(dateStr);
+      const {data:tasks} = await sb.from('learning_tasks').select('*').eq('week_start',ws).eq('day',wd);
+      const existing = new Set((tasks||[]).map(t=>`${t.task_name} | ${t.resource_link||''} | ${t.estimated_minutes||0}`));
+      const newRows=[];
+      lines.forEach(line=>{
+        if(existing.has(line)) return;
+        const parts=line.split('|').map(s=>s.trim());
+        if(!parts[0]) return;
+        newRows.push({week_start:ws, day:wd, task_name:parts[0], resource_link:parts[1]||'', estimated_minutes:Number(parts[2])||0, actual_minutes:0, status:'To Do'});
+      });
+      if(newRows.length) await sb.from('learning_tasks').insert(newRows);
+      this.close(); renderLearningTasks();
+    }
+  }
+};
 const ScheduleAdhoc = {
   async add(){
     const activity = $('schedAdhocActivity').value.trim();
@@ -1033,7 +1114,6 @@ async function renderGymToday(){
   const dateStr = GlobalView.date;
   const isToday = dateStr===todayISO();
   const isPast = dateStr < todayISO();
-  $('gymSelDate').textContent = new Date(dateStr+'T00:00:00').toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'}) + (isToday?' (Today)':isPast?' · read only':'');
   $('gymAdhocPanel').style.display = isPast ? 'none' : 'block';
   const wd = weekdayOfDateStr(dateStr);
   sb.from('gym_plans').select('day,exercise_name').then(({data:allPlans})=>{
@@ -1112,7 +1192,6 @@ async function renderMealPlanToday(){
   const dateStr = GlobalView.date;
   const isToday = dateStr===todayISO();
   const isPast = dateStr < todayISO();
-  $('mealsSelDate').textContent = new Date(dateStr+'T00:00:00').toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'}) + (isToday?' (Today)':isPast?' · read only':'');
   $('mealAdhocPanel').style.display = isPast ? 'none' : 'block';
   const wd = weekdayOfDateStr(dateStr);
   const [{data},checkedSet,{data:adhoc}] = await Promise.all([
@@ -1385,12 +1464,6 @@ const Meals = {
     ['mealDesc','mealCal','mealProt','mealFat','mealCarbs','mealFibre'].forEach(id=>$(id).value='');
     $('mealPhotoPreview').style.display='none'; mealPhotoB64=null; $('mealFlipBtn').style.display='none';
     renderMealLog(); renderIntakeChart();
-  },
-  async editGoal(){
-    const val = prompt('Daily calorie goal (kcal):', $('calGoalLbl').textContent||'1500');
-    if(!val) return;
-    await sb.from('user_settings').upsert({target_calories:Number(val)},{onConflict:'user_id'});
-    renderIntakeChart();
   }
 };
 const MealLog = {
@@ -1437,15 +1510,7 @@ const Hydration = {
   async add(ml){
     await sb.from('water_log').insert({date:todayISO(), ml});
     renderIntakeChart();
-  },
-  async prefillGoal(){
-    const {data} = await sb.from('user_settings').select('target_water_ml').maybeSingle();
-    $('waterGoalInput').value = data?.target_water_ml || 2000;
-  },
-  async saveGoal(){
-    const val = Number($('waterGoalInput').value)||2000;
-    await sb.from('user_settings').upsert({target_water_ml:val},{onConflict:'user_id'});
-    renderIntakeChart();
+    renderHeaderSummary();
   }
 };
 let intakeChartInstance=null;
@@ -1463,7 +1528,7 @@ async function renderIntakeChart(){
     sb.from('meal_logs').select('calories').eq('date',todayISO()),
     sb.from('water_log').select('ml').eq('date',todayISO())
   ]);
-  const calGoal = settings?.target_calories || 1500;
+  const calGoal = settings?.target_calories || 1200;
   const waterGoal = settings?.target_water_ml || 2000;
   const eaten = (meals||[]).reduce((a,m)=>a+(m.calories||0),0);
   const had = (waterLogs||[]).reduce((a,l)=>a+(l.ml||0),0);
@@ -1719,6 +1784,7 @@ const Steps = {
     await sb.from('steps_log').insert({date:todayISO(), steps:v});
     $('stepsInput').value='';
     renderStepsToday();
+    renderHeaderSummary();
   }
 };
 async function renderStepsToday(){
@@ -1732,14 +1798,26 @@ function updateHeaderDateTime(){
   const now = new Date();
   $('headerDateTime').textContent = now.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'}) + ' · ' + now.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
 }
+async function renderHeaderSummary(){
+  const [{data:steps},{data:water},{data:gp}] = await Promise.all([
+    sb.from('steps_log').select('steps').eq('date',todayISO()),
+    sb.from('water_log').select('ml').eq('date',todayISO()),
+    sb.from('gym_plans').select('day,exercise_name')
+  ]);
+  const stepTotal = (steps||[]).reduce((a,s)=>a+s.steps,0);
+  const waterTotal = (water||[]).reduce((a,w)=>a+w.ml,0);
+  const gymByDay = wd=>(gp||[]).filter(r=>r.day===wd).map(r=>r.exercise_name);
+  const gymStreak = await computeStreakAny('gym', gymByDay);
+  $('headerSummary').textContent = `👣 ${stepTotal.toLocaleString()}   🔥 ${gymStreak}   💧 ${waterTotal}ml`;
+}
 async function initApp(){
   Estimator.renderCategoryChips();
   updateHeaderDateTime();
   setInterval(updateHeaderDateTime, 60000);
+  renderHeaderSummary();
   const rolledCount = await rolloverOverdueTasks();
   await rolloverOfficeTasks();
   await Promise.all([
-    renderTodayQuote(),
     renderToday(),
     renderOfficeTasks(),
     renderGymToday(),
