@@ -106,6 +106,27 @@
   .lightbox-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.12);color:#fff;border:none;width:42px;height:42px;border-radius:50%;font-size:1.3rem;}
   .lightbox-nav.prev{left:14px;}
   .lightbox-nav.next{right:14px;}
+
+  @media (min-width: 720px){
+    body{background:var(--panel-2);}
+    .app{max-width:900px;padding:24px;}
+    header.top{max-width:900px;margin:0 auto;}
+    nav.tabs{max-width:900px;margin:0 auto;padding:10px 24px;}
+    #globalDateBar > div{max-width:900px;margin:0 auto;}
+    .app.show{background:var(--bg);border-radius:20px;box-shadow:0 8px 40px rgba(0,0,0,.08);}
+    .mealLogGrid, #mealLogGrid{grid-template-columns:repeat(4,1fr) !important;}
+    .btn, .icon-btn, nav.tabs button, .check-item input[type=checkbox]{cursor:pointer;}
+    .btn:hover, .icon-btn:hover{filter:brightness(1.08);}
+    nav.tabs button:hover{border-color:var(--accent);}
+    .card:hover{box-shadow:0 4px 16px rgba(0,0,0,.05);}
+    .tile:hover{transform:translateY(-2px);transition:transform .15s;}
+    input, textarea, select{cursor:text;}
+    .datenav{max-width:360px;}
+  }
+  @media (min-width: 1100px){
+    .app{max-width:1040px;}
+    header.top, nav.tabs, #globalDateBar > div{max-width:1040px;}
+  }
 </style>
 </head>
 <body>
@@ -405,6 +426,21 @@ Task 2"></textarea>
         <button class="btn ghost" onclick="Learning.preview()">Preview</button>
         <button class="btn block" onclick="guardedRun('lrnSave',this,()=>Learning.save())">Save weekly topics</button>
         <div id="lrnPreview"></div>
+      </details>
+    </div>
+    <div class="card">
+      <details class="planner" ontoggle="if(this.open) OfficeTemplate.prefill()">
+        <summary>🏢 Weekly office plan</summary>
+        <div class="muted">Day header, then tasks. Indent (tab/space) to nest a sub-task — auto-fills each matching day's Todo if nothing's added yet.</div>
+        <textarea id="officeTemplateInput" placeholder="Monday
+Task 1
+	Subtask 1
+	Subtask 2
+Task 2
+
+Tuesday
+..."></textarea>
+        <button class="btn block" onclick="guardedRun('officeTemplateSave',this,()=>OfficeTemplate.save())">Save weekly office plan</button>
       </details>
     </div>
   </div>
@@ -870,19 +906,86 @@ function renderOfficeTree(items, byParent, editable, depth){
     return renderOfficeItem(t, depth, editable) + (children.length ? renderOfficeTree(children, byParent, editable, depth+1) : '');
   }).join('');
 }
+async function seedOfficeTasksFromTemplate(dateStr){
+  const wd = weekdayOfDateStr(dateStr);
+  const {data:tmpl} = await sb.from('office_task_templates').select('*').eq('day',wd).order('created_at');
+  if(!tmpl || !tmpl.length) return;
+  async function insertTree(rows, parentId, newParentId){
+    const kids = rows.filter(r=>r.parent_id===parentId);
+    for(const k of kids){
+      const {data:row} = await sb.from('office_tasks').insert({date:dateStr, text:k.text, parent_id:newParentId}).select().single();
+      if(row) await insertTree(rows, k.id, row.id);
+    }
+  }
+  await insertTree(tmpl, null, null);
+}
 async function renderOfficeTasks(){
   const dateStr = GlobalView.date;
   const isToday = dateStr===todayISO();
   const isPast = dateStr < todayISO();
   $('officeTaskAddPanel').style.display = isPast ? 'none' : 'block';
   $('officeTaskClearBtn').style.display = isPast ? 'none' : 'inline-block';
-  const {data} = await sb.from('office_tasks').select('*').eq('date',dateStr).order('created_at');
+  let {data} = await sb.from('office_tasks').select('*').eq('date',dateStr).order('created_at');
+  if((!data || !data.length) && !isPast){
+    await seedOfficeTasksFromTemplate(dateStr);
+    ({data} = await sb.from('office_tasks').select('*').eq('date',dateStr).order('created_at'));
+  }
   const top = (data||[]).filter(t=>!t.parent_id);
   const byParent = {};
   (data||[]).forEach(t=>{ if(t.parent_id) (byParent[t.parent_id]=byParent[t.parent_id]||[]).push(t); });
   if(!top.length){ $('officeTaskTree').innerHTML='<div class="empty">No office tasks for this day</div>'; return; }
   $('officeTaskTree').innerHTML = renderOfficeTree(top, byParent, isToday, 0);
 }
+const OfficeTemplate = {
+  async prefill(){
+    const {data} = await sb.from('office_task_templates').select('*').order('created_at');
+    function toText(rows, parentId, depth){
+      const kids = (rows||[]).filter(r=>r.parent_id===parentId);
+      let text='';
+      kids.forEach(k=>{ text += '\t'.repeat(depth)+k.text+'\n'; text += toText(rows, k.id, depth+1); });
+      return text;
+    }
+    const text = DAYS.map(d=>{
+      const dayRows = (data||[]).filter(r=>r.day===d);
+      if(!dayRows.length) return '';
+      return d+'\n'+toText(dayRows, null, 0);
+    }).filter(Boolean).join('\n');
+    $('officeTemplateInput').value = text.trim();
+  },
+  async save(){
+    const parsedByDay = {};
+    const lines = $('officeTemplateInput').value.split('\n');
+    let currentDay=null, buffer=[];
+    function flush(){
+      if(currentDay && buffer.length) parsedByDay[currentDay] = parseOfficeTasksTree(buffer.join('\n'));
+      buffer=[];
+    }
+    lines.forEach(raw=>{
+      const trimmed = raw.trim();
+      if(DAYS.map(d=>d.toLowerCase()).includes(trimmed.toLowerCase())){
+        flush();
+        currentDay = DAYS.find(d=>d.toLowerCase()===trimmed.toLowerCase());
+        return;
+      }
+      if(trimmed) buffer.push(raw);
+    });
+    flush();
+    if(!Object.keys(parsedByDay).length){ alert('Add at least one day with tasks.'); return; }
+    await sb.from('office_task_templates').delete().neq('id','00000000-0000-0000-0000-000000000000');
+    async function insertTree(nodes, day, parentId){
+      for(const n of nodes){
+        const {data:row, error} = await sb.from('office_task_templates').insert({day, text:n.text, parent_id:parentId}).select().single();
+        if(error){ alert('Could not save: '+error.message); return false; }
+        if(n.children.length){ const ok = await insertTree(n.children, day, row.id); if(!ok) return false; }
+      }
+      return true;
+    }
+    for(const day of Object.keys(parsedByDay)){
+      await insertTree(parsedByDay[day], day, null);
+    }
+    renderOfficeTasks();
+  }
+};
 const OfficeTasks = {
   async remove(id){
     if(!confirm('Remove this task (and any sub-tasks under it)?')) return;
