@@ -112,7 +112,7 @@
     .app{max-width:900px;padding:24px;}
     header.top{max-width:900px;margin:0 auto;}
     nav.tabs{max-width:900px;margin:0 auto;padding:10px 24px;}
-    #globalDateBar > div{max-width:900px;margin:0 auto;}
+    
     .app.show{background:var(--bg);border-radius:20px;box-shadow:0 8px 40px rgba(0,0,0,.08);}
     .mealLogGrid, #mealLogGrid{grid-template-columns:repeat(4,1fr) !important;}
     .btn, .icon-btn, nav.tabs button, .check-item input[type=checkbox]{cursor:pointer;}
@@ -125,7 +125,7 @@
   }
   @media (min-width: 1100px){
     .app{max-width:1040px;}
-    header.top, nav.tabs, #globalDateBar > div{max-width:1040px;}
+    header.top, nav.tabs{max-width:1040px;}
   }
 </style>
 </head>
@@ -184,20 +184,18 @@
     <div class="muted" id="headerDateTime" style="font-size:.7rem;margin-top:-2px;"></div>
     <div class="muted" id="headerSummary" style="font-size:.72rem;margin-top:2px;"></div>
   </div>
-  <div class="headerbtns">
-    <button class="icon-btn" onclick="toggleTheme()" id="themeBtn">🌙</button>
-    <button class="icon-btn" onclick="ResetData.confirmAndRun()" title="Reset data">↺</button>
-    <button class="icon-btn" onclick="TabCustomizer.open()" title="Customize tabs">⚙️</button>
-  </div>
-</header>
-<div id="globalDateBar" style="display:none;padding:8px 16px;background:var(--panel);border-bottom:1px solid var(--line);">
-  <div class="datenav">
+  <div class="datenav" id="globalDateBar" style="display:none;flex:1;justify-content:center;">
     <button onclick="GlobalView.shift(-1)">←</button>
     <input type="date" id="globalDatePicker" style="width:auto;margin:0;padding:6px 8px;" onchange="GlobalView.setDate(this.value)">
     <button onclick="GlobalView.shift(1)">→</button>
-    <button class="btn small ghost" onclick="GlobalView.goToday()">Today</button>
   </div>
-</div>
+  <div class="headerbtns">
+    <button class="icon-btn" onclick="toggleTheme()" id="themeBtn">🌙</button>
+    <button class="icon-btn" onclick="ResetData.confirmAndRun()" title="Reset data">↺</button>
+    <button class="btn small ghost" onclick="GlobalView.goToday()">Today</button>
+    <button class="icon-btn" onclick="TabCustomizer.open()" title="Customize tabs">⚙️</button>
+  </div>
+</header>
 
 <nav class="tabs" id="tabNav" style="display:none;">
   <button data-tab="home" class="active">Todo</button>
@@ -234,8 +232,6 @@ Task 2"></textarea>
   <!-- TODAY -->
   <div class="view" id="view-today">
     <div class="card">
-    </div>
-    <div class="card">
       <div class="row between"><h3 style="margin:0;">Schedule</h3><span class="pill" id="schedProgLbl"></span></div>
       <div class="progress"><div id="schedProgBar" style="width:0%"></div></div>
       <div id="scheduleList" style="margin-top:10px;"></div>
@@ -246,9 +242,6 @@ Task 2"></textarea>
 
   <!-- GYM -->
   <div class="view" id="view-gym">
-    <div class="card">
-      <div class="muted" id="gymStreakLbl" style="margin-top:4px;"></div>
-    </div>
     <div class="card">
       <div class="row between"><h3 style="margin:0;">Workout</h3><span class="pill" id="gymProgLbl"></span></div>
       <div class="progress"><div id="gymProgBar" style="width:0%"></div></div>
@@ -281,9 +274,7 @@ Task 2"></textarea>
           </div>
         </div>
       </div>
-      <div class="muted" style="margin-top:6px;">Set water goal in <b>Plan</b>. Rings fill outward — exceeding a goal shows red on that ring.</div>
-    </div>
-    <div class="card">
+      <div class="muted" style="margin-top:6px;">Rings fill outward — exceeding a goal shows red on that ring.</div>
     </div>
     <div class="card">
       <div class="row between"><h3 style="margin:0;">Meal plan</h3><span class="pill" id="mealProgLbl"></span></div>
@@ -423,9 +414,7 @@ Task 2"></textarea>
         <summary>📚 Weekly SF topics</summary>
         <div class="muted">Format: <code>Task | Link | Minutes</code></div>
         <textarea id="lrnInput"></textarea>
-        <button class="btn ghost" onclick="Learning.preview()">Preview</button>
         <button class="btn block" onclick="guardedRun('lrnSave',this,()=>Learning.save())">Save weekly topics</button>
-        <div id="lrnPreview"></div>
       </details>
     </div>
     <div class="card">
@@ -593,7 +582,7 @@ async function enterApp(){
   await renderTodayQuote();
   $('loginScreen').style.display='none';
   $('topHeader').style.display='flex';
-  $('globalDateBar').style.display='block';
+  $('globalDateBar').style.display='flex';
   $('tabNav').style.display='flex';
   $('app').classList.add('show');
   if(localStorage.getItem('planner_theme')==='dark') $('themeBtn').textContent='☀️';
@@ -1154,14 +1143,6 @@ const DayPlanPopup = {
   }
 };
 const ScheduleAdhoc = {
-  async add(){
-    const activity = $('schedAdhocActivity').value.trim();
-    const time_text = $('schedAdhocTime').value.trim();
-    if(!activity) return;
-    await sb.from('schedule_adhoc').insert({date:GlobalView.date, activity, time_text});
-    $('schedAdhocActivity').value=''; $('schedAdhocTime').value='';
-    renderToday();
-  },
   async remove(id){
     await sb.from('schedule_adhoc').delete().eq('id',id);
     renderToday();
@@ -1219,12 +1200,6 @@ async function renderGymToday(){
   const isPast = dateStr < todayISO();
   $('gymAdhocPanel').style.display = isPast ? 'none' : 'block';
   const wd = weekdayOfDateStr(dateStr);
-  sb.from('gym_plans').select('day,exercise_name').then(({data:allPlans})=>{
-    const byDay = w=>(allPlans||[]).filter(r=>r.day===w).map(r=>r.exercise_name);
-    computeStreakAny('gym', byDay).then(streak=>{
-      $('gymStreakLbl').textContent = `🔥 ${streak} day streak`;
-    });
-  });
   const [{data},checkedSet,{data:adhoc}] = await Promise.all([
     sb.from('gym_plans').select('*').eq('day',wd).order('created_at'),
     getChecksForDate('gym', dateStr),
@@ -1250,13 +1225,6 @@ async function renderGymToday(){
 }
 async function onGymCheck(dateStr,key,checked){ await toggleCheck('gym', key, dateStr, checked); renderGymToday(); }
 const GymAdhoc = {
-  async add(){
-    const exercise_name = $('gymAdhocName').value.trim();
-    if(!exercise_name) return;
-    await sb.from('gym_adhoc').insert({date:GlobalView.date, exercise_name, sets:$('gymAdhocSets').value.trim(), youtube_link:$('gymAdhocLink').value.trim()});
-    $('gymAdhocName').value=''; $('gymAdhocSets').value=''; $('gymAdhocLink').value='';
-    renderGymToday();
-  },
   async remove(id){ await sb.from('gym_adhoc').delete().eq('id',id); renderGymToday(); }
 };
 const GymPlan = {
@@ -1321,14 +1289,6 @@ async function renderMealPlanToday(){
 }
 async function onMealCheck(dateStr,key,checked){ await toggleCheck('meals', key, dateStr, checked); renderMealPlanToday(); }
 const MealAdhoc = {
-  async add(){
-    const meal_type = $('mealAdhocType').value;
-    const description = $('mealAdhocDesc').value.trim();
-    if(!description) return;
-    await sb.from('meal_adhoc').insert({date:GlobalView.date, meal_type, description});
-    $('mealAdhocDesc').value='';
-    renderMealPlanToday();
-  },
   async remove(id){ await sb.from('meal_adhoc').delete().eq('id',id); renderMealPlanToday(); }
 };
 const MealPlan = {
@@ -1675,20 +1635,13 @@ async function rolloverOverdueTasks(){
 }
 const Learning = {
   parse(text){ return {tasks: parseWeekly(text,'|',['name','link','minutes']).map(r=>{const m=(r.minutes||'').match(/[\d.]+/); return {day:r.day,name:r.name,link:r.link,minutes: m?Math.round(parseFloat(m[0])*(/hour|hr/i.test(r.minutes)?60:1)):0};})}; },
-  preview(){
-    const {tasks} = this.parse($('lrnInput').value);
-    $('lrnPreview').innerHTML = `<table style="width:100%;font-size:.78rem;margin-top:10px;border-collapse:collapse;">
-      <tr style="color:var(--ink-dim);"><td>Day</td><td>Task</td><td>Min</td></tr>
-      ${tasks.map(t=>`<tr style="border-top:1px solid var(--line);"><td>${t.day}</td><td>${t.name}</td><td>${t.minutes}</td></tr>`).join('')}
-    </table>`;
-  },
   async save(){
     const {tasks} = this.parse($('lrnInput').value);
     const ws = weekStart();
     const rows = tasks.filter(t=>t.name).map(t=>({week_start:ws, day:t.day, task_name:t.name, resource_link:t.link, estimated_minutes:t.minutes, actual_minutes:0, status:'To Do'}));
     await sb.from('learning_tasks').delete().eq('week_start',ws);
     if(rows.length) await sb.from('learning_tasks').insert(rows);
-    renderLearningTasks(); this.preview();
+    renderLearningTasks();
   },
   async prefill(){
     const ws = weekStart();
