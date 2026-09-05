@@ -184,10 +184,8 @@
     <div class="muted" id="headerDateTime" style="font-size:.7rem;margin-top:-2px;"></div>
     <div class="muted" id="headerSummary" style="font-size:.72rem;margin-top:2px;"></div>
   </div>
-  <div class="datenav" id="globalDateBar" style="display:none;flex:1;justify-content:center;">
-    <button onclick="GlobalView.shift(-1)">←</button>
+  <div class="datenav" id="globalDateBar" style="display:none;justify-content:center;">
     <input type="date" id="globalDatePicker" style="width:auto;margin:0;padding:6px 8px;" onchange="GlobalView.setDate(this.value)">
-    <button onclick="GlobalView.shift(1)">→</button>
   </div>
   <div class="headerbtns">
     <button class="icon-btn" onclick="toggleTheme()" id="themeBtn">🌙</button>
@@ -728,13 +726,8 @@ function refreshAllDateViews(){
   renderMealPlanToday();
   JournalBrowse.render();
 }
-GlobalView.shift = function(n){
-  this.date = addDays(this.date, n);
-  refreshAllDateViews();
-};
 GlobalView.setDate = function(dateStr){
-  if(!dateStr) return;
-  this.date = dateStr;
+  this.date = dateStr || todayISO();
   refreshAllDateViews();
 };
 GlobalView.goToday = function(){
