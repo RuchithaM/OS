@@ -190,7 +190,6 @@
   <div class="headerbtns">
     <button class="icon-btn" onclick="toggleTheme()" id="themeBtn">🌙</button>
     <button class="icon-btn" onclick="ResetData.confirmAndRun()" title="Reset data">↺</button>
-    <button class="btn small ghost" onclick="GlobalView.goToday()">Today</button>
     <button class="icon-btn" onclick="TabCustomizer.open()" title="Customize tabs">⚙️</button>
   </div>
 </header>
@@ -728,10 +727,6 @@ function refreshAllDateViews(){
 }
 GlobalView.setDate = function(dateStr){
   this.date = dateStr || todayISO();
-  refreshAllDateViews();
-};
-GlobalView.goToday = function(){
-  this.date = todayISO();
   refreshAllDateViews();
 };
 const WEEKDAY_ROUTINE = [
