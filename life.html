@@ -831,12 +831,25 @@ function parseOfficeTasksTree(text){
   });
   return root;
 }
-async function saveTaskTree(nodes, dateStr, parentId){
+async function saveTaskTreeMerged(nodes, dateStr, parentId, existingSiblings){
   for(const n of nodes){
-    const {data:row, error} = await sb.from('office_tasks').insert({date:dateStr, text:n.text, parent_id:parentId}).select().single();
-    if(error){ alert('Could not save: '+error.message); return false; }
+    let match = existingSiblings.find(e=>e.text===n.text);
+    let currentId;
+    if(match){
+      currentId = match.id;
+    } else {
+      const {data:row, error} = await sb.from('office_tasks').insert({date:dateStr, text:n.text, parent_id:parentId}).select().single();
+      if(error){ alert('Could not save: '+error.message); return false; }
+      currentId = row.id;
+      existingSiblings.push(row);
+    }
     if(n.children.length){
-      const ok = await saveTaskTree(n.children, dateStr, row.id);
+      let childSiblings = [];
+      if(match){
+        const {data:kids} = await sb.from('office_tasks').select('*').eq('parent_id', currentId);
+        childSiblings = kids||[];
+      }
+      const ok = await saveTaskTreeMerged(n.children, dateStr, currentId, childSiblings);
       if(!ok) return false;
     }
   }
@@ -871,6 +884,7 @@ function renderOfficeItem(t, depth, editable){
   return `<div class="check-item ${t.checked?'checked':''}" style="padding-left:${depth*24}px;">
     <input type="checkbox" ${t.checked?'checked':''} ${editable?'':'disabled'} onchange="OfficeTasks.toggle('${t.id}',this.checked)">
     <div style="flex:1;"><div class="label">${t.text}</div><div class="muted" style="font-size:.65rem;">Added ${addedStr}${t.completed_at?` · ✓ Completed ${completedStr}`:''}</div></div>
+    ${editable?`<button class="btn small ghost" onclick="OfficeTasks.editText('${t.id}','${t.text.replace(/'/g,"\\'")}')">✎</button>`:''}
     ${editable?`<button class="btn small ghost" onclick="OfficeTasks.remove('${t.id}')">✕</button>`:''}
   </div>`;
 }
@@ -971,11 +985,20 @@ const OfficeTasks = {
     await sb.from('office_tasks').delete().eq('date', GlobalView.date);
     renderOfficeTasks();
   },
+  async editText(id, oldText){
+    const newText = prompt('Edit task:', oldText);
+    if(newText===null) return;
+    const trimmed = newText.trim();
+    if(!trimmed || trimmed===oldText) return;
+    await sb.from('office_tasks').update({text:trimmed}).eq('id',id);
+    renderOfficeTasks();
+  },
   async save(){
     const tree = parseOfficeTasksTree($('officeTaskInput').value);
     if(!tree.length){ alert('Type at least one task first.'); return; }
     const dateStr = GlobalView.date;
-    const ok = await saveTaskTree(tree, dateStr, null);
+    const {data:existingTop} = await sb.from('office_tasks').select('*').eq('date',dateStr).is('parent_id',null);
+    const ok = await saveTaskTreeMerged(tree, dateStr, null, existingTop||[]);
     if(ok){ $('officeTaskInput').value=''; renderOfficeTasks(); }
   },
   async toggle(id, checked){
