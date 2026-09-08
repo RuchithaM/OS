@@ -210,9 +210,9 @@
     <div class="card">
       <div class="row between"><h3 style="margin:0;">Office hours tasks</h3><button class="btn small ghost" id="officeTaskClearBtn" onclick="OfficeTasks.clearDay()">Clear all</button></div>
       <div id="officeTaskTree"></div>
-      <details class="planner" id="officeTaskAddPanel">
-        <summary>+ Add tasks</summary>
-        <div class="muted">Each extra level of indent (tab or spaces) nests one level deeper.</div>
+      <details class="planner" id="officeTaskAddPanel" ontoggle="if(this.open) OfficeTasks.prefill()">
+        <summary>+ Add / edit tasks</summary>
+        <div class="muted">Shows today's tasks — edit text to rename, delete a line to remove it, add new lines for new tasks. Each extra level of indent (tab or spaces) nests one level deeper.</div>
         <textarea id="officeTaskInput" placeholder="Task 1
 	Subtask 1
 		Sub-subtask 1a
@@ -831,26 +831,30 @@ function parseOfficeTasksTree(text){
   });
   return root;
 }
-async function saveTaskTreeMerged(nodes, dateStr, parentId, existingSiblings){
-  for(const n of nodes){
-    let match = existingSiblings.find(e=>e.text===n.text);
+async function reconcileTaskTree(newNodes, dateStr, parentId, existingSiblings){
+  const usedIds = new Set();
+  for(const n of newNodes){
+    let match = existingSiblings.find(e=>e.text===n.text && !usedIds.has(e.id));
     let currentId;
     if(match){
       currentId = match.id;
+      usedIds.add(match.id);
     } else {
       const {data:row, error} = await sb.from('office_tasks').insert({date:dateStr, text:n.text, parent_id:parentId}).select().single();
       if(error){ alert('Could not save: '+error.message); return false; }
       currentId = row.id;
-      existingSiblings.push(row);
     }
-    if(n.children.length){
-      let childSiblings = [];
-      if(match){
-        const {data:kids} = await sb.from('office_tasks').select('*').eq('parent_id', currentId);
-        childSiblings = kids||[];
-      }
-      const ok = await saveTaskTreeMerged(n.children, dateStr, currentId, childSiblings);
-      if(!ok) return false;
+    let childSiblings = [];
+    if(match){
+      const {data:kids} = await sb.from('office_tasks').select('*').eq('parent_id', currentId);
+      childSiblings = kids||[];
+    }
+    const ok = await reconcileTaskTree(n.children, dateStr, currentId, childSiblings);
+    if(!ok) return false;
+  }
+  for(const e of existingSiblings){
+    if(!usedIds.has(e.id)){
+      await sb.from('office_tasks').delete().eq('id', e.id);
     }
   }
   return true;
@@ -884,7 +888,6 @@ function renderOfficeItem(t, depth, editable){
   return `<div class="check-item ${t.checked?'checked':''}" style="padding-left:${depth*24}px;">
     <input type="checkbox" ${t.checked?'checked':''} ${editable?'':'disabled'} onchange="OfficeTasks.toggle('${t.id}',this.checked)">
     <div style="flex:1;"><div class="label">${t.text}</div><div class="muted" style="font-size:.65rem;">Added ${addedStr}${t.completed_at?` · ✓ Completed ${completedStr}`:''}</div></div>
-    ${editable?`<button class="btn small ghost" onclick="OfficeTasks.editText('${t.id}','${t.text.replace(/'/g,"\\'")}')">✎</button>`:''}
     ${editable?`<button class="btn small ghost" onclick="OfficeTasks.remove('${t.id}')">✕</button>`:''}
   </div>`;
 }
@@ -985,21 +988,23 @@ const OfficeTasks = {
     await sb.from('office_tasks').delete().eq('date', GlobalView.date);
     renderOfficeTasks();
   },
-  async editText(id, oldText){
-    const newText = prompt('Edit task:', oldText);
-    if(newText===null) return;
-    const trimmed = newText.trim();
-    if(!trimmed || trimmed===oldText) return;
-    await sb.from('office_tasks').update({text:trimmed}).eq('id',id);
-    renderOfficeTasks();
+  async prefill(){
+    const dateStr = GlobalView.date;
+    const {data} = await sb.from('office_tasks').select('*').eq('date',dateStr).order('created_at');
+    function toText(rows, parentId, depth){
+      const kids = (rows||[]).filter(r=>r.parent_id===parentId);
+      let text='';
+      kids.forEach(k=>{ text += '\t'.repeat(depth)+k.text+'\n'; text += toText(rows, k.id, depth+1); });
+      return text;
+    }
+    $('officeTaskInput').value = toText(data, null, 0).trim();
   },
   async save(){
     const tree = parseOfficeTasksTree($('officeTaskInput').value);
-    if(!tree.length){ alert('Type at least one task first.'); return; }
     const dateStr = GlobalView.date;
     const {data:existingTop} = await sb.from('office_tasks').select('*').eq('date',dateStr).is('parent_id',null);
-    const ok = await saveTaskTreeMerged(tree, dateStr, null, existingTop||[]);
-    if(ok){ $('officeTaskInput').value=''; renderOfficeTasks(); }
+    const ok = await reconcileTaskTree(tree, dateStr, null, existingTop||[]);
+    if(ok) renderOfficeTasks();
   },
   async toggle(id, checked){
     const dateStr = GlobalView.date;
