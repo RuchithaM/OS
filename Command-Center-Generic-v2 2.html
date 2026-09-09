@@ -1,0 +1,2557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Command Center - Generic</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans','Segoe UI',sans-serif;background:#0f1117;color:#e2e8f0;min-height:100vh;-webkit-font-smoothing:antialiased;font-size:11px}
+
+.app-header{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;background:#161822;border-bottom:1px solid #252836;flex-wrap:wrap;gap:8px}
+.header-label{font-size:9px;font-weight:700;color:#6366f1;letter-spacing:0.14em;text-transform:uppercase}
+.header-date{font-size:16px;font-weight:700;font-family:'DM Mono',monospace;color:#f1f5f9;margin-top:1px}
+.header-stats{display:flex;gap:12px;font-size:11px;font-weight:600;font-family:'DM Mono',monospace}
+.hs-item{opacity:0.9}
+.header-actions{display:flex;gap:4px;margin-top:4px}
+.export-btn{padding:4px 10px;border-radius:6px;border:1px solid #333;background:#1e2030;color:#94a3b8;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s}
+.export-btn:hover{background:#252836;color:#e2e8f0;border-color:#444}
+.export-btn.danger{border-color:#7f1d1d;color:#f87171}
+.export-btn.undo{border-color:#4338ca;color:#818cf8}
+.export-btn.undo:hover{background:#312e81;color:#a5b4fc}
+.export-btn.undo.disabled{opacity:0.3;pointer-events:none}
+.export-btn.save{border-color:#065f46;color:#34d399}
+.export-btn.save:hover{background:#064e3b;color:#6ee7b7}
+.hdr-sep{width:1px;height:16px;background:#333;margin:0 2px}
+
+.two-pane{display:flex;height:calc(100vh - 56px);overflow:hidden;position:relative}
+.left-pane{flex:1;min-width:0;display:flex;flex-direction:column;border-right:1px solid #252836;background:#13151e}
+.right-pane{width:360px;min-width:200px;display:flex;flex-direction:column;background:#161822}
+@media(max-width:900px){.two-pane{flex-direction:column}.right-pane{width:100%;min-height:280px;border-top:2px solid #6366f1}}
+
+.pane-header{display:flex;justify-content:space-between;align-items:center;padding:6px 12px;background:#1a1d2e;border-bottom:1px solid #252836}
+.pane-header.right{background:#1a1d2e}
+.pane-tabs{display:flex;gap:3px}
+.pane-tab{padding:4px 12px;border-radius:6px;border:none;background:transparent;color:#64748b;font-weight:600;font-size:11px;cursor:pointer;font-family:inherit;transition:all 0.15s}
+.pane-tab.active{background:#6366f1;color:#fff}
+.plan-title{font-size:13px;font-weight:700;color:#f1f5f9}
+.plan-count{font-size:10px;color:#64748b;font-weight:600}
+
+.pane-toolbar{padding:6px 12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;border-bottom:1px solid #252836;background:#161822}
+.search-input{flex:1;min-width:140px;padding:5px 10px;border-radius:6px;border:1px solid #333;font-size:11px;font-family:inherit;outline:none;background:#1e2030;color:#e2e8f0}
+.search-input:focus{border-color:#6366f1}
+.search-input::placeholder{color:#475569}
+.toolbar-btns{display:flex;gap:3px}
+.sm-btn{padding:4px 8px;border-radius:5px;border:1px solid #333;background:#1e2030;color:#94a3b8;font-size:9px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s}
+.sm-btn:hover{background:#252836;color:#e2e8f0}
+.sm-btn.accent{border-color:#4338ca;color:#818cf8}
+
+/* ── COMPACT TREE ── */
+.tree-container{flex:1;overflow-y:auto;padding:6px 10px}
+.tree-container::-webkit-scrollbar{width:5px}
+.tree-container::-webkit-scrollbar-track{background:#13151e}
+.tree-container::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
+
+.card{background:#1a1d2e;border-radius:8px;border:1px solid #252836;padding:2px 8px;margin-bottom:8px}
+.card-red{border-color:#7f1d1d}
+
+/* Compact tree nodes */
+.tn{border-bottom:1px solid #1e2030}.tn:last-child{border-bottom:none}
+.nr{display:flex;align-items:center;gap:3px;padding:2px 0;border-radius:3px;cursor:default;line-height:1.35}
+.nr:hover{background:#1e203040}
+.nr[draggable="true"]{cursor:grab}
+.nr.drop-above{border-top:2px solid #6366f1!important;margin-top:-1px}
+.nr.drop-below{border-bottom:2px solid #6366f1!important;margin-bottom:-1px}
+.nr.drop-inside{background:#6366f118!important;outline:1px dashed #6366f1;outline-offset:-1px;border-radius:4px}
+.ni{display:inline-block;width:12px;min-width:12px}
+.nt{width:16px;min-width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;font-size:9px;color:#475569;border-radius:3px;padding:0}
+.nt:hover{background:#252836;color:#818cf8}
+.nt.expanded{color:#818cf8}
+.nl{width:16px;min-width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;font-size:5px;color:#333}
+.cb{width:14px;height:14px;min-width:14px;border-radius:4px;border:1.5px solid;background:transparent;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all 0.12s;font-size:0;padding:0}
+.cb.chk{border:none;color:#fff;font-size:9px;font-weight:700}
+.cdot{width:6px;height:6px;min-width:6px;border-radius:2px;display:inline-block;margin-right:2px}
+.nt2{font-size:11px;color:#cbd5e1;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nt2.done{text-decoration:line-through;color:#475569;opacity:0.4}
+.nt2.parent{font-weight:700;color:#e2e8f0;font-size:11px}
+.nt2.l1{font-size:14px;font-weight:700;color:#f1f5f9;letter-spacing:0.01em}
+.comp-label{font-size:9px;font-weight:600;margin-left:4px}
+.itags{margin-left:4px}
+.itag{font-size:8px;font-weight:700;padding:0 4px;border-radius:3px;margin-left:2px}
+.itag.blocked{background:#7f1d1d;color:#fca5a5}
+.itag.inplan{background:#064e3b;color:#6ee7b7}
+.itag.rec{background:#312e81;color:#a5b4fc}
+
+.nact{display:none;gap:1px;margin-left:auto;flex-shrink:0}
+.nr:hover .nact{display:inline-flex}
+.abtn{width:18px;height:18px;border-radius:3px;border:1px solid #333;background:transparent;color:#64748b;font-size:9px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all 0.1s;padding:0}
+.abtn:hover{background:#252836;color:#e2e8f0}
+.abtn.go{background:#059669;color:#fff;border-color:#059669;font-weight:700;font-size:10px}
+.abtn.go:hover{background:#047857}
+.abtn.blk{opacity:1;border:none}
+.abtn.plus{font-size:12px;font-weight:300}
+.abtn.plus:hover{color:#818cf8;border-color:#4338ca}
+.abtn.mv{font-size:7px;color:#475569}
+.abtn.mv:hover{color:#38bdf8;border-color:#0284c7}
+.abtn.ind{font-size:9px;color:#475569}
+.abtn.ind:hover{color:#a78bfa;border-color:#6d28d9}
+.abtn.del{color:#64748b;font-size:8px}
+.abtn.del:hover{background:#450a0a;color:#f87171;border-color:#7f1d1d}
+.abtn.edt{font-size:10px;color:#475569}
+.abtn.edt:hover{color:#fbbf24;border-color:#b45309}
+.edit-inline{flex:1;min-width:0;padding:1px 6px;border-radius:4px;border:1px solid #6366f1;font-size:11px;font-family:inherit;outline:none;background:#1e2030;color:#e2e8f0;line-height:1.5}
+.edit-inline:focus{border-color:#818cf8;box-shadow:0 0 0 2px #6366f130}
+
+.nch{/* children container */}
+
+/* ── Add Form ── */
+.add-form{padding:4px 0 6px;border-bottom:1px solid #252836}
+.add-form.top-add{padding:0 12px 8px}
+.add-input{width:100%;padding:5px 8px;border-radius:5px;border:1px solid #333;font-size:11px;font-family:inherit;outline:none;background:#1e2030;color:#e2e8f0;margin-bottom:4px}
+.add-input:focus{border-color:#6366f1}
+.add-textarea{width:100%;padding:5px 8px;border-radius:5px;border:1px solid #333;font-size:11px;font-family:inherit;outline:none;background:#1e2030;color:#e2e8f0;margin-bottom:4px;resize:vertical;line-height:1.5}
+.add-textarea:focus{border-color:#6366f1}
+.add-textarea::placeholder{color:#475569}
+.add-form-row{display:flex;gap:3px;flex-wrap:wrap;align-items:center}
+.add-select{padding:3px 4px;border-radius:4px;border:1px solid #333;font-size:9px;background:#1e2030;color:#94a3b8;font-family:inherit}
+.add-confirm{padding:3px 10px;border-radius:4px;border:none;background:#6366f1;color:#fff;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit}
+.add-cancel{padding:3px 8px;border-radius:4px;border:1px solid #333;background:transparent;color:#64748b;font-size:10px;cursor:pointer;font-family:inherit}
+
+/* ── Recommendations ── */
+.rec-header{font-size:11px;font-weight:700;color:#e2e8f0;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.rec-hint{font-size:9px;font-weight:500;color:#475569}
+
+/* ── Right Pane ── */
+.plan-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#475569;padding:30px 16px}
+.plan-empty-icon{font-size:32px;margin-bottom:10px;opacity:0.3}
+.plan-empty-text{text-align:center;font-size:12px;line-height:1.6}
+.plan-list{flex:1;overflow-y:auto;padding:8px 10px}
+.plan-list::-webkit-scrollbar{width:5px}
+.plan-list::-webkit-scrollbar-track{background:#161822}
+.plan-list::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
+.plan-item{background:#1a1d2e;border-radius:6px;padding:5px 8px;margin-bottom:3px;border:1px solid #252836;transition:all 0.15s;cursor:grab}
+.plan-item:hover{border-color:#333}
+.plan-item.plan-drop-above{border-top:2px solid #6366f1!important;margin-top:-1px}
+.plan-item.plan-drop-below{border-bottom:2px solid #6366f1!important;margin-bottom:-1px}
+.plan-item-top{display:flex;gap:6px;align-items:center}
+.plan-num{width:18px;height:18px;min-width:18px;border-radius:50%;background:#252836;color:#818cf8;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace}
+.plan-text{font-size:11px;font-weight:600;color:#e2e8f0;line-height:1.3}
+.plan-breadcrumb{font-size:8px;color:#475569;margin-top:0;line-height:1.2}
+.plan-actions{display:flex;flex-direction:row;gap:2px}
+.plan-move,.plan-done,.plan-remove{width:18px;height:18px;border-radius:3px;border:1px solid #333;background:transparent;color:#64748b;font-size:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.12s}
+.plan-move:hover{background:#252836;color:#e2e8f0}
+.plan-done{border-color:#065f46;color:#34d399}
+.plan-done:hover{background:#065f46;color:#fff}
+.plan-remove:hover{background:#450a0a;color:#f87171;border-color:#7f1d1d}
+.plan-item.plan-drop-above{border-top:2px solid #6366f1!important;margin-top:-1px}
+.plan-item.plan-drop-below{border-bottom:2px solid #6366f1!important;margin-bottom:-1px}
+.plan-item:active{cursor:grabbing}
+.plan-footer{padding:8px 10px;border-top:1px solid #252836;display:flex;justify-content:center}
+
+.empty-state{padding:16px;text-align:center;color:#475569;font-size:11px}
+.section-title{font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px}
+
+/* Briefing reuse old classes for pills */
+.pill{display:inline-block;padding:0 5px;border-radius:99px;font-size:9px;font-weight:600;white-space:nowrap;border:1px solid;line-height:1.6}
+.node-text{font-size:11px;line-height:1.4;color:#cbd5e1}
+.node-text.done{text-decoration:line-through;color:#475569;opacity:0.5}
+.node-meta{display:flex;gap:3px;margin-top:2px;flex-wrap:wrap;align-items:center}
+.checkbox{width:14px;height:14px;min-width:14px;border-radius:4px;border:1.5px solid;background:transparent;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:0;padding:0}
+.checkbox.checked{border:none;color:#fff;font-size:9px;font-weight:700}
+.add-plan-btn{background:#059669;color:#fff;border:none;border-radius:3px;width:18px;height:18px;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700}
+.add-plan-btn:hover{background:#047857}
+.phase-select{padding:0 3px;border-radius:4px;border:1px solid #333;font-size:9px;background:#1e2030;color:#94a3b8;font-family:inherit;cursor:pointer;font-weight:600}
+.tree-node{border-bottom:1px solid #1e2030}.tree-node:last-child{border-bottom:none}
+.node-row{display:flex;align-items:center;gap:5px;padding:3px 0}
+.node-row[draggable="true"]{cursor:grab}
+
+/* ── Edit Tab / Outliner ── */
+.ed-toolbar{padding:6px 12px;border-bottom:1px solid #252836;background:#161822}
+.ed-hint{font-size:9px;color:#475569;line-height:1.8}
+.ed-hint b{color:#64748b;font-weight:600}
+.ed-card{padding:8px 12px}
+.ed-row{display:flex;align-items:center;gap:3px;padding:1px 0;min-height:24px}
+.ed-text{flex:1;min-width:0;font-size:11px;color:#cbd5e1;padding:2px 4px;border-radius:3px;outline:none;cursor:text;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.ed-text:focus{background:#1e2030;box-shadow:0 0 0 1px #6366f140}
+.ed-text.done{text-decoration:line-through;color:#475569;opacity:0.4}
+.ed-text.ed-l1{font-size:14px;font-weight:700;color:#f1f5f9}
+.ed-text[draggable="true"]{cursor:grab}
+.ed-text[draggable="true"]:focus{cursor:text}
+.ed-grip{display:inline-flex;align-items:center;justify-content:center;width:14px;min-width:14px;height:18px;cursor:grab;color:#333;font-size:10px;border-radius:2px;transition:color 0.15s;user-select:none}
+.ed-grip:hover{color:#818cf8}
+.ed-grip:active{cursor:grabbing}
+.ed-children{/* inherits from tree */}
+.ed-plan{opacity:0;transition:opacity 0.15s}
+.ed-row:hover .ed-plan{opacity:1}
+.ed-row.ed-selected{background:#6366f118;border-radius:3px}
+.ed-row.ed-selected .ed-text{color:#c7d2fe}
+
+
+.help-btn{border-color:#4338ca;color:#818cf8}
+.help-btn:hover{background:#312e81;color:#a5b4fc}
+.help-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
+.help-panel{background:#1a1d2e;border:1px solid #333;border-radius:14px;max-width:560px;width:100%;max-height:85vh;overflow-y:auto;padding:28px 24px;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.5)}
+.help-panel::-webkit-scrollbar{width:5px}
+.help-panel::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
+.help-close{position:absolute;top:12px;right:16px;font-size:16px;color:#64748b;cursor:pointer;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px}
+.help-close:hover{background:#252836;color:#e2e8f0}
+.help-title{font-size:18px;font-weight:700;color:#f1f5f9;margin-bottom:20px;font-family:'DM Mono',monospace}
+.help-section{margin-bottom:16px}
+.help-h{font-size:12px;font-weight:700;color:#818cf8;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px}
+.help-p{font-size:12px;color:#94a3b8;line-height:1.6;margin-bottom:4px}
+.help-p b{color:#cbd5e1}
+.help-keys{width:100%;border-collapse:collapse}
+.help-keys td{font-size:11px;color:#94a3b8;padding:3px 8px;border-bottom:1px solid #252836}
+.help-keys td:first-child{color:#cbd5e1;white-space:nowrap;width:140px}
+
+/* ── Help Infographic ── */
+.help-infographic{background:#13151e;border:1px solid #252836;border-radius:10px;padding:14px;margin-bottom:16px}
+.hi-flow{display:flex;align-items:center;justify-content:center;gap:4px;flex-wrap:wrap}
+.hi-step{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 14px;background:#1a1d2e;border:1px solid #252836;border-radius:8px;min-width:90px;flex:1}
+.hi-step.hi-alt{border-color:#6366f130;background:#1e2040}
+.hi-icon{font-size:20px}
+.hi-label{font-size:9px;color:#94a3b8;text-align:center;font-weight:600;line-height:1.3}
+.hi-arrow{color:#333;font-size:14px;min-width:16px;text-align:center}
+
+.resize-handle{width:6px;cursor:col-resize;background:transparent;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background 0.15s;position:relative;z-index:5}
+.resize-handle:hover,.resize-handle.dragging{background:#6366f130}
+.resize-handle::after{content:'';width:2px;height:40px;background:#333;border-radius:1px;transition:background 0.15s}
+.resize-handle:hover::after,.resize-handle.dragging::after{background:#6366f1}
+
+/* ── Notes Tab ── */
+.notes-toolbar{padding:8px 12px;border-bottom:1px solid #252836;background:#161822;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.notes-hint{font-size:10px;color:#64748b;line-height:1.5}
+.notes-hint b{color:#94a3b8}
+.notes-toolbar-btns{display:flex;gap:4px}
+.notes-editor-wrap{flex:1;overflow-y:auto;padding:12px}
+.notes-editor-wrap::-webkit-scrollbar{width:5px}
+.notes-editor-wrap::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
+.notes-editor{min-height:calc(100vh - 160px);padding:16px 20px;background:#1a1d2e;border:1px solid #252836;border-radius:10px;color:#e2e8f0;font-size:13px;line-height:1.7;font-family:'DM Sans',sans-serif;outline:none;white-space:pre-wrap;word-break:break-word}
+.notes-editor:focus{border-color:#6366f140}
+.notes-editor::selection{background:#6366f140}
+.notes-editor:empty:before{content:attr(placeholder);color:#475569}
+
+/* ── Review UI ── */
+.notes-review{display:flex;flex-direction:column;flex:1;overflow:hidden}
+.notes-review-bar{padding:8px 12px;border-bottom:1px solid #252836;background:#161822;display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0}
+.notes-review-count{font-size:11px;color:#94a3b8;font-weight:600;flex:1}
+.notes-review-body{flex:1;overflow-y:auto;padding:12px}
+.notes-review-body::-webkit-scrollbar{width:5px}
+.notes-review-body::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
+
+/* ── Fixed summary area ── */
+.extract-fixed{padding:10px 12px;border-bottom:1px solid #252836;background:#13151e;flex-shrink:0;max-height:45%;overflow-y:auto}
+.extract-fixed::-webkit-scrollbar{width:4px}
+.extract-fixed::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
+
+/* ── Scrollable diff tree ── */
+.diff-scroll{flex:1;overflow-y:auto;padding:10px 12px}
+.diff-scroll::-webkit-scrollbar{width:5px}
+.diff-scroll::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
+
+/* ── Processing state ── */
+.notes-processing{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:16px}
+.notes-spinner{width:32px;height:32px;border:3px solid #252836;border-top-color:#6366f1;border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.notes-proc-text{text-align:center;font-size:14px;color:#e2e8f0;line-height:1.6}
+.notes-error{padding:16px;background:#450a0a;border:1px solid #7f1d1d;border-radius:8px;color:#fca5a5;font-size:12px;margin-bottom:12px}
+.notes-empty{padding:40px;text-align:center;color:#64748b;font-size:13px}
+
+/* ── Flow Hint ── */
+.api-status{font-size:10px;font-weight:600;padding:3px 8px;border-radius:99px}
+.api-status.connected{color:#34d399;background:#064e3b}
+.notes-flow-hint{padding:16px;background:#1e2030;border-bottom:1px solid #252836}
+.nfh-title{font-size:12px;font-weight:700;color:#f1f5f9;margin-bottom:10px}
+.nfh-steps{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.nfh-step{background:#1a1d2e;border:1px solid #252836;border-radius:8px;padding:8px 12px;display:flex;gap:8px;align-items:center;flex:1;min-width:140px}
+.nfh-num{width:22px;height:22px;border-radius:50%;background:#6366f1;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;min-width:22px;font-family:'DM Mono',monospace}
+.nfh-text{font-size:10px;color:#94a3b8;line-height:1.4}
+.nfh-text b{color:#e2e8f0}
+.nfh-arrow{color:#333;font-size:14px;min-width:16px;text-align:center}
+
+/* ── Import Panel ── */
+.import-panel{padding:14px 16px;background:#1e2030;border-bottom:1px solid #252836}
+.import-title{font-size:13px;font-weight:700;color:#f1f5f9;margin-bottom:4px}
+.import-desc{font-size:11px;color:#64748b;line-height:1.5;margin-bottom:10px}
+.import-textarea{width:100%;min-height:120px;padding:10px 14px;border-radius:8px;border:1px solid #333;background:#13151e;color:#e2e8f0;font-family:'DM Mono',monospace;font-size:11px;line-height:1.5;resize:vertical;outline:none}
+.import-textarea:focus{border-color:#6366f1}
+.import-textarea::placeholder{color:#475569}
+.import-actions{display:flex;gap:8px;margin-top:8px}
+
+/* ── Diff Tree View ── */
+.diff-summary{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.diff-badge{font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;border:1px solid}
+.diff-badge-new{background:#064e3b;color:#6ee7b7;border-color:#065f46}
+.diff-badge-update{background:#78350f;color:#fbbf24;border-color:#92400e}
+.diff-badge-done{background:#1e3a5f;color:#60a5fa;border-color:#1e40af}
+.diff-badge-blocked{background:#7f1d1d;color:#fca5a5;border-color:#991b1b}
+
+.diff-tree{background:#1a1d2e;border:1px solid #252836;border-radius:10px;padding:8px 12px;overflow-x:auto}
+.diff-indent{display:inline-block;width:14px;min-width:14px}
+.diff-row{padding:3px 0;display:flex;align-items:flex-start;gap:4px;flex-wrap:wrap;border-bottom:1px solid #1e2030}
+.diff-row:last-child{border-bottom:none}
+.diff-row-changed{background:#fbbf2408;border-left:2px solid #fbbf24;padding-left:6px;margin:2px 0;border-radius:0 4px 4px 0}
+.diff-row-new{background:#05966910;border-left:2px solid #059669;padding-left:6px;margin:2px 0;border-radius:0 4px 4px 0;cursor:pointer;transition:all 0.15s}
+.diff-row-new:hover{background:#05966920}
+.diff-row-new.diff-accepted{background:#05966925;border-left-color:#34d399}
+.diff-row-new.diff-rejected{opacity:0.25}
+.diff-text{font-size:11px;color:#94a3b8;flex:1;min-width:0}
+.diff-text-current{color:#e2e8f0;font-weight:600}
+
+.diff-new-icon{width:18px;height:18px;min-width:18px;border-radius:4px;background:#064e3b;color:#6ee7b7;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center}
+.diff-new-text{font-size:11px;color:#6ee7b7;font-weight:600;flex:1;min-width:0}
+.diff-new-reason{font-size:9px;color:#818cf8;font-style:italic;padding:1px 0 4px;line-height:1.3}
+
+.diff-change{margin:4px 0 4px 20px;padding:6px 10px;background:#1e2030;border:1px solid #333;border-radius:6px;cursor:pointer;transition:all 0.15s}
+.diff-change:hover{border-color:#555}
+.diff-change.diff-accepted{background:#05966918;border-color:#065f46}
+.diff-change.diff-rejected{opacity:0.25}
+.diff-change-done{border-left:2px solid #3b82f6}
+.diff-change-blocked{border-left:2px solid #ef4444}
+.diff-change-head{display:flex;align-items:center;gap:6px}
+.diff-change-icon{width:18px;height:18px;min-width:18px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700}
+.diff-change-label{font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;flex:1}
+.diff-change-check{width:18px;height:18px;min-width:18px;border-radius:4px;border:2px solid #333;display:inline-flex;align-items:center;justify-content:center;font-size:0;color:transparent;transition:all 0.15s}
+.diff-change-check.checked{background:#059669;border-color:#059669;color:#fff;font-size:10px;font-weight:700}
+.diff-change-new{font-size:11px;color:#fbbf24;margin-top:4px;padding-left:24px}
+.diff-change-detail{font-size:10px;color:#94a3b8;margin-top:2px;padding-left:24px;line-height:1.4}
+.diff-change-reason{font-size:9px;color:#818cf8;margin-top:3px;padding-left:24px;font-style:italic;line-height:1.3}
+.diff-orphan-hint{font-size:10px;color:#64748b;margin-bottom:8px;font-style:italic}
+
+/* ── Extract Summary Card ── */
+.extract-summary{background:#1a1d2e;border:1px solid #252836;border-radius:10px;padding:12px 14px}
+.extract-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.extract-title{font-size:12px;font-weight:700;color:#f1f5f9}
+.extract-covered-badge{font-size:10px;color:#64748b;font-weight:500}
+.extract-list{display:flex;flex-direction:column;gap:3px;max-height:30vh;overflow-y:auto;scroll-behavior:smooth}
+.extract-list::-webkit-scrollbar{width:4px}
+.extract-list::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
+.extract-item{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;cursor:pointer;transition:all 0.15s;background:#161822;border:1px solid #1e2030}
+.extract-item:hover{background:#1e2040;border-color:#333}
+.extract-item.extract-accepted{background:#05966915;border-color:#065f46}
+.extract-check{width:16px;height:16px;min-width:16px;border-radius:4px;border:2px solid #333;display:flex;align-items:center;justify-content:center;font-size:0;color:transparent;transition:all 0.15s}
+.extract-check.checked{background:#059669;border-color:#059669;color:#fff;font-size:9px;font-weight:700}
+.extract-type{width:16px;height:16px;min-width:16px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700}
+.extract-label{font-size:8px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;min-width:44px}
+.extract-text{font-size:11px;color:#e2e8f0;font-weight:500;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.extract-where{font-size:9px;color:#475569;white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis}
+.extract-grip{color:#333;font-size:10px;cursor:grab;user-select:none;min-width:10px;transition:color 0.15s}
+.extract-item:hover .extract-grip{color:#818cf8}
+.extract-item[draggable="true"]{cursor:grab}
+.extract-item[draggable="true"]:active{cursor:grabbing;opacity:0.6}
+
+/* ── Diff drag target ── */
+.diff-row.diff-drop-target{background:#6366f120!important;outline:1px dashed #6366f1;outline-offset:-1px;border-radius:4px}
+.diff-drag-hint{font-size:9px;color:#475569;font-style:italic}
+.diff-row-new[draggable="true"]{cursor:grab}
+.diff-row-new[draggable="true"]:active{cursor:grabbing}
+
+/* ── Covered items ── */
+.extract-covered{opacity:0.6}
+.extract-text-covered{color:#64748b;font-style:italic}
+.prop-covered{background:#1e293b;color:#64748b}
+.diff-badge-covered{background:#1e293b;color:#64748b;border-color:#334155}
+.diff-row-covered{background:#1e293b10;border-left:2px solid #334155;padding-left:6px;margin:1px 0;border-radius:0 4px 4px 0}
+.diff-covered-tag{font-size:9px;font-weight:600;color:#64748b;background:#1e293b;padding:1px 8px;border-radius:99px;border:1px solid #334155;white-space:nowrap;margin-left:6px}
+
+/* ── Flash highlight on scroll-to ── */
+.diff-flash{animation:diffFlash 1.5s ease}
+@keyframes diffFlash{0%{background:#6366f140}50%{background:#6366f120}100%{background:transparent}}
+
+/* ── Diff tree section ── */
+.diff-tree-section{margin-top:8px}
+.diff-section-label{font-size:10px;font-weight:600;color:#475569;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+
+/* ── Proposal Items ── */
+.prop-group{margin-bottom:16px}
+.prop-group-title{font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.prop-group-icon{width:20px;height:20px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.prop-group-icon.prop-new{background:#064e3b;color:#6ee7b7}
+.prop-group-icon.prop-update{background:#78350f;color:#fbbf24}
+.prop-group-icon.prop-done{background:#1e3a5f;color:#60a5fa}
+.prop-group-icon.prop-blocked{background:#7f1d1d;color:#fca5a5}
+
+.prop-item{display:flex;gap:10px;padding:10px 12px;margin-bottom:6px;background:#1a1d2e;border:1px solid #252836;border-radius:8px;cursor:pointer;transition:all 0.15s;align-items:flex-start}
+.prop-item:hover{background:#1e2040;border-color:#333}
+.prop-item.prop-accepted{background:#064e3b30;border-color:#065f46}
+.prop-item.prop-rejected{opacity:0.3}
+
+.prop-check{width:20px;height:20px;min-width:20px;border-radius:5px;border:2px solid #333;display:flex;align-items:center;justify-content:center;transition:all 0.15s;font-size:0;color:transparent;margin-top:1px}
+.prop-check.checked{background:#059669;border-color:#059669;color:#fff;font-size:11px;font-weight:700}
+
+.prop-type{width:24px;height:24px;min-width:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.prop-type.prop-new{background:#064e3b;color:#6ee7b7}
+.prop-type.prop-update{background:#78350f;color:#fbbf24}
+.prop-type.prop-done{background:#1e3a5f;color:#60a5fa}
+.prop-type.prop-blocked{background:#7f1d1d;color:#fca5a5}
+
+.prop-body{flex:1;min-width:0}
+.prop-text{font-size:12px;font-weight:600;color:#e2e8f0;line-height:1.4}
+.prop-detail{font-size:11px;color:#94a3b8;margin-top:3px;line-height:1.4}
+.prop-reason{font-size:10px;color:#818cf8;margin-top:4px;line-height:1.3;font-style:italic}
+.prop-path{font-size:10px;color:#475569;margin-top:3px}
+
+.prop-actions{display:flex;gap:3px;flex-shrink:0}
+
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+var TREE=[{"id":"p1","text":"Personal","comp":"Personal","ch":[{"id":"p-ev","text":"Climb Everest","comp":"Personal","ch":[{"id":"ed-1781452397028-s17u2","text":"10 floors of stairs each day","comp":"Personal","ch":[]}]},{"id":"p-dance","text":"Learn tap dance","comp":"Personal","ch":[{"id":"p-d1","text":"Find a YouTube tutorial that doesn't start with 'Hey guys!'","comp":"Personal","ch":[]},{"id":"p-d2","text":"Practice without annoying neighbors at 11 PM","comp":"Personal","ch":[]}]}]},{"id":"g1","text":"My Growth","comp":"Growth","ch":[{"id":"g-ai","text":"Learn AI (beyond saying 'AI' in meetings)","comp":"Growth","ch":[{"id":"g-ai1","text":"Build something useful with AI","comp":"Growth","ch":[]},{"id":"g-ai2","text":"Automate the boring status reports","comp":"Growth","ch":[]}]},{"id":"g-raise","text":"Ask boss for a raise (practice confident face first)","comp":"Growth","ch":[]}]},{"id":"f1","text":"Firm Initiatives","comp":"Firm","ch":[{"id":"f-cross","text":"QA to BA Cross-skilling","comp":"Firm","ch":[{"id":"f-cr1","text":"Identify candidates from QA pool","comp":"Firm","ch":[]},{"id":"f-cr2","text":"Design training curriculum","comp":"Firm","ch":[]}]},{"id":"f-hack","text":"AI Hackathon","comp":"Firm","ch":[{"id":"f-hk1","text":"Form cross-functional team","comp":"Firm","ch":[]},{"id":"f-hk2","text":"Shortlist use cases","comp":"Firm","ch":[]}]}]},{"id":"pj1","text":"Project Phoenix","comp":"Project 1","ch":[{"id":"px-r1","text":"Release 1 - Foundation","comp":"Project 1","ch":[{"id":"px-s1","text":"Provision dev, staging, and prod environments","comp":"Project 1","ch":[]},{"id":"px-q2","text":"Prepare UAT test plan and coordinate with client","comp":"Project 1","ch":[]}]},{"id":"px-r2","text":"Release 2 - Enhancements","comp":"Project 1","ch":[{"id":"px-r2a","text":"Add real-time notification system","comp":"Project 1","ch":[]},{"id":"px-r2b","text":"Build export module for PDF and Excel reports","comp":"Project 1","ch":[]},{"id":"px-r2c","text":"Run performance profiling and fix bottlenecks","comp":"Project 1","ch":[]}]}]},{"id":"pj2","text":"Project Atlas","comp":"Project 2","ch":[{"id":"pa-disc","text":"Discovery Phase","comp":"Project 2","ch":[{"id":"pa-d1","text":"Schedule and run stakeholder interviews","comp":"Project 2","ch":[]},{"id":"pa-d2","text":"Document current-state business processes","comp":"Project 2","ch":[]},{"id":"pa-d3","text":"Compile requirements and get sign-off","comp":"Project 2","ch":[]},{"id":"pa-d4","text":"Draft solution architecture proposal","comp":"Project 2","ch":[]}]},{"id":"pa-staff","text":"Staffing & Planning","comp":"Project 2","ch":[{"id":"pa-st1","text":"Finalize resource allocation with RM","comp":"Project 2","ch":[]},{"id":"pa-st2","text":"Create onboarding schedule","comp":"Project 2","ch":[]},{"id":"pa-st3","text":"Set up project governance and RACI","comp":"Project 2","ch":[]}]}]}];
+</script>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+var PP={this_week:1,weekly:2,this_sprint:3,monthly:4,this_month:5,someday:6};
+var PL={this_week:"This Week",weekly:"Weekly",this_sprint:"This Sprint",monthly:"Monthly",this_month:"This Month",someday:"Someday"};
+var EI={small:"\u26A1",medium:"\u25D0",large:"\u25CF"};
+var CC={"Personal":"#14b8a6","Growth":"#f59e0b","Firm":"#6366f1","Project 1":"#0891b2","Project 2":"#ec4899"};
+
+var exp={},dn={},bl={},po={};
+var dayPlan=["ed-1781452397028-s17u2","g-ai1","f-cr2","px-q2","pa-d4","pa-st1"]; // array of task ids in the right pane
+var baselineDayPlan=["ed-1781452397028-s17u2","g-ai1","f-cr2","px-q2","pa-d4","pa-st1"]; // preserved for reset
+var cv="edit"; // left pane view: tree or briefing
+var st="";
+var mt=null;
+var showHelp=false;
+var dragId=null;
+var addMode=null; // {parentId, afterId} or null
+var editId=null; // id of node currently being inline-edited
+var newCompName="";
+
+var firstLoad=true;
+var undoStack=[];
+var MAX_UNDO=50;
+
+try{var s=localStorage.getItem("dcc-team-9");if(s){var d=JSON.parse(s);exp=d.e||{};dn=d.d||{};bl=d.b||{};po=d.p||{};dayPlan=d.dp||[];firstLoad=false;}}catch(e){}
+// On first load, expand everything for bird's eye view
+if(firstLoad){(function w(ns){for(var i=0;i<ns.length;i++){if(ns[i].ch&&ns[i].ch.length>0){exp[ns[i].id]=true;w(ns[i].ch);}}})(TREE);}
+
+function getSnapshot(){
+  return JSON.stringify({tree:TREE,e:exp,d:dn,b:bl,p:po,dp:dayPlan});
+}
+function pushUndo(){
+  undoStack.push(getSnapshot());
+  if(undoStack.length>MAX_UNDO)undoStack.shift();
+}
+function undo(){
+  if(undoStack.length===0)return;
+  var snap=JSON.parse(undoStack.pop());
+  TREE.length=0;
+  for(var i=0;i<snap.tree.length;i++)TREE.push(snap.tree[i]);
+  exp=snap.e||{};dn=snap.d||{};bl=snap.b||{};po=snap.p||{};dayPlan=snap.dp||[];
+  sv();R();
+}
+
+function sv(){try{localStorage.setItem("dcc-team-9",JSON.stringify({e:exp,d:dn,b:bl,p:po,dp:dayPlan,tree:TREE}));}catch(e){}}
+
+// Save full state to downloadable JSON file
+function saveToFile(){
+  var data=JSON.stringify({tree:TREE,e:exp,d:dn,b:bl,p:po,dp:dayPlan,cc:CC,saved:new Date().toISOString()},null,2);
+  var blob=new Blob([data],{type:"application/json"});
+  var a=document.createElement("a");a.href=URL.createObjectURL(blob);
+  a.download="command-center-"+new Date().toISOString().slice(0,10)+".json";
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+
+// Load state from JSON file
+function loadFromFile(){
+  var input=document.createElement("input");input.type="file";input.accept=".json";
+  input.onchange=function(e){
+    var file=e.target.files[0];if(!file)return;
+    var reader=new FileReader();
+    reader.onload=function(ev){
+      try{
+        var data=JSON.parse(ev.target.result);
+        pushUndo();
+        TREE.length=0;
+        for(var i=0;i<data.tree.length;i++)TREE.push(data.tree[i]);
+        exp=data.e||{};dn=data.d||{};bl=data.b||{};po=data.p||{};dayPlan=data.dp||[];
+        if(data.cc){for(var k in data.cc){CC[k]=data.cc[k];}}
+        sv();R();
+      }catch(err){alert("Could not load file: "+err.message);}
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+// Load tree from localStorage if previously saved with tree
+try{
+  var s2=localStorage.getItem("dcc-team-9");
+  if(s2){var d2=JSON.parse(s2);if(d2.tree){TREE.length=0;for(var ti=0;ti<d2.tree.length;ti++)TREE.push(d2.tree[ti]);}}
+}catch(e){}
+
+// ═══════════════════════════════════════════════════════════════
+// TREE HELPERS
+// ═══════════════════════════════════════════════════════════════
+function esc(s){var d=document.createElement("div");d.textContent=s;return d.innerHTML;}
+function gp(n){return po[n.id]||n.phase||"";}
+function ib(n){return bl[n.id]!==undefined?bl[n.id]:!!n.blocked;}
+function isDone(n){return !!dn[n.id];}
+function hc(n){return n.ch&&n.ch.length>0;}
+function ig(n){return hc(n)&&!gp(n);}
+
+function findNode(id,nodes){
+  for(var i=0;i<nodes.length;i++){
+    if(nodes[i].id===id)return nodes[i];
+    if(hc(nodes[i])){var f=findNode(id,nodes[i].ch);if(f)return f;}
+  }
+  return null;
+}
+
+function findParent(id,nodes,parent){
+  for(var i=0;i<nodes.length;i++){
+    if(nodes[i].id===id)return {parent:parent,index:i};
+    if(hc(nodes[i])){var f=findParent(id,nodes[i].ch,nodes[i]);if(f)return f;}
+  }
+  return null;
+}
+
+function collectLeaves(ns,o){
+  for(var i=0;i<ns.length;i++){
+    var n=ns[i];
+    if(!hc(n)&&!isDone(n))o.push(n);
+    else if(hc(n))collectLeaves(n.ch,o);
+  }
+}
+
+function collectAll(ns,o){
+  for(var i=0;i<ns.length;i++){
+    var n=ns[i];if(gp(n)&&n.effort)o.push(n);
+    if(hc(n))collectAll(n.ch,o);
+  }
+}
+
+function getPath(id,nodes,path){
+  for(var i=0;i<nodes.length;i++){
+    var np=path.concat([nodes[i].text]);
+    if(nodes[i].id===id)return np;
+    if(hc(nodes[i])){var f=getPath(id,nodes[i].ch,np);if(f)return f;}
+  }
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ACTIONS
+// ═══════════════════════════════════════════════════════════════
+function te(i){exp[i]=!exp[i];sv();R();} // no undo for expand/collapse
+function td(i){pushUndo();dn[i]=!dn[i];sv();R();}
+function tb(i){pushUndo();bl[i]=bl[i]!==undefined?!bl[i]:true;sv();R();}
+function cp(i,p){pushUndo();po[i]=p;sv();R();}
+function ra(){if(confirm("Reset everything?")){pushUndo();exp={};dn={};bl={};po={};dayPlan=baselineDayPlan.slice();(function w(ns){for(var i=0;i<ns.length;i++){if(ns[i].ch&&ns[i].ch.length>0){exp[ns[i].id]=true;w(ns[i].ch);}}})(TREE);sv();R();}}
+
+function ea(){
+  function w(ns){for(var i=0;i<ns.length;i++){if(hc(ns[i])){exp[ns[i].id]=true;w(ns[i].ch);}}}
+  w(TREE);sv();R();
+}
+function ca(){exp={};sv();R();}
+
+// Expand to specific depth level
+function expandToLevel(maxDepth){
+  exp={};
+  function w(ns,d){for(var i=0;i<ns.length;i++){if(hc(ns[i])){if(d<maxDepth){exp[ns[i].id]=true;}w(ns[i].ch,d+1);}}}
+  w(TREE,0);sv();R();
+}
+
+// ─── Tree structure manipulation: move, indent, outdent ───
+function getContainer(id){
+  // returns {arr, idx} where arr is the children array containing the node
+  function search(arr){
+    for(var i=0;i<arr.length;i++){
+      if(arr[i].id===id)return {arr:arr,idx:i};
+      if(hc(arr[i])){var r=search(arr[i].ch);if(r)return r;}
+    }
+    return null;
+  }
+  return search(TREE);
+}
+
+function moveNode(id,dir){
+  var loc=getContainer(id);if(!loc)return;
+  var ni=loc.idx+dir;
+  if(ni<0||ni>=loc.arr.length)return;
+  pushUndo();
+  var tmp=loc.arr[ni];loc.arr[ni]=loc.arr[loc.idx];loc.arr[loc.idx]=tmp;
+  sv();R();
+}
+
+function indentNode(id){
+  // Make this node a child of its previous sibling
+  var loc=getContainer(id);if(!loc||loc.idx===0)return;
+  pushUndo();
+  var node=loc.arr.splice(loc.idx,1)[0];
+  var prevSibling=loc.arr[loc.idx-1];
+  if(!prevSibling.ch)prevSibling.ch=[];
+  prevSibling.ch.push(node);
+  exp[prevSibling.id]=true; // expand parent so user can see it
+  sv();R();
+}
+
+function outdentNode(id){
+  // Move this node up one level - become sibling of its parent
+  var info=findParent(id,TREE,null);
+  if(!info||!info.parent)return; // already top-level
+  var parentInfo=getContainer(info.parent.id);
+  if(!parentInfo)return;
+  pushUndo();
+  // Remove from parent's children
+  var node=info.parent.ch.splice(info.index,1)[0];
+  // Insert after parent in parent's container
+  parentInfo.arr.splice(parentInfo.idx+1,0,node);
+  sv();R();
+}
+
+function deleteNode(id){
+  // Delete only this node; its children get promoted to the same level
+  var loc=getContainer(id);if(!loc)return;
+  pushUndo();
+  var node=loc.arr[loc.idx];
+  var children=(node.ch&&node.ch.length>0)?node.ch.slice():[];
+  // Remove the node
+  loc.arr.splice(loc.idx,1);
+  // Insert its children at the same position
+  for(var i=children.length-1;i>=0;i--){
+    loc.arr.splice(loc.idx,0,children[i]);
+  }
+  // Also remove from dayPlan if present
+  dayPlan=dayPlan.filter(function(x){return x!==id;});
+  sv();R();
+}
+
+// Day plan actions
+function addToPlan(id){
+  if(dayPlan.indexOf(id)<0){pushUndo();dayPlan.push(id);sv();R();}
+}
+function removeFromPlan(id){
+  pushUndo();dayPlan=dayPlan.filter(function(x){return x!==id;});sv();R();
+}
+function completePlanItem(id){
+  pushUndo();dn[id]=true;
+  dayPlan=dayPlan.filter(function(x){return x!==id;});
+  sv();R();
+}
+function movePlanItem(id,dir){
+  var idx=dayPlan.indexOf(id);
+  if(idx<0)return;
+  var newIdx=idx+dir;
+  if(newIdx<0||newIdx>=dayPlan.length)return;
+  pushUndo();
+  var tmp=dayPlan[newIdx];
+  dayPlan[newIdx]=dayPlan[idx];
+  dayPlan[idx]=tmp;
+  sv();R();
+}
+function clearPlan(){
+  if(confirm("Clear today's plan?")){pushUndo();dayPlan=[];sv();R();}
+}
+
+// Parse indent level from leading whitespace: each 2 spaces or 1 tab = 1 level
+function parseIndentedLines(text){
+  var lines=text.split("\n");
+  var items=[];
+  for(var i=0;i<lines.length;i++){
+    var raw=lines[i];
+    if(!raw.trim())continue;
+    // Count leading whitespace
+    var indent=0;
+    for(var j=0;j<raw.length;j++){
+      if(raw[j]==="\t"){indent++;continue;}
+      if(raw[j]===" "){indent+=0.5;continue;}
+      break;
+    }
+    items.push({text:raw.trim(),level:Math.floor(indent)});
+  }
+  return items;
+}
+
+function addItem(parentId){
+  var text=document.getElementById("new-item-text");
+  if(!text||!text.value.trim())return;
+  var parent=findNode(parentId,TREE);
+  if(!parent)return;
+  if(!parent.ch)parent.ch=[];
+  pushUndo();
+  var compSel=document.getElementById("new-item-comp");
+  var phaseSel=document.getElementById("new-item-phase");
+  var effortSel=document.getElementById("new-item-effort");
+  var comp=compSel?compSel.value:parent.comp;
+  var phase=phaseSel?phaseSel.value:"this_sprint";
+  var effort=effortSel?effortSel.value:"medium";
+
+  var items=parseIndentedLines(text.value);
+  // Build nested structure: level 0 = direct children of parent, level 1 = children of last level-0, etc.
+  var stack=[{node:parent,level:-1}];
+  for(var i=0;i<items.length;i++){
+    var it=items[i];
+    var newNode={
+      id:"custom-"+Date.now()+"-"+Math.random().toString(36).substr(2,5)+i,
+      text:it.text, comp:comp, phase:phase, effort:effort, ch:[]
+    };
+    // Pop stack until we find a parent at a level less than current
+    while(stack.length>1&&stack[stack.length-1].level>=it.level){
+      stack.pop();
+    }
+    var target=stack[stack.length-1].node;
+    if(!target.ch)target.ch=[];
+    target.ch.push(newNode);
+    exp[target.id]=true;
+    stack.push({node:newNode,level:it.level});
+  }
+  exp[parentId]=true;
+  sv();R();
+  setTimeout(function(){var t=document.getElementById("new-item-text");if(t){t.value="";t.focus();}},50);
+}
+
+function addTopLevel(){
+  var text=document.getElementById("new-top-text");
+  if(!text||!text.value.trim())return;
+  pushUndo();
+  var compSel=document.getElementById("new-top-comp");
+  var comp=compSel?compSel.value:"PMO";
+
+  var items=parseIndentedLines(text.value);
+  // Build nested: level 0 = top-level, level 1+ = nested
+  var fakeRoot={ch:TREE};
+  var stack=[{node:fakeRoot,level:-1}];
+  for(var i=0;i<items.length;i++){
+    var it=items[i];
+    var newNode={
+      id:"top-"+Date.now()+"-"+Math.random().toString(36).substr(2,5)+i,
+      text:it.text, comp:comp, ch:[]
+    };
+    while(stack.length>1&&stack[stack.length-1].level>=it.level){
+      stack.pop();
+    }
+    var target=stack[stack.length-1].node;
+    if(!target.ch)target.ch=[];
+    target.ch.push(newNode);
+    if(target.id)exp[target.id]=true;
+    stack.push({node:newNode,level:it.level});
+  }
+  sv();R();
+  setTimeout(function(){var t=document.getElementById("new-top-text");if(t){t.value="";t.focus();}},50);
+}
+
+function addNewCompartment(){
+  var input=document.getElementById("new-comp-input");
+  if(!input||!input.value.trim())return;
+  var name=input.value.trim();
+  if(!CC[name]){
+    var hue=Math.floor(Math.random()*360);
+    CC[name]="hsl("+hue+",60%,45%)";
+  }
+  newCompName="";
+  addMode=null;sv();R();
+}
+
+// Drag and drop - supports both plan drops and tree rearrangement
+var dragId=null;
+var dropTarget=null; // {id, zone: "above"|"inside"|"below"}
+
+function onDragStart(e,id){
+  dragId=id;
+  e.dataTransfer.setData("text/plain",id);
+  e.dataTransfer.effectAllowed="copyMove";
+  e.dataTransfer.setDragImage(e.target,10,10);
+}
+function onDragOver(e){e.preventDefault();e.dataTransfer.dropEffect="copy";}
+function onDropPlan(e){
+  e.preventDefault();
+  var id=e.dataTransfer.getData("text/plain")||dragId;
+  if(id)addToPlan(id);
+  dragId=null;dropTarget=null;
+  clearDropIndicators();
+}
+
+function clearDropIndicators(){
+  var els=document.querySelectorAll(".drop-above,.drop-inside,.drop-below");
+  for(var i=0;i<els.length;i++){els[i].classList.remove("drop-above","drop-inside","drop-below");}
+}
+
+function onTreeDragOver(e,targetId){
+  e.preventDefault();
+  e.stopPropagation();
+  if(!dragId||dragId===targetId)return;
+  // Determine zone based on mouse Y position within the row
+  var rect=e.currentTarget.getBoundingClientRect();
+  var y=e.clientY-rect.top;
+  var h=rect.height;
+  clearDropIndicators();
+  var zone;
+  if(y<h*0.25){zone="above";}
+  else if(y>h*0.75){zone="below";}
+  else{zone="inside";}
+  dropTarget={id:targetId,zone:zone};
+  e.currentTarget.classList.add("drop-"+zone);
+}
+
+function onTreeDragLeave(e){
+  e.currentTarget.classList.remove("drop-above","drop-inside","drop-below");
+}
+
+function onTreeDrop(e,targetId){
+  e.preventDefault();
+  e.stopPropagation();
+  clearDropIndicators();
+  var srcId=e.dataTransfer.getData("text/plain")||dragId;
+  if(!srcId||srcId===targetId)return;
+  // Don't allow dropping a parent into its own descendant
+  var srcNode=findNode(srcId,TREE);
+  if(!srcNode)return;
+  function isDescendant(node,ancestorId){
+    if(node.id===ancestorId)return true;
+    if(hc(node)){for(var i=0;i<node.ch.length;i++){if(isDescendant(node.ch[i],ancestorId))return true;}}
+    return false;
+  }
+  if(isDescendant(srcNode,targetId))return;
+
+  var zone=dropTarget?dropTarget.zone:"inside";
+  pushUndo();
+
+  // Remove source from its current location
+  var srcLoc=getContainer(srcId);
+  if(!srcLoc)return;
+  srcLoc.arr.splice(srcLoc.idx,1);
+
+  // Insert at target location based on zone
+  var tgtLoc=getContainer(targetId);
+  if(!tgtLoc){dragId=null;dropTarget=null;return;}
+
+  if(zone==="above"){
+    tgtLoc.arr.splice(tgtLoc.idx,0,srcNode);
+  } else if(zone==="below"){
+    tgtLoc.arr.splice(tgtLoc.idx+1,0,srcNode);
+  } else { // inside
+    var tgtNode=findNode(targetId,TREE);
+    if(!tgtNode.ch)tgtNode.ch=[];
+    tgtNode.ch.push(srcNode);
+    exp[targetId]=true;
+  }
+
+  dragId=null;dropTarget=null;
+  sv();R();
+}
+
+// Inline edit
+function startEdit(id){
+  editId=id;R();
+  setTimeout(function(){
+    var inp=document.getElementById("edit-input");
+    if(inp){inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length);}
+  },30);
+}
+function saveEdit(id){
+  var inp=document.getElementById("edit-input");
+  if(!inp||!inp.value.trim()){editId=null;R();return;}
+  var node=findNode(id,TREE);
+  if(node&&node.text!==inp.value.trim()){
+    pushUndo();
+    node.text=inp.value.trim();
+    sv();
+  }
+  editId=null;R();
+}
+function cancelEdit(){editId=null;R();}
+function editKeyDown(e,id){
+  if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();saveEdit(id);}
+  if(e.key==="Escape"){e.preventDefault();cancelEdit();}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BRIEFING
+// ═══════════════════════════════════════════════════════════════
+function gb(){
+  var lv=[];collectLeaves(TREE,lv);var bk=[],rc=[];
+  for(var i=0;i<lv.length;i++){if(ib(lv[i]))bk.push(lv[i]);if(lv[i].rec)rc.push(lv[i]);}
+  // Group by compartment
+  var bc={};for(var i=0;i<lv.length;i++){var t=lv[i];if(!bc[t.comp])bc[t.comp]=[];bc[t.comp].push(t);}
+  var bal=[];var ckeys=Object.keys(bc);
+  for(var ci=0;ci<ckeys.length;ci++){
+    var items=bc[ckeys[ci]].filter(function(t){return !ib(t)&&!isDone(t)&&dayPlan.indexOf(t.id)<0;});
+    // If items have phases, sort by phase priority; otherwise just take first 2
+    var sorted=items.sort(function(a,b){return (PP[gp(a)]||50)-(PP[gp(b)]||50);});
+    if(sorted[0])bal.push(sorted[0]);
+    if(sorted[1])bal.push(sorted[1]);
+  }
+  var seen={};
+  var tp=bal.filter(function(t){if(seen[t.id])return false;seen[t.id]=true;return true;}).slice(0,12);
+  return {tp:tp,bk:bk,rc:rc};
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER HELPERS
+// ═══════════════════════════════════════════════════════════════
+function pl(t,c){return '<span class="pill" style="background:'+(c?c+"15":"#f1f5f9")+";color:"+(c||"#475569")+";border-color:"+(c?c+"40":"#e2e8f0")+'">'+esc(t)+"</span>";}
+
+function ms(n,s){
+  if(n.text.toLowerCase().indexOf(s)>=0||n.comp.toLowerCase().indexOf(s)>=0)return true;
+  if(hc(n)){for(var i=0;i<n.ch.length;i++){if(ms(n.ch[i],s))return true;}}
+  return false;
+}
+
+function compOptions(selected){
+  var h="";var keys=Object.keys(CC);
+  for(var i=0;i<keys.length;i++){h+='<option value="'+keys[i]+'"'+(selected===keys[i]?" selected":"")+">"+keys[i]+"</option>";}
+  return h;
+}
+
+function phaseOptions(selected){
+  var h="";var keys=["this_week","weekly","this_sprint","monthly","this_month","someday"];
+  for(var i=0;i<keys.length;i++){h+='<option value="'+keys[i]+'"'+(selected===keys[i]?" selected":"")+">"+PL[keys[i]]+"</option>";}
+  return h;
+}
+
+function rn(n,depth){
+  var p=gp(n),b=ib(n),done=isDone(n),x=!!exp[n.id],has=hc(n),g=ig(n),c=CC[n.comp]||"#64748b";
+  if(st&&!ms(n,st.toLowerCase()))return "";
+  var ind="";for(var i=0;i<depth;i++)ind+='<span class="ni"></span>';
+  var tog=has?'<button class="nt'+(x?" expanded":"")+'" onclick="te(\''+n.id+'\')">'+(x?"\u25BE":"\u25B8")+"</button>":'<span class="nl">\u2022</span>';
+
+  var inPlan=dayPlan.indexOf(n.id)>=0;
+  var dragAttr=' draggable="true" ondragstart="onDragStart(event,\''+n.id+'\')" ondragover="onTreeDragOver(event,\''+n.id+'\')" ondragleave="onTreeDragLeave(event)" ondrop="onTreeDrop(event,\''+n.id+'\')"';
+
+  var cb="";
+  if(p&&n.effort){cb='<button class="cb'+(done?" chk":"")+'" style="'+(done?"background:"+c+";":"border-color:"+c+"60;")+'" onclick="td(\''+n.id+'\')">'+(done?"\u2713":"")+"</button>";}
+
+  // Compact: parent nodes get bold name + compartment color bar; leaf nodes get inline tags
+  var textCls="nt2"+(done?" done":"")+(g?" parent":"")+(depth===0?" l1":"");
+  var compDot='<span class="cdot" style="background:'+c+'"></span>';
+
+  var inline="";
+
+  var actions='<span class="nact">';
+  if(p&&n.effort&&!done&&!inPlan){actions+='<button class="abtn go" onclick="addToPlan(\''+n.id+'\')" title="Add to plan">\u2192</button>';}
+  actions+='<button class="abtn edt" onclick="startEdit(\''+n.id+'\')" title="Edit">\u270E</button>';
+  actions+='<button class="abtn mv" onclick="moveNode(\''+n.id+'\',-1)" title="Move up">\u25B2</button>';
+  actions+='<button class="abtn mv" onclick="moveNode(\''+n.id+'\',1)" title="Move down">\u25BC</button>';
+  actions+='<button class="abtn ind" onclick="outdentNode(\''+n.id+'\')" title="Outdent (move left)">\u2190</button>';
+  actions+='<button class="abtn ind" onclick="indentNode(\''+n.id+'\')" title="Indent (move right)">\u2192</button>';
+  if(p&&n.effort){actions+='<button class="abtn'+(b?" blk":"")+'" onclick="tb(\''+n.id+'\')">'+(b?"\uD83D\uDD34":"\u23F8")+"</button>";}
+  actions+='<button class="abtn plus" onclick="addMode={pid:\''+n.id+"'};R()\">+</button>";
+  actions+='<button class="abtn del" onclick="deleteNode(\''+n.id+"')\" title=\"Delete (keeps children)\">\u2715</button>";
+  actions+="</span>";
+
+  // Text content: inline edit mode or display mode
+  var textContent="";
+  if(editId===n.id){
+    textContent='<input id="edit-input" class="edit-inline" value="'+esc(n.text).replace(/"/g,"&quot;")+'" onkeydown="editKeyDown(event,\''+n.id+'\')" onblur="saveEdit(\''+n.id+'\')">';
+  } else {
+    textContent='<span class="'+textCls+'" ondblclick="startEdit(\''+n.id+'\')">'+esc(n.text)+inline+'</span>';
+  }
+
+  var html='<div class="tn"><div class="nr"'+dragAttr+' style="opacity:'+(done?0.35:1)+'">'+ind+tog+cb+compDot+textContent+actions+"</div>";
+
+  if(addMode&&addMode.pid===n.id){
+    html+='<div class="add-form" style="margin-left:'+(depth*12+30)+'px"><textarea id="new-item-text" class="add-textarea" onkeydown="trapTab(event)" placeholder="Add items (one per line)&#10;Use Tab to nest:&#10;Item A&#10;&#9;Sub-item of A&#10;&#9;&#9;Deeper item&#10;Item B" rows="4"></textarea><div class="add-form-row"><select id="new-item-comp" class="add-select">'+compOptions(n.comp)+'</select><select id="new-item-phase" class="add-select">'+phaseOptions("this_sprint")+'</select><select id="new-item-effort" class="add-select"><option value="small">\u26A1</option><option value="medium" selected>\u25D0</option><option value="large">\u25CF</option></select><button class="add-confirm" onclick="addItem(\''+n.id+"')\">Add</button><button class=\"add-cancel\" onclick=\"addMode=null;R()\">Done</button></div></div>";
+  }
+
+  if(has&&x){
+    html+='<div class="nch" style="margin-left:'+(depth>0?12:0)+"px;"+(depth>0?"padding-left:6px;border-left:1px solid #252836;":"")+"\">";
+    for(var j=0;j<n.ch.length;j++){html+=rn(n.ch[j],depth+1);}
+    html+="</div>";
+  }
+  html+="</div>";return html;
+}
+
+// Right pane item
+function planItem(n,idx){
+  var c=CC[n.comp]||"#64748b";
+  var path=getPath(n.id,TREE,[]);
+  var breadcrumb=path?path.slice(0,-1).join(" \u203A "):n.comp;
+  return '<div class="plan-item" style="border-left:3px solid '+c+'" draggable="true" ondragstart="onPlanDragStart(event,\''+n.id+'\')" ondragend="onPlanDragEnd(event)" ondragover="onPlanDragOver(event,\''+n.id+'\')" ondragleave="onPlanDragLeave(event)" ondrop="onPlanDrop2(event,\''+n.id+'\')"><div class="plan-item-top"><div class="plan-num">'+(idx+1)+'</div><div style="flex:1;min-width:0"><div class="plan-text">'+esc(n.text)+'</div><div class="plan-breadcrumb">'+esc(breadcrumb)+'</div></div><div class="plan-actions"><button class="plan-done" onclick="completePlanItem(\''+n.id+'\')" title="Complete">\u2713</button><button class="plan-remove" onclick="removeFromPlan(\''+n.id+'\')" title="Remove">\u2715</button></div></div></div>';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PLAN DRAG REORDER
+// ═══════════════════════════════════════════════════════════════
+var planDragId=null;
+function onPlanDragStart(e,id){
+  planDragId=id;
+  e.dataTransfer.setData("text/plan",id);
+  e.dataTransfer.effectAllowed="move";
+  e.target.style.opacity="0.4";
+}
+function onPlanDragEnd(e){
+  e.target.style.opacity="1";
+  planDragId=null;
+  clearPlanDropIndicators();
+}
+function clearPlanDropIndicators(){
+  var els=document.querySelectorAll(".plan-drop-above,.plan-drop-below");
+  for(var i=0;i<els.length;i++){els[i].classList.remove("plan-drop-above","plan-drop-below");}
+}
+function onPlanDragOver(e,id){
+  e.preventDefault();
+  e.stopPropagation();
+  if(!planDragId||planDragId===id)return;
+  clearPlanDropIndicators();
+  var rect=e.currentTarget.getBoundingClientRect();
+  var y=e.clientY-rect.top;
+  if(y<rect.height/2){e.currentTarget.classList.add("plan-drop-above");}
+  else{e.currentTarget.classList.add("plan-drop-below");}
+}
+function onPlanDragLeave(e){
+  e.currentTarget.classList.remove("plan-drop-above","plan-drop-below");
+}
+function onPlanDrop2(e,targetId){
+  e.preventDefault();
+  e.stopPropagation();
+  clearPlanDropIndicators();
+  if(!planDragId||planDragId===targetId)return;
+  var fromIdx=dayPlan.indexOf(planDragId);
+  var toIdx=dayPlan.indexOf(targetId);
+  if(fromIdx<0||toIdx<0)return;
+  pushUndo();
+  dayPlan.splice(fromIdx,1);
+  toIdx=dayPlan.indexOf(targetId);
+  var rect=e.currentTarget.getBoundingClientRect();
+  var y=e.clientY-rect.top;
+  if(y>=rect.height/2)toIdx++;
+  dayPlan.splice(toIdx,0,planDragId);
+  planDragId=null;
+  sv();R();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EXPORT
+// ═══════════════════════════════════════════════════════════════
+function exportExcel(){
+  var rows=[["Indent Level","Task","Compartment","Phase","Effort","Status","In Plan"]];
+  function walk(nodes,depth){
+    for(var i=0;i<nodes.length;i++){
+      var n=nodes[i];
+      var prefix="";for(var p=0;p<depth;p++)prefix+="  ";
+      rows.push([
+        String(depth),
+        prefix+n.text,
+        n.comp,
+        PL[gp(n)]||"",
+        n.effort||"",
+        isDone(n)?"Done":(ib(n)?"Blocked":"Active"),
+        dayPlan.indexOf(n.id)>=0?"Yes":""
+      ]);
+      if(hc(n))walk(n.ch,depth+1);
+    }
+  }
+  walk(TREE,0);
+  var csv=rows.map(function(r){return r.map(function(c){return '"'+(c||"").replace(/"/g,'""')+'"';}).join(",");}).join("\r\n");
+  var bom="\uFEFF";
+  var blob=new Blob([bom+csv],{type:"text/csv;charset=utf-8;"});
+  var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="daily-command-center.csv";document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+
+function exportWord(){
+  var html='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="UTF-8"><style>';
+  html+='body{font-family:Calibri,sans-serif;font-size:11pt;line-height:1.4;}';
+  html+='h1{font-size:16pt;color:#1e293b;border-bottom:2px solid #e2e8f0;padding-bottom:6pt;}';
+  html+='h2{font-size:13pt;color:#334155;margin-top:14pt;}';
+  html+='ul{margin-top:2pt;margin-bottom:2pt;}';
+  html+='li{margin-bottom:1pt;}';
+  html+='.done{text-decoration:line-through;color:#999;}';
+  html+='.blocked{color:#dc2626;}';
+  html+='</style></head><body>';
+  html+='<h1>Daily Command Center</h1>';
+  html+='<p>'+new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"})+'</p>';
+
+  if(dayPlan.length>0){
+    html+='<h2>Today\'s Plan</h2><ol>';
+    for(var i=0;i<dayPlan.length;i++){
+      var n=findNode(dayPlan[i],TREE);
+      if(n)html+='<li><b>'+esc(n.text)+'</b></li>';
+    }
+    html+='</ol><br/>';
+  }
+
+  html+='<h2>Full Task Tree</h2>';
+  function walk(nodes){
+    html+='<ul>';
+    for(var i=0;i<nodes.length;i++){
+      var n=nodes[i];
+      var cls=isDone(n)?' class="done"':(ib(n)?' class="blocked"':'');
+      if(ig(n)){
+        html+='<li'+cls+'><b>'+esc(n.text)+'</b></li>';
+      } else {
+        html+='<li'+cls+'>'+esc(n.text)+'</li>';
+      }
+      if(hc(n))walk(n.ch);
+    }
+    html+='</ul>';
+  }
+  walk(TREE);
+  html+='</body></html>';
+
+  var blob=new Blob([html],{type:"application/msword"});
+  var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="daily-command-center.doc";document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MAIN RENDER (called via R() wrapper that preserves scroll)
+// ═══════════════════════════════════════════════════════════════
+function _doRender(){
+  var today=new Date();var ds=today.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
+  var allL=[];collectAll(TREE,allL);var acLen=0,dcLen=0,bkLen=0;
+  for(var i=0;i<allL.length;i++){if(isDone(allL[i]))dcLen++;else{acLen++;if(ib(allL[i]))bkLen++;}}
+
+  var h='<div class="app-header"><div class="app-header-left"><div class="header-label">DEEPAK&#39;S COMMAND CENTER</div><div class="header-date">'+ds+'</div></div><div class="app-header-right"><div class="header-stats"><span class="hs-item" style="color:#38bdf8">'+acLen+' active</span><span class="hs-item" style="color:#4ade80">'+dcLen+' done</span><span class="hs-item" style="color:#fb7185">'+bkLen+' blocked</span></div><div class="header-actions"><button class="export-btn undo'+(undoStack.length===0?" disabled":"")+'" onclick="undo()" title="Undo ('+undoStack.length+')">\u21A9 Undo'+(undoStack.length>0?" ("+undoStack.length+")":"")+'</button><button class="export-btn save" onclick="saveToFile()" title="Save to file">\uD83D\uDCBE Save</button><button class="export-btn" onclick="loadFromFile()" title="Load from file">\uD83D\uDCC2 Load</button><span class="hdr-sep"></span><button class="export-btn" onclick="exportWord()" title="Export Word">\uD83D\uDCC4 Word</button><button class="export-btn" onclick="exportExcel()" title="Export CSV">\uD83D\uDCCA CSV</button><button class="export-btn danger" onclick="ra()">Reset</button><span class="hdr-sep"></span><button class="export-btn help-btn" onclick="showHelp=!showHelp;R()">? Help</button></div></div></div>';
+
+
+  // Help panel
+  if(showHelp){
+    h+='<div class="help-overlay" onclick="showHelp=false;R()"><div class="help-panel" onclick="event.stopPropagation()">';
+    h+='<div class="help-close" onclick="showHelp=false;R()">\u2715</div>';
+    h+='<div class="help-title">\uD83C\uDFAF Command Center</div>';
+    h+='<div class="help-p" style="margin-bottom:16px;color:#c7d2fe">One HTML file. No login. No cloud. Auto-saves in your browser.</div>';
+
+    // ── Visual flow infographic ──
+    h+='<div class="help-infographic">';
+    h+='<div class="hi-flow">';
+    h+='<div class="hi-step"><div class="hi-icon">\u270E</div><div class="hi-label">Edit your tasks</div></div>';
+    h+='<div class="hi-arrow">\u2192</div>';
+    h+='<div class="hi-step"><div class="hi-icon">\uD83C\uDFAF</div><div class="hi-label">Drag to Day Plan</div></div>';
+    h+='<div class="hi-arrow">\u2192</div>';
+    h+='<div class="hi-step"><div class="hi-icon">\u2713</div><div class="hi-label">Execute & Complete</div></div>';
+    h+='</div>';
+    h+='<div class="hi-flow" style="margin-top:8px">';
+    h+='<div class="hi-step hi-alt"><div class="hi-icon">\uD83D\uDCDD</div><div class="hi-label">Paste meeting notes</div></div>';
+    h+='<div class="hi-arrow">\u2192</div>';
+    h+='<div class="hi-step hi-alt"><div class="hi-icon">\uD83E\uDDE0</div><div class="hi-label">AI extracts tasks</div></div>';
+    h+='<div class="hi-arrow">\u2192</div>';
+    h+='<div class="hi-step hi-alt"><div class="hi-icon">\uD83D\uDD0D</div><div class="hi-label">Review & Accept</div></div>';
+    h+='</div></div>';
+
+    // ── 1. Tabs (Left Pane) ──
+    h+='<div class="help-section"><div class="help-h">The Four Tabs (Left Pane)</div>';
+    h+='<div class="help-p"><b>\u270E Edit</b> \u2014 Your main workspace. Type like OneNote \u2014 Enter, Tab, Shift+Tab, arrows all work naturally.</div>';
+    h+='<div class="help-p"><b>\uD83C\uDF33 Full Tree</b> \u2014 Visual overview. Hover items for actions (edit, move, indent, add child, delete). Use L1-L4 to expand/collapse by depth.</div>';
+    h+='<div class="help-p"><b>\uD83D\uDCDD Notes</b> \u2014 Scratchpad for meeting notes. Process into tasks with AI.</div>';
+    h+='<div class="help-p"><b>\u2600 Briefing</b> \u2014 Auto-suggested priorities balanced across your streams. Drag to plan.</div></div>';
+
+    // ── 2. Plan Your Day (Right Pane) ──
+    h+='<div class="help-section"><div class="help-h">\uD83C\uDFAF Plan Your Day (Right Pane)</div>';
+    h+='<div class="help-p">The right pane is your focused action list. Fill it each morning, work through it, clear it by evening.</div>';
+    h+='<div class="help-p"><b>Add items:</b> Drag any task from the left \u2192 drop on the right pane. Or click the green \u2192 arrow. Or multi-select in Edit tab and click \u2192 Plan.</div>';
+    h+='<div class="help-p"><b>Reorder:</b> Grab any plan item and drag it up or down to prioritize.</div>';
+    h+='<div class="help-p"><b>Complete:</b> Hit \u2713 to mark done (updates the tree too). Hit \u2715 to remove from plan without completing.</div>';
+    h+='<div class="help-p"><b>Resize:</b> Drag the thin handle between panes to give the plan more or less space.</div></div>';
+
+    // ── 3. AI-Powered Notes to Tasks ──
+    h+='<div class="help-section"><div class="help-h">\uD83E\uDDE0 AI-Powered Notes to Tasks</div>';
+    h+='<div class="help-p">Use the <b>Notes</b> tab as a scratchpad. Paste raw notes from any meeting, call, or email \u2014 any format works.</div>';
+    h+='<div class="help-p">When ready to process:</div>';
+    h+='<div class="help-p">1. <b>Select the portion</b> you want processed (or leave unselected for all)</div>';
+    h+='<div class="help-p">2. Click <b>\uD83D\uDCCB Copy for AI</b> \u2014 copies your notes + full task tree as a prompt</div>';
+    h+='<div class="help-p">3. Paste in your preferred AI chat (Claude, ChatGPT, Sidekick, etc.) and send</div>';
+    h+='<div class="help-p">4. Copy the AI\'s response, click <b>\uD83D\uDCE5 Import</b>, paste, and review</div>';
+    h+='<div class="help-p">5. Your <b>full tree appears with changes highlighted</b> \u2014 <span style=\"color:#6ee7b7\">green</span> for new, <span style=\"color:#fbbf24\">amber</span> for updates, <span style=\"color:#64748b\">grey</span> for already covered. Click to accept, drag to reposition. Nothing changes until you hit Apply.</div></div>';
+
+    // ── 4. Save, Load & Reset ──
+    h+='<div class="help-section"><div class="help-h">\uD83D\uDCBE Save, Load & Reset</div>';
+    h+='<div class="help-p">Your data <b>automatically saves to the browser</b> after every change \u2014 close the tab, reopen, everything is right where you left it. But for safety, you can also save and load manually:</div>';
+    h+='<div class="help-p"><b>\uD83D\uDCBE Save</b> (or Ctrl+S) \u2014 Downloads a <b>.json snapshot</b> of your current state \u2014 tasks, plan, everything. Do this daily as backup.</div>';
+    h+='<div class="help-p"><b>\uD83D\uDCC2 Load</b> \u2014 Restores from a saved .json file. <b>Replaces</b> your current data with whatever is in the file. Use to move between browsers or recover from mistakes.</div>';
+    h+='<div class="help-p"><b>\u21A9 Reset</b> \u2014 Wipes everything back to the <b>original sample data</b> that came with the HTML file. Your edits are gone (but you can Ctrl+Z to undo immediately, or Load a saved .json to recover).</div>';
+    h+='<div class="help-p"><b>\uD83D\uDCC4 Word</b> \u2014 Nested bullets for OneNote/email. <b>\uD83D\uDCCA CSV</b> \u2014 Excel with indent levels.</div>';
+    h+='<div class="help-p" style="margin-top:6px;color:#fbbf24;font-size:10px">\u26A0 Auto-save is browser-specific. Different browser or cleared cache = fresh start. Always keep a saved .json as backup.</div></div>';
+
+    // ── 5. Keyboard Shortcuts (last) ──
+    h+='<div class="help-section"><div class="help-h">Keyboard Shortcuts (Edit Tab)</div>';
+    h+='<table class="help-keys">';
+    h+='<tr><td><b>Enter</b></td><td>New line (above at start, below at end)</td></tr>';
+    h+='<tr><td><b>Tab / Shift+Tab</b></td><td>Indent / Outdent</td></tr>';
+    h+='<tr><td><b>\u2191\u2193</b></td><td>Navigate rows</td></tr>';
+    h+='<tr><td><b>Shift+\u2191\u2193 / Shift+Click</b></td><td>Multi-select</td></tr>';
+    h+='<tr><td><b>Ctrl+Shift+\u2191\u2193</b></td><td>Move item up/down</td></tr>';
+    h+='<tr><td><b>Ctrl+Z / Ctrl+C / Ctrl+S</b></td><td>Undo / Copy / Save</td></tr>';
+    h+='</table></div>';
+
+    // ── Briefing (last) ──
+    h+='<div class="help-section"><div class="help-h">\u2600 Briefing</div>';
+    h+='<div class="help-p">The Briefing tab is designed to <b>recommend your best plan for the day</b> \u2014 an AI-powered daily planner that reads your full task tree, calendar, and project timelines to suggest what to focus on, balanced across all your streams.</div>';
+    h+='<div class="help-p">For now, it\'s <b>rudimentary</b> \u2014 it surfaces leaf tasks that aren\'t done or in your plan, up to 2 per compartment. A quick nudge to get started. Smarter recommendations are coming.</div>';
+    h+='<div class="help-p">Drag any suggested item to your plan, or click \u2192 to add it.</div></div>';
+
+    h+='</div></div>';
+  }
+
+  // Two pane layout
+  h+='<div class="two-pane">';
+
+  // ═══ LEFT PANE ═══
+  h+='<div class="left-pane">';
+  h+='<div class="pane-header"><div class="pane-tabs"><button class="pane-tab'+(cv==="edit"?" active":"")+'" onclick="cv=\'edit\';R()">\u270E Edit</button><button class="pane-tab'+(cv==="tree"?" active":"")+'" onclick="cv=\'tree\';R()">\uD83C\uDF33 Full Tree</button><button class="pane-tab'+(cv==="notes"?" active":"")+'" onclick="cv=\'notes\';R()">\uD83D\uDCDD Notes</button><button class="pane-tab'+(cv==="briefing"?" active":"")+'" onclick="cv=\'briefing\';R()">\u2600 Briefing</button></div></div>';
+
+  if(cv==="tree"){
+    h+='<div class="pane-toolbar"><input class="search-input" id="sb" placeholder="Search tasks, people, streams..." value="'+esc(st)+'" oninput="st=this.value;R()"><div class="toolbar-btns"><button class="sm-btn" onclick="ea()">All</button><button class="sm-btn" onclick="expandToLevel(1)">L1</button><button class="sm-btn" onclick="expandToLevel(2)">L2</button><button class="sm-btn" onclick="expandToLevel(3)">L3</button><button class="sm-btn" onclick="expandToLevel(4)">L4</button><button class="sm-btn" onclick="ca()">\u2296</button><button class="sm-btn accent" onclick="addMode={top:true};R()">+ New</button></div></div>';
+
+    if(addMode&&addMode.top){
+      h+='<div class="add-form top-add"><textarea id="new-top-text" class="add-textarea" onkeydown="trapTab(event)" placeholder="Add items (one per line)&#10;Use Tab to nest:&#10;Item A&#10;&#9;Sub-item of A&#10;&#9;&#9;Deeper&#10;Item B" rows="4"></textarea><div class="add-form-row"><select id="new-top-comp" class="add-select">'+compOptions("PMO")+'</select><button class="add-confirm" onclick="addTopLevel()">Add</button><button class="add-cancel" onclick="addMode=null;R()">Done</button></div></div>';
+    }
+
+    h+='<div class="tree-container"><div class="card">';
+    for(var i=0;i<TREE.length;i++){h+=rn(TREE[i],0);}
+    h+="</div></div>";
+  }
+
+  if(cv==="edit"){
+    h+=renderEditTab();
+  }
+
+  if(cv==="briefing"){
+    var b=gb();
+    h+='<div class="tree-container">';
+    h+='<div class="rec-header">\uD83D\uDD25 Recommended for today <span class="rec-hint">Drag items to your plan \u2192</span></div>';
+    h+='<div class="card">';
+    for(var i=0;i<b.tp.length;i++){
+      var n=b.tp[i];var c=CC[n.comp]||"#64748b";
+      var path=getPath(n.id,TREE,[]);
+      var breadcrumb=path?path.slice(0,-1).join(" \u203A "):"";
+      h+='<div class="tree-node"><div class="node-row" draggable="true" ondragstart="onDragStart(event,\''+n.id+'\')" style="cursor:grab"><span class="cdot" style="background:'+c+'"></span><div style="flex:1;min-width:0"><div class="node-text">'+esc(n.text)+'</div><div class="plan-breadcrumb">'+esc(breadcrumb)+'</div></div>'+
+      '<button class="add-plan-btn" onclick="addToPlan(\''+n.id+'\')" title="Add to plan">\u2192</button></div></div>';
+    }
+    if(b.tp.length===0)h+='<div class="empty-state">All items are in your plan or done! \uD83C\uDF89</div>';
+    h+="</div>";
+
+    if(b.bk.length>0){
+      h+='<div class="rec-header" style="color:#ef4444;margin-top:16px">\uD83D\uDEAB Blocked</div><div class="card card-red">';
+      for(var i=0;i<b.bk.length;i++){
+        var n=b.bk[i];var c=CC[n.comp]||"#64748b";
+        h+='<div class="tree-node"><div class="node-row"><span class="cdot" style="background:'+c+'"></span><div style="flex:1;min-width:0"><div class="node-text">'+esc(n.text)+'</div><div class="node-meta">'+pl("BLOCKED","#ef4444")+"</div></div></div></div>";
+      }
+      h+="</div>";
+    }
+    h+="</div>";
+  }
+
+  if(cv==="notes"){
+    h+=renderNotesTab();
+  }
+
+  h+="</div>"; // left pane
+
+  // Resize handle
+  h+='<div class="resize-handle" id="resize-handle" onmousedown="startResize(event)"></div>';
+
+  // ═══ RIGHT PANE ═══
+  h+='<div class="right-pane" ondragover="onDragOver(event)" ondrop="onDropPlan(event)">';
+  h+='<div class="pane-header right"><div class="plan-title">\uD83C\uDFAF Today\'s Plan</div><div class="plan-count">'+dayPlan.length+" items</div></div>";
+
+  if(dayPlan.length===0){
+    h+='<div class="plan-empty"><div class="plan-empty-icon">\uD83D\uDCCB</div><div class="plan-empty-text">Drag tasks here from the left<br>or click the \u2192 arrow on any task</div></div>';
+  } else {
+    h+='<div class="plan-list">';
+    for(var i=0;i<dayPlan.length;i++){
+      var n=findNode(dayPlan[i],TREE);
+      if(n)h+=planItem(n,i);
+    }
+    h+="</div>";
+    h+='<div class="plan-footer"><button class="sm-btn" onclick="clearPlan()">Clear Plan</button></div>';
+  }
+  h+="</div>"; // right pane
+  h+="</div>"; // two-pane
+
+  document.getElementById("app").innerHTML=h;
+  // Restore scroll position
+  var tc=document.querySelector(".tree-container");
+  if(tc&&typeof _scrollTop==="number"){tc.scrollTop=_scrollTop;}
+  var pl2=document.querySelector(".plan-list");
+  if(pl2&&typeof _planScroll==="number"){pl2.scrollTop=_planScroll;}
+  // Restore cursor in edit mode
+  if(cv==="edit"&&edCursor){
+    var el=document.getElementById("ed-"+edCursor);
+    if(el&&document.activeElement!==el){
+      // Don't auto-focus on initial render, only on re-render after action
+    }
+  }
+}
+
+// Save scroll positions before re-render
+var _scrollTop=0,_planScroll=0;
+function R(){
+  var tc=document.querySelector(".tree-container");
+  if(tc)_scrollTop=tc.scrollTop;
+  var pl2=document.querySelector(".plan-list");
+  if(pl2)_planScroll=pl2.scrollTop;
+  _doRender();
+}
+var isResizing=false;
+function startResize(e){
+  isResizing=true;
+  document.body.style.cursor='col-resize';
+  document.body.style.userSelect='none';
+  var handle=document.getElementById('resize-handle');
+  if(handle)handle.classList.add('dragging');
+  document.addEventListener('mousemove',doResize);
+  document.addEventListener('mouseup',stopResize);
+}
+function doResize(e){
+  if(!isResizing)return;
+  var container=document.querySelector('.two-pane');
+  var rightPane=document.querySelector('.right-pane');
+  if(!container||!rightPane)return;
+  var containerRect=container.getBoundingClientRect();
+  var newWidth=containerRect.right-e.clientX;
+  if(newWidth<200)newWidth=200;
+  if(newWidth>containerRect.width*0.6)newWidth=containerRect.width*0.6;
+  rightPane.style.width=newWidth+'px';
+}
+function stopResize(){
+  isResizing=false;
+  document.body.style.cursor='';
+  document.body.style.userSelect='';
+  var handle=document.getElementById('resize-handle');
+  if(handle)handle.classList.remove('dragging');
+  document.removeEventListener('mousemove',doResize);
+  document.removeEventListener('mouseup',stopResize);
+}
+function pm(){var ta=document.getElementById("mta");var lines=(ta.value||"").split("\n");mt=[];for(var i=0;i<lines.length;i++){var l=lines[i].trim();if(l)mt.push({title:l});}R();}
+
+// Keyboard shortcuts
+document.addEventListener("keydown",function(e){
+  if((e.ctrlKey||e.metaKey)&&e.key==="z"&&!e.shiftKey){
+    var tag=document.activeElement?document.activeElement.tagName:"";
+    if(tag==="INPUT"||tag==="TEXTAREA"||tag==="SELECT")return;
+    e.preventDefault();undo();
+  }
+  if((e.ctrlKey||e.metaKey)&&e.key==="c"&&cv==="edit"&&typeof edSelCount==="function"&&edSelCount()>0){
+    // Copy selected items as text
+    var flat=getFlatList();
+    var lines=[];
+    for(var ci=0;ci<flat.length;ci++){
+      if(edSelected[flat[ci].node.id]){
+        var indent="";for(var di=0;di<flat[ci].depth;di++)indent+="\t";
+        lines.push(indent+flat[ci].node.text);
+      }
+    }
+    if(lines.length>0){
+      var copyText=lines.join("\n");
+      navigator.clipboard.writeText(copyText).catch(function(){});
+    }
+  }
+  if((e.ctrlKey||e.metaKey)&&e.key==="s"){
+    e.preventDefault();saveToFile();
+  }
+  // Global multi-select key handling for edit mode
+  if(cv==="edit"){
+    var tag2=document.activeElement?document.activeElement.tagName:"";
+    var isCE=document.activeElement&&document.activeElement.getAttribute("contenteditable")==="true";
+    if(tag2==="INPUT"||tag2==="TEXTAREA"||tag2==="SELECT")return;
+
+    // Shift+Arrow selection — works whether focused on a row or not
+    if(e.shiftKey&&!e.ctrlKey&&!e.metaKey&&(e.key==="ArrowUp"||e.key==="ArrowDown")){
+      e.preventDefault();
+      // Save text if focused on a contenteditable
+      if(isCE&&edCursor)edSaveText(edCursor);
+      if(document.activeElement&&isCE)document.activeElement.blur();
+
+      var flat=getFlatList();
+      var sc=edSelCount();
+
+      if(e.key==="ArrowDown"){
+        if(sc===0){
+          // Very first press: select current row only
+          if(!edAnchor&&edCursor)edAnchor=edCursor;
+          if(!edAnchor&&flat.length>0)edAnchor=flat[0].node.id;
+          edSelected={};edSelected[edAnchor]=true;
+          edCursor=edAnchor;
+        } else {
+          // Extend down from moving cursor
+          var movingIdx=edCursor?getFlatIndex(edCursor):-1;
+          if(movingIdx<0)movingIdx=0;
+          if(movingIdx<flat.length-1){
+            edCursor=flat[movingIdx+1].node.id;
+            edSelectRange(edAnchor,edCursor);
+          }
+        }
+      } else { // ArrowUp
+        if(sc===0){
+          // Very first press up: select current + one above
+          if(!edAnchor&&edCursor)edAnchor=edCursor;
+          if(!edAnchor&&flat.length>0)edAnchor=flat[0].node.id;
+          var anchorIdx=getFlatIndex(edAnchor);
+          if(anchorIdx>0){
+            edSelected={};
+            edCursor=flat[anchorIdx-1].node.id;
+            edSelectRange(edAnchor,edCursor);
+          } else {
+            edSelected={};edSelected[edAnchor]=true;
+            edCursor=edAnchor;
+          }
+        } else {
+          var movingIdx=edCursor?getFlatIndex(edCursor):-1;
+          if(movingIdx<0)movingIdx=0;
+          if(movingIdx>0){
+            edCursor=flat[movingIdx-1].node.id;
+            edSelectRange(edAnchor,edCursor);
+          }
+        }
+      }
+      R();
+      return;
+    }
+
+    // Bulk operations only when multiple selected and not in a contenteditable
+    if(edSelCount()>1&&!isCE){
+      if(e.key==="Tab"&&!e.shiftKey){e.preventDefault();edBulkIndent();return;}
+      if(e.key==="Tab"&&e.shiftKey){e.preventDefault();edBulkOutdent();return;}
+      if(e.key==="Backspace"||e.key==="Delete"){e.preventDefault();edBulkDelete();return;}
+      if(e.key==="Escape"){e.preventDefault();edClearSelection();R();return;}
+    }
+  }
+});
+
+// Trap Tab key inside add textareas so it inserts a tab character
+function trapTab(e){
+  if(e.key==="Tab"){
+    e.preventDefault();
+    var ta=e.target;
+    var start=ta.selectionStart;
+    var end=ta.selectionEnd;
+    if(e.shiftKey){
+      // Shift+Tab: remove leading tab/spaces on current line
+      var before=ta.value.substring(0,start);
+      var lineStart=before.lastIndexOf("\n")+1;
+      var linePrefix=ta.value.substring(lineStart,start);
+      if(linePrefix.indexOf("\t")===0){
+        ta.value=ta.value.substring(0,lineStart)+ta.value.substring(lineStart+1);
+        ta.selectionStart=ta.selectionEnd=start-1;
+      } else if(linePrefix.indexOf("  ")===0){
+        ta.value=ta.value.substring(0,lineStart)+ta.value.substring(lineStart+2);
+        ta.selectionStart=ta.selectionEnd=start-2;
+      }
+    } else {
+      // Insert tab at cursor
+      ta.value=ta.value.substring(0,start)+"\t"+ta.value.substring(end);
+      ta.selectionStart=ta.selectionEnd=start+1;
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RAW NOTES TAB — Meeting Notes Processor (Phase 2)
+// ═══════════════════════════════════════════════════════════════
+
+var notesContent="Atlas pricing model to be created\nAI hackathon panel to be shortlisted"; // stored notes HTML
+var proposals=null; // array of AI proposals or null
+var proposalState={}; // id -> "accepted"|"rejected"|undefined
+var processError=null;
+var showImportPanel=false;
+var lastCopiedText=""; // track what was last copied to show status
+
+// Save/load notes to localStorage
+function saveNotes(){
+  var el=document.getElementById("notes-editor");
+  if(el)notesContent=el.innerHTML;
+  try{localStorage.setItem("dcc-notes",notesContent);}catch(e){}
+}
+function loadNotes(){
+  try{var s=localStorage.getItem("dcc-notes");if(s)notesContent=s;}catch(e){}
+}
+loadNotes();
+
+// Get selected text from the notes editor, or all text if nothing selected
+function getNotesText(){
+  var sel=window.getSelection();
+  if(sel&&sel.rangeCount>0&&!sel.isCollapsed){
+    // Check if selection is within the notes editor
+    var el=document.getElementById("notes-editor");
+    if(el&&el.contains(sel.anchorNode)){
+      return {text:sel.toString(),isSelection:true};
+    }
+  }
+  var el=document.getElementById("notes-editor");
+  if(el)return {text:el.textContent||el.innerText,isSelection:false};
+  return {text:"",isSelection:false};
+}
+
+// Build tree summary for AI context (compact representation)
+function buildTreeSummary(nodes,depth){
+  var lines=[];
+  for(var i=0;i<nodes.length;i++){
+    var n=nodes[i];
+    var indent="";for(var d=0;d<depth;d++)indent+="  ";
+    lines.push(indent+"- "+n.text+" ["+n.comp+"]"+(n.id?" (id:"+n.id+")":""));
+    if(n.ch&&n.ch.length>0){
+      lines=lines.concat(buildTreeSummary(n.ch,depth+1));
+    }
+  }
+  return lines;
+}
+
+// Build prompt and copy to clipboard
+function copyForClaude(){
+  saveNotes();
+  var notesData=getNotesText();
+  if(!notesData.text.trim()){alert("No notes to process. Type or paste your meeting notes first.");return;}
+  
+  var treeSummary=buildTreeSummary(TREE,0).join("\n");
+  var prompt="You are an AI assistant helping a project manager organize their task list.\n\n";
+  prompt+="Here is their current task tree:\n```\n"+treeSummary+"\n```\n\n";
+  prompt+="Here are their raw meeting notes"+(notesData.isSelection?" (SELECTED PORTION ONLY)":"")+":\n```\n"+notesData.text+"\n```\n\n";
+  prompt+="Analyze these notes and extract ALL actionable items. For each, determine:\n";
+  prompt+="1. If it matches an EXISTING task and needs a change — propose an UPDATE (status change, text refinement, mark done, mark blocked)\n";
+  prompt+="2. If it's a NEW task not already tracked — propose where to ADD it in the tree (specify the parent node id)\n";
+  prompt+="3. If something was completed — propose marking it DONE\n";
+  prompt+="4. If a topic is ALREADY COVERED by an existing task and needs NO changes — mark it as type 'covered' with the targetId of the existing task\n\n";
+  prompt+="Respond ONLY with a JSON array (no markdown, no backticks, no preamble). Each item should be:\n";
+  prompt+='{"type":"new"|"update"|"done"|"blocked"|"covered","text":"the task text or topic from notes","reason":"brief explanation","parentId":"id of parent node for new items or null","targetId":"id of existing node for updates/done/covered or null","detail":"what specifically to change for updates, or null for covered"}\n\n';
+  prompt+="IMPORTANT: Include 'covered' items so the user can see that you recognized the topic is already tracked. This avoids bloating the task list.\n";
+  prompt+="Be specific about where new items go. Use the exact parent node IDs from the tree. If unsure, use the closest matching parent.\n";
+  prompt+="IMPORTANT: Return ONLY valid JSON array, nothing else. No text before or after.";
+  
+  navigator.clipboard.writeText(prompt).then(function(){
+    lastCopiedText=notesData.isSelection?"Selection copied!":"All notes copied!";
+    R();
+    setTimeout(function(){lastCopiedText="";R();},3000);
+  }).catch(function(){
+    // Fallback: show prompt in a textarea for manual copy
+    showImportPanel=true;
+    lastCopiedText="MANUAL";
+    processError=prompt;
+    R();
+  });
+}
+
+// Import Claude's response
+function importResponse(){
+  var el=document.getElementById("import-textarea");
+  if(!el||!el.value.trim()){alert("Paste the AI response first.");return;}
+  
+  var text=el.value.trim();
+  // Strip markdown fences if present
+  text=text.replace(/```json\s*/g,"").replace(/```\s*/g,"").trim();
+  
+  try{
+    proposals=JSON.parse(text);
+    for(var i=0;i<proposals.length;i++){
+      proposals[i]._id="prop-"+i;
+    }
+    proposalState={};
+    processError=null;
+    showImportPanel=false;
+    R();
+  }catch(e){
+    processError="Could not parse response. Make sure you copied the full JSON response.\nError: "+e.message;
+    R();
+  }
+}
+
+function acceptProposal(id){proposalState[id]="accepted";R();}
+function rejectProposal(id){proposalState[id]="rejected";R();}
+function toggleProposal(id){
+  if(proposalState[id]==="accepted")proposalState[id]=undefined;
+  else proposalState[id]="accepted";
+  R();
+}
+function acceptAllProposals(){
+  if(!proposals)return;
+  for(var i=0;i<proposals.length;i++){proposalState[proposals[i]._id]="accepted";}
+  R();
+}
+function clearProposals(){
+  proposals=null;proposalState={};processError=null;R();
+}
+
+// Apply accepted proposals to the tree
+function applyProposals(){
+  if(!proposals)return;
+  var accepted=proposals.filter(function(p){return proposalState[p._id]==="accepted";});
+  if(accepted.length===0){alert("No proposals accepted. Check the ones you want to apply.");return;}
+  
+  pushUndo();
+  
+  for(var i=0;i<accepted.length;i++){
+    var p=accepted[i];
+    
+    if(p.type==="new"){
+      // Add new node under parent
+      var parent=null;
+      if(p.parentId)parent=findNode(p.parentId,TREE);
+      if(!parent){
+        // Try to find by fuzzy match on parent text if id didn't work
+        // Fallback: add to first top-level node
+        parent=TREE[0];
+      }
+      if(!parent.ch)parent.ch=[];
+      var newId="ai-"+Date.now()+"-"+Math.random().toString(36).substr(2,5)+i;
+      parent.ch.push({id:newId,text:p.text,comp:parent.comp,ch:[]});
+      exp[parent.id]=true;
+    }
+    
+    if(p.type==="update"&&p.targetId){
+      var node=findNode(p.targetId,TREE);
+      if(node&&p.text)node.text=p.text;
+    }
+    
+    if(p.type==="done"&&p.targetId){
+      dn[p.targetId]=true;
+    }
+    
+    if(p.type==="blocked"&&p.targetId){
+      bl[p.targetId]=true;
+    }
+  }
+  
+  sv();
+  proposals=null;
+  proposalState={};
+  R();
+}
+
+// Render the tree with proposals highlighted inline
+function renderDiffTree(nodes,depth){
+  var h="";
+  for(var i=0;i<nodes.length;i++){
+    var n=nodes[i];
+    var c=CC[n.comp]||"#64748b";
+    var indent="";for(var d=0;d<depth;d++)indent+='<span class="diff-indent"></span>';
+    
+    // Check if this node has any proposals targeting it
+    var nodeUpdates=proposals?proposals.filter(function(p){return p.targetId===n.id&&(p.type==="update");}):[];
+    var nodeDone=proposals?proposals.filter(function(p){return p.targetId===n.id&&p.type==="done";}):[];
+    var nodeBlocked=proposals?proposals.filter(function(p){return p.targetId===n.id&&p.type==="blocked";}):[];
+    var nodeCovered=proposals?proposals.filter(function(p){return p.targetId===n.id&&p.type==="covered";}):[];
+    var nodeNewChildren=proposals?proposals.filter(function(p){return p.parentId===n.id&&p.type==="new";}):[];
+    var hasChanges=nodeUpdates.length>0||nodeDone.length>0||nodeBlocked.length>0;
+    var hasCovered=nodeCovered.length>0;
+    var hasNewChildren=nodeNewChildren.length>0;
+    
+    // Determine row class
+    var rowCls="diff-row";
+    if(hasChanges)rowCls+=" diff-row-changed";
+    if(hasCovered)rowCls+=" diff-row-covered";
+    
+    h+='<div class="'+rowCls+'" ondragover="onPropDragOverRow(event)" ondragleave="onPropDragLeaveRow(event)" ondrop="onPropDropRow(event,\''+n.id+'\')">';
+    h+=indent;
+    h+='<span class="cdot" style="background:'+c+'"></span>';
+    
+    if(hasChanges){
+      // Show current text with change indicator
+      h+='<span class="diff-text diff-text-current">'+esc(n.text)+'</span>';
+      // Show what changes
+      for(var u=0;u<nodeUpdates.length;u++){
+        var p=nodeUpdates[u];
+        var state=proposalState[p._id]||"pending";
+        h+='<div class="diff-change'+(state==="accepted"?" diff-accepted":state==="rejected"?" diff-rejected":"")+'" onclick="toggleProposal(\''+p._id+'\')">';
+        h+='<div class="diff-change-head">';
+        h+='<span class="diff-change-icon prop-update">~</span>';
+        h+='<span class="diff-change-label">UPDATE</span>';
+        h+='<span class="diff-change-check'+(state==="accepted"?" checked":"")+'">'+( state==="accepted"?"\u2713":"")+'</span>';
+        h+='</div>';
+        if(p.text&&p.text!==n.text)h+='<div class="diff-change-new">\u2192 '+esc(p.text)+'</div>';
+        if(p.detail)h+='<div class="diff-change-detail">'+esc(p.detail)+'</div>';
+        h+='<div class="diff-change-reason">\uD83D\uDCA1 '+esc(p.reason)+'</div>';
+        h+='</div>';
+      }
+      for(var u=0;u<nodeDone.length;u++){
+        var p=nodeDone[u];
+        var state=proposalState[p._id]||"pending";
+        h+='<div class="diff-change diff-change-done'+(state==="accepted"?" diff-accepted":state==="rejected"?" diff-rejected":"")+'" onclick="toggleProposal(\''+p._id+'\')">';
+        h+='<div class="diff-change-head">';
+        h+='<span class="diff-change-icon prop-done">\u2713</span>';
+        h+='<span class="diff-change-label">MARK DONE</span>';
+        h+='<span class="diff-change-check'+(state==="accepted"?" checked":"")+'">'+( state==="accepted"?"\u2713":"")+'</span>';
+        h+='</div>';
+        h+='<div class="diff-change-reason">\uD83D\uDCA1 '+esc(p.reason)+'</div>';
+        h+='</div>';
+      }
+      for(var u=0;u<nodeBlocked.length;u++){
+        var p=nodeBlocked[u];
+        var state=proposalState[p._id]||"pending";
+        h+='<div class="diff-change diff-change-blocked'+(state==="accepted"?" diff-accepted":state==="rejected"?" diff-rejected":"")+'" onclick="toggleProposal(\''+p._id+'\')">';
+        h+='<div class="diff-change-head">';
+        h+='<span class="diff-change-icon prop-blocked">!</span>';
+        h+='<span class="diff-change-label">BLOCKED</span>';
+        h+='<span class="diff-change-check'+(state==="accepted"?" checked":"")+'">'+( state==="accepted"?"\u2713":"")+'</span>';
+        h+='</div>';
+        h+='<div class="diff-change-reason">\uD83D\uDCA1 '+esc(p.reason)+'</div>';
+        h+='</div>';
+      }
+    } else {
+      // Normal row — just show text
+      var dimCls="";
+      h+='<span class="diff-text '+dimCls+'">'+esc(n.text)+'</span>';
+      if(hasCovered){
+        h+='<span class="diff-covered-tag" id="dcov-'+n.id+'">\u2713 Already Covered</span>';
+      }
+    }
+    h+='</div>';
+    
+    // Render children
+    if(n.ch&&n.ch.length>0){
+      h+=renderDiffTree(n.ch,depth+1);
+    }
+    
+    // Show new children proposals after existing children
+    if(hasNewChildren){
+      for(var nc=0;nc<nodeNewChildren.length;nc++){
+        var p=nodeNewChildren[nc];
+        var state=proposalState[p._id]||"pending";
+        var childIndent="";for(var d=0;d<=depth;d++)childIndent+='<span class="diff-indent"></span>';
+        h+='<div class="diff-row diff-row-new'+(state==="accepted"?" diff-accepted":state==="rejected"?" diff-rejected":"")+'" id="dprop-'+p._id+'" onclick="toggleProposal(\''+p._id+'\')" draggable="true" ondragstart="onPropDragStart(event,\''+p._id+'\')" ondragend="onPropDragEnd(event)">';
+        h+=childIndent;
+        h+='<span class="diff-new-icon">\u2725</span>';
+        h+='<span class="diff-new-text">'+esc(p.text)+'</span>';
+        h+='<span class="diff-change-check'+(state==="accepted"?" checked":"")+'">'+( state==="accepted"?"\u2713":"")+'</span>';
+        h+='</div>';
+        if(p.reason){
+          h+='<div class="diff-new-reason" style="margin-left:'+((depth+1)*14+24)+'px">\uD83D\uDCA1 '+esc(p.reason)+'</div>';
+        }
+      }
+    }
+  }
+  return h;
+}
+
+// ── Proposal drag-and-drop to reposition ──
+var propDragId=null;
+function onPropDragStart(e,propId){
+  propDragId=propId;
+  e.dataTransfer.setData("text/propid",propId);
+  e.dataTransfer.effectAllowed="move";
+  e.target.style.opacity="0.5";
+}
+function onPropDragEnd(e){
+  e.target.style.opacity="1";
+  propDragId=null;
+  var els=document.querySelectorAll(".diff-drop-target");
+  for(var i=0;i<els.length;i++)els[i].classList.remove("diff-drop-target");
+}
+function onPropDragOverRow(e){
+  if(!propDragId)return;
+  e.preventDefault();
+  e.currentTarget.classList.add("diff-drop-target");
+}
+function onPropDragLeaveRow(e){
+  e.currentTarget.classList.remove("diff-drop-target");
+}
+function onPropDropRow(e,nodeId){
+  e.preventDefault();
+  e.currentTarget.classList.remove("diff-drop-target");
+  if(!propDragId||!proposals)return;
+  for(var i=0;i<proposals.length;i++){
+    if(proposals[i]._id===propDragId){
+      proposals[i].parentId=nodeId;
+      break;
+    }
+  }
+  propDragId=null;
+  R();
+}
+
+// Scroll to a proposal in the diff tree
+function scrollToProp(propId){
+  setTimeout(function(){
+    var el=document.getElementById("dprop-"+propId);
+    var container=document.getElementById("review-scroll");
+    if(el&&container){
+      var elTop=el.offsetTop-container.offsetTop;
+      container.scrollTo({top:elTop-60,behavior:"smooth"});
+      el.classList.add("diff-flash");
+      setTimeout(function(){el.classList.remove("diff-flash");},1500);
+    }
+  },100);
+}
+
+// Scroll to a covered item in the diff tree (by node id)
+function scrollToCovered(nodeId){
+  setTimeout(function(){
+    var el=document.getElementById("dcov-"+nodeId);
+    var container=document.getElementById("review-scroll");
+    if(el&&container){
+      var elTop=el.offsetTop-container.offsetTop;
+      container.scrollTo({top:elTop-60,behavior:"smooth"});
+      el.classList.add("diff-flash");
+      setTimeout(function(){el.classList.remove("diff-flash");},1500);
+    }
+  },100);
+}
+
+// Check if a node or its descendants are affected by proposals
+function nodeHasProposals(n){
+  if(!proposals)return false;
+  for(var i=0;i<proposals.length;i++){
+    var p=proposals[i];
+    if(p.targetId===n.id||p.parentId===n.id)return true;
+  }
+  if(n.ch){for(var i=0;i<n.ch.length;i++){if(nodeHasProposals(n.ch[i]))return true;}}
+  return false;
+}
+
+// Render a single proposal item (used for orphans)
+function renderProposal(p){
+  var state=proposalState[p._id]||"pending";
+  var typeIcon=p.type==="new"?"+":p.type==="update"?"~":p.type==="done"?"\u2713":"!";
+  var typeClass=p.type==="new"?"prop-new":p.type==="update"?"prop-update":p.type==="done"?"prop-done":"prop-blocked";
+  var stateClass=state==="accepted"?"prop-accepted":state==="rejected"?"prop-rejected":"";
+  
+  // Find target/parent node name for context
+  var context="";
+  if(p.parentId){
+    var pn=findNode(p.parentId,TREE);
+    if(pn){
+      var path=getPath(p.parentId,TREE,[]);
+      context=path?path.join(" \u203A "):"";
+    }
+  }
+  if(p.targetId){
+    var tn=findNode(p.targetId,TREE);
+    if(tn){
+      var path=getPath(p.targetId,TREE,[]);
+      context=path?path.join(" \u203A "):"";
+    }
+  }
+
+  var h='<div class="prop-item '+stateClass+'" onclick="toggleProposal(\''+p._id+'\')">';
+  h+='<div class="prop-check'+(state==="accepted"?" checked":"")+'">'+( state==="accepted"?"\u2713":"")+'</div>';
+  h+='<div class="prop-type '+typeClass+'">'+typeIcon+'</div>';
+  h+='<div class="prop-body">';
+  h+='<div class="prop-text">'+esc(p.text)+'</div>';
+  if(p.detail)h+='<div class="prop-detail">'+esc(p.detail)+'</div>';
+  h+='<div class="prop-reason">\uD83D\uDCA1 '+esc(p.reason)+'</div>';
+  if(context)h+='<div class="prop-path">\uD83D\uDCCD '+esc(context)+'</div>';
+  h+='</div>';
+  h+='<div class="prop-actions">';
+  h+='<button class="pp-btn accept" onclick="event.stopPropagation();acceptProposal(\''+p._id+'\')" title="Accept">\u2713</button>';
+  h+='<button class="pp-btn reject" onclick="event.stopPropagation();rejectProposal(\''+p._id+'\')" title="Reject">\u2715</button>';
+  h+='</div>';
+  h+='</div>';
+  return h;
+}
+
+// Render the Raw Notes tab
+function renderNotesTab(){
+  var h='';
+  
+  // If we have proposals, show the review UI
+  if(proposals||processError){
+    h+='<div class="notes-review">';
+    
+    // ── Action bar (fixed at top) ──
+    h+='<div class="notes-review-bar">';
+    h+='<button class="sm-btn" onclick="clearProposals()">\u2190 Back to Notes</button>';
+    if(proposals){
+      var accCount=0;
+      for(var i=0;i<proposals.length;i++){if(proposalState[proposals[i]._id]==="accepted")accCount++;}
+      h+='<span class="notes-review-count">'+proposals.length+' proposals \u2022 '+accCount+' accepted</span>';
+      h+='<button class="btn btn-ghost" style="padding:5px 12px;font-size:11px" onclick="acceptAllProposals()">Select All</button>';
+      h+='<button class="btn btn-success" style="padding:5px 12px;font-size:11px" onclick="applyProposals()">\u2713 Apply '+accCount+' Changes</button>';
+    }
+    h+='</div>';
+    
+    if(processError){
+      h+='<div style="padding:12px"><div class="notes-error">\u26A0 '+esc(processError)+'</div></div>';
+    }
+    
+    if(proposals&&proposals.length>0){
+      var newItems=proposals.filter(function(p){return p.type==="new";});
+      var updates=proposals.filter(function(p){return p.type==="update";});
+      var doneItems=proposals.filter(function(p){return p.type==="done";});
+      var blocked=proposals.filter(function(p){return p.type==="blocked";});
+      var covered=proposals.filter(function(p){return p.type==="covered";});
+      
+      // ── Summary card (fixed, not scrollable) ──
+      h+='<div class="extract-fixed">';
+      h+='<div class="extract-summary">';
+      h+='<div class="extract-header">';
+      h+='<div class="extract-title">\uD83D\uDCCB '+proposals.length+' items extracted';
+      if(covered.length)h+=' <span class="extract-covered-badge">\u2022 '+covered.length+' already covered</span>';
+      h+='</div>';
+      h+='<div class="diff-summary" style="margin:0">';
+      if(newItems.length)h+='<span class="diff-badge diff-badge-new">+'+newItems.length+' new</span>';
+      if(updates.length)h+='<span class="diff-badge diff-badge-update">~'+updates.length+' updates</span>';
+      if(doneItems.length)h+='<span class="diff-badge diff-badge-done">\u2713'+doneItems.length+' done</span>';
+      if(blocked.length)h+='<span class="diff-badge diff-badge-blocked">!'+blocked.length+' blocked</span>';
+      if(covered.length)h+='<span class="diff-badge diff-badge-covered">\u2022'+covered.length+' covered</span>';
+      h+='</div></div>';
+      
+      h+='<div class="extract-list">';
+      for(var si=0;si<proposals.length;si++){
+        var sp=proposals[si];
+        var spState=proposalState[sp._id]||"pending";
+        var isCovered=sp.type==="covered";
+        var spIcon=sp.type==="new"?"+":sp.type==="update"?"~":sp.type==="done"?"\u2713":sp.type==="covered"?"\u2022":"!";
+        var spTypeCls=sp.type==="new"?"prop-new":sp.type==="update"?"prop-update":sp.type==="done"?"prop-done":sp.type==="covered"?"prop-covered":"prop-blocked";
+        var spLabel=sp.type==="new"?"CREATE":sp.type==="update"?"MODIFY":sp.type==="done"?"DONE":sp.type==="covered"?"COVERED":"BLOCKED";
+        var spWhere="";
+        if(sp.parentId){var spn=findNode(sp.parentId,TREE);if(spn){var spp=getPath(sp.parentId,TREE,[]);spWhere=spp?spp.join(" \u203A "):"";}}
+        if(sp.targetId){var stn=findNode(sp.targetId,TREE);if(stn){var stp=getPath(sp.targetId,TREE,[]);spWhere=stp?stp.join(" \u203A "):"";}}
+        
+        var clickAction=isCovered?"scrollToCovered('"+sp.targetId+"')" :"toggleProposal('"+sp._id+"');scrollToProp('"+sp._id+"')";
+        var dragAttr="";
+        if(sp.type==="new"){
+          dragAttr=' draggable="true" ondragstart="onPropDragStart(event,\''+sp._id+'\')" ondragend="onPropDragEnd(event)"';
+        }
+        h+='<div class="extract-item'+(spState==="accepted"?" extract-accepted":"")+(isCovered?" extract-covered":"")+'"'+dragAttr+' onclick="'+clickAction+'">';
+        if(!isCovered){
+          h+='<span class="extract-check'+(spState==="accepted"?" checked":"")+'">'+( spState==="accepted"?"\u2713":"")+'</span>';
+        }
+        if(sp.type==="new"){h+='<span class="extract-grip">\u2847</span>';}
+        h+='<span class="extract-type '+spTypeCls+'">'+spIcon+'</span>';
+        h+='<span class="extract-label">'+spLabel+'</span>';
+        h+='<span class="extract-text'+(isCovered?" extract-text-covered":"")+'">'+esc(sp.text)+'</span>';
+        if(spWhere)h+='<span class="extract-where">\u2192 '+esc(spWhere)+'</span>';
+        h+='</div>';
+      }
+      h+='</div></div></div>';
+      
+      // ── Scrollable tree diff ──
+      h+='<div class="diff-scroll" id="review-scroll">';
+      h+='<div class="diff-section-label">Tree Preview \u2014 drop items from summary above onto any row \u2022 <span class="diff-drag-hint">click summary to jump here</span></div>';
+      h+='<div class="diff-tree">';
+      h+=renderDiffTree(TREE,0);
+      h+='</div>';
+      
+      var orphans=proposals.filter(function(p){
+        if(p.type==="covered")return false;
+        if(p.type==="new"&&p.parentId&&!findNode(p.parentId,TREE))return true;
+        if((p.type==="update"||p.type==="done"||p.type==="blocked")&&p.targetId&&!findNode(p.targetId,TREE))return true;
+        return false;
+      });
+      if(orphans.length>0){
+        h+='<div class="prop-group" style="margin-top:16px"><div class="prop-group-title"><span class="prop-group-icon prop-update">?</span> Unmapped ('+orphans.length+')</div>';
+        h+='<div class="diff-orphan-hint">Could not match to tree. Accept to add to top level.</div>';
+        for(var oi=0;oi<orphans.length;oi++)h+=renderProposal(orphans[oi]);
+        h+='</div>';
+      }
+      h+='</div>'; // diff-scroll
+    }
+    
+    if(proposals&&proposals.length===0){
+      h+='<div class="notes-empty">No actionable items found in the notes.</div>';
+    }
+    
+    h+='</div>'; // notes-review
+    return h;
+  }
+  
+  // Normal notes editor view
+  h+='<div class="notes-toolbar">';
+  h+='<span class="notes-hint">Type or paste meeting notes. <b>Select text</b> to process only that portion.</span>';
+  h+='<div class="notes-toolbar-btns">';
+  if(lastCopiedText&&lastCopiedText!=="MANUAL"){
+    h+='<span class="api-status connected">'+esc(lastCopiedText)+'</span>';
+  }
+  h+='<button class="btn btn-primary" style="padding:6px 14px;font-size:11px" onclick="saveNotes();copyForClaude()">\uD83D\uDCCB Copy for AI</button>';
+  h+='<button class="btn btn-ghost" style="padding:6px 14px;font-size:11px" onclick="showImportPanel=!showImportPanel;R()">\uD83D\uDCE5 Import Response</button>';
+  h+='<button class="sm-btn" onclick="saveNotes()">Save</button>';
+  h+='<button class="sm-btn" style="border-color:#7f1d1d;color:#f87171" onclick="if(confirm(\'Clear all notes?\')){notesContent=\'\';saveNotes();R();}">Clear</button>';
+  h+='</div></div>';
+  
+  // How it works hint (show on first use)
+  if(!notesContent&&!showImportPanel){
+    h+='<div class="notes-flow-hint">';
+    h+='<div class="nfh-title">How Notes Processing Works</div>';
+    h+='<div class="nfh-steps">';
+    h+='<div class="nfh-step"><div class="nfh-num">1</div><div class="nfh-text">Type or paste your meeting notes below</div></div>';
+    h+='<div class="nfh-arrow">\u2192</div>';
+    h+='<div class="nfh-step"><div class="nfh-num">2</div><div class="nfh-text"><b>Select text</b> for partial, or leave unselected for all</div></div>';
+    h+='<div class="nfh-arrow">\u2192</div>';
+    h+='<div class="nfh-step"><div class="nfh-num">3</div><div class="nfh-text">Click <b>Copy for AI</b> \u2192 Paste in any AI chat</div></div>';
+    h+='<div class="nfh-arrow">\u2192</div>';
+    h+='<div class="nfh-step"><div class="nfh-num">4</div><div class="nfh-text">Copy AI\'s response \u2192 Click <b>Import Response</b></div></div>';
+    h+='</div></div>';
+  }
+  
+  // Import panel
+  if(showImportPanel){
+    h+='<div class="import-panel">';
+    h+='<div class="import-title">\uD83D\uDCE5 Paste AI Response</div>';
+    h+='<div class="import-desc">After pasting the prompt into your AI chat (Claude, ChatGPT, Sidekick, etc.) and getting a response, copy the full JSON response and paste it below.</div>';
+    h+='<textarea id="import-textarea" class="import-textarea" placeholder="Paste AI JSON response here...\n\nIt should look like:\n[{&quot;type&quot;:&quot;new&quot;,&quot;text&quot;:&quot;...&quot;,...}, ...]"></textarea>';
+    h+='<div class="import-actions"><button class="btn btn-primary" style="padding:6px 14px;font-size:11px" onclick="importResponse()">\u2713 Import &amp; Review</button><button class="btn btn-ghost" style="padding:6px 14px;font-size:11px" onclick="showImportPanel=false;R()">Cancel</button></div>';
+    h+='</div>';
+  }
+  
+  h+='<div class="notes-editor-wrap"><div id="notes-editor" class="notes-editor" contenteditable="true" spellcheck="true" placeholder="Paste or type your meeting notes here...\n\nYou can use bullet points, paragraphs, any format.\n\nTip: Select specific text before clicking Process to analyze just that portion." onblur="saveNotes()" onkeydown="notesKeyDown(event)">'+notesContent+'</div></div>';
+  
+  return h;
+}
+
+// Notes editor keyboard handling for OneNote-like behavior
+function notesKeyDown(e){
+  if(e.key==="Tab"&&!e.shiftKey){
+    e.preventDefault();
+    document.execCommand("insertHTML",false,"&nbsp;&nbsp;&nbsp;&nbsp;");
+  }
+  if(e.key==="Tab"&&e.shiftKey){
+    e.preventDefault();
+    // Remove leading spaces from current line
+    var sel=window.getSelection();
+    if(sel.rangeCount>0){
+      var range=sel.getRangeAt(0);
+      var node=range.startContainer;
+      if(node.nodeType===3){
+        var text=node.textContent;
+        var before=text.substring(0,range.startOffset);
+        var lineStart=before.lastIndexOf("\n")+1;
+        var prefix=text.substring(lineStart,lineStart+4);
+        if(prefix==="    "||prefix==="\t"){
+          node.textContent=text.substring(0,lineStart)+text.substring(lineStart+(prefix==="\t"?1:4));
+        }
+      }
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// OUTLINER EDIT TAB - OneNote-like keyboard editing
+// ═══════════════════════════════════════════════════════════════
+var edCursor=null; // id of the currently focused node in edit mode
+var edSelected={}; // id -> true for multi-selected rows
+var edAnchor=null; // id of the anchor for shift-click range selection
+
+function edClearSelection(){edSelected={};edAnchor=null;}
+function edIsSelected(id){return !!edSelected[id];}
+function edSelCount(){return Object.keys(edSelected).length;}
+
+// Select a range of rows between anchor and target (inclusive)
+function edSelectRange(fromId,toId){
+  var flat=getFlatList();
+  var fi=-1,ti=-1;
+  for(var i=0;i<flat.length;i++){
+    if(flat[i].node.id===fromId)fi=i;
+    if(flat[i].node.id===toId)ti=i;
+  }
+  if(fi<0||ti<0)return;
+  var lo=Math.min(fi,ti),hi=Math.max(fi,ti);
+  edSelected={};
+  for(var i=lo;i<=hi;i++){edSelected[flat[i].node.id]=true;}
+}
+
+// Handle click on a row for selection
+function edRowClick(e,id){
+  if(e.shiftKey&&edAnchor){
+    // Shift+click = range select
+    e.preventDefault();
+    edSelectRange(edAnchor,id);
+    // Blur contenteditable to show selection highlight
+    if(document.activeElement)document.activeElement.blur();
+    R();
+    return;
+  }
+  if(e.ctrlKey||e.metaKey){
+    // Ctrl+click = toggle this row
+    e.preventDefault();
+    if(edSelected[id]){delete edSelected[id];}
+    else{edSelected[id]=true;}
+    edAnchor=id;
+    if(document.activeElement)document.activeElement.blur();
+    R();
+    return;
+  }
+  // Normal click = clear multi-select, focus this row
+  if(edSelCount()>1){
+    edClearSelection();
+    R();
+  }
+  edAnchor=id;
+  edCursor=id;
+}
+
+// Bulk operations on selected rows
+function edBulkIndent(){
+  var ids=Object.keys(edSelected);if(ids.length===0)return;
+  pushUndo();
+  // Indent in order so that earlier items don't break later positions
+  var flat=getFlatList();
+  var ordered=flat.filter(function(f){return edSelected[f.node.id];}).map(function(f){return f.node.id;});
+  for(var i=0;i<ordered.length;i++){
+    indentNode(ordered[i]);
+  }
+  cv="edit";R();
+}
+
+function edBulkOutdent(){
+  var ids=Object.keys(edSelected);if(ids.length===0)return;
+  pushUndo();
+  var flat=getFlatList();
+  // Outdent in reverse order to preserve positions
+  var ordered=flat.filter(function(f){return edSelected[f.node.id];}).map(function(f){return f.node.id;});
+  for(var i=ordered.length-1;i>=0;i--){
+    outdentNode(ordered[i]);
+  }
+  cv="edit";R();
+}
+
+function edBulkDelete(){
+  var ids=Object.keys(edSelected);if(ids.length===0)return;
+  pushUndo();
+  // Delete in reverse flat order so positions stay valid
+  var flat=getFlatList();
+  var ordered=flat.filter(function(f){return edSelected[f.node.id];}).map(function(f){return f.node.id;});
+  for(var i=ordered.length-1;i>=0;i--){
+    var loc=getContainer(ordered[i]);
+    if(!loc)continue;
+    var node=loc.arr[loc.idx];
+    var children=(node.ch&&node.ch.length>0)?node.ch.slice():[];
+    loc.arr.splice(loc.idx,1);
+    for(var j=children.length-1;j>=0;j--){
+      loc.arr.splice(loc.idx,0,children[j]);
+    }
+    dayPlan=dayPlan.filter(function(x){return x!==ordered[i];});
+  }
+  edClearSelection();
+  sv();cv="edit";R();
+}
+
+function edBulkAddToPlan(){
+  var ids=Object.keys(edSelected);if(ids.length===0)return;
+  pushUndo();
+  for(var i=0;i<ids.length;i++){
+    if(dayPlan.indexOf(ids[i])<0)dayPlan.push(ids[i]);
+  }
+  edClearSelection();
+  sv();R();
+}
+
+// Flatten tree into an ordered list for navigation
+function flattenVisible(nodes,depth,out){
+  for(var i=0;i<nodes.length;i++){
+    out.push({node:nodes[i],depth:depth});
+    if(hc(nodes[i])&&exp[nodes[i].id]){
+      flattenVisible(nodes[i].ch,depth+1,out);
+    }
+  }
+}
+
+function getFlatList(){
+  var list=[];flattenVisible(TREE,0,list);return list;
+}
+
+function getFlatIndex(id){
+  var list=getFlatList();
+  for(var i=0;i<list.length;i++){if(list[i].node.id===id)return i;}
+  return -1;
+}
+
+// Focus a specific node in the editor
+function edFocus(id){
+  edCursor=id;
+  setTimeout(function(){
+    var el=document.getElementById("ed-"+id);
+    if(el){
+      el.focus();
+      // Place cursor at end
+      var range=document.createRange();
+      var sel=window.getSelection();
+      if(el.childNodes.length>0){
+        range.setStartAfter(el.lastChild);
+      } else {
+        range.setStart(el,0);
+      }
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+  },20);
+}
+
+// Save text from contenteditable back to tree node
+function edSaveText(id){
+  var el=document.getElementById("ed-"+id);
+  if(!el)return;
+  var newText=el.textContent.trim();
+  var node=findNode(id,TREE);
+  if(node&&node.text!==newText&&newText){
+    pushUndo();
+    node.text=newText;
+    sv();
+  }
+}
+
+// Insert new sibling after current node
+function edInsertAfter(id){
+  var loc=getContainer(id);
+  if(!loc)return;
+  pushUndo();
+  var newId="ed-"+Date.now()+"-"+Math.random().toString(36).substr(2,5);
+  var node=findNode(id,TREE);
+  var newNode={id:newId,text:"",comp:node?node.comp:"PMO",ch:[]};
+  // If node has expanded children, insert as first child instead
+  if(hc(node)&&exp[node.id]){
+    node.ch.unshift(newNode);
+  } else {
+    loc.arr.splice(loc.idx+1,0,newNode);
+  }
+  sv();
+  cv="edit";R();
+  edFocus(newId);
+}
+
+// Insert new sibling before current node
+function edInsertBefore(id){
+  var loc=getContainer(id);
+  if(!loc)return;
+  pushUndo();
+  var newId="ed-"+Date.now()+"-"+Math.random().toString(36).substr(2,5);
+  var node=findNode(id,TREE);
+  var newNode={id:newId,text:"",comp:node?node.comp:"PMO",ch:[]};
+  loc.arr.splice(loc.idx,0,newNode);
+  sv();
+  cv="edit";R();
+  edFocus(newId);
+}
+
+// Delete current node if empty, promote children
+function edDeleteIfEmpty(id){
+  var el=document.getElementById("ed-"+id);
+  if(!el)return false;
+  if(el.textContent.trim()!=="")return false;
+  // Find previous node to focus
+  var flat=getFlatList();
+  var idx=getFlatIndex(id);
+  var prevId=idx>0?flat[idx-1].node.id:null;
+  pushUndo();
+  // Delete node, promote children
+  var loc=getContainer(id);
+  if(!loc)return false;
+  var node=loc.arr[loc.idx];
+  var children=(node.ch&&node.ch.length>0)?node.ch.slice():[];
+  loc.arr.splice(loc.idx,1);
+  for(var i=children.length-1;i>=0;i--){
+    loc.arr.splice(loc.idx,0,children[i]);
+  }
+  dayPlan=dayPlan.filter(function(x){return x!==id;});
+  sv();cv="edit";R();
+  if(prevId)edFocus(prevId);
+  return true;
+}
+
+// Handle keydown in editor rows
+function edKeyDown(e,id){
+  // Shift+Arrow for multi-select — preventDefault here, global handler does the work
+  if(e.shiftKey&&!e.ctrlKey&&!e.metaKey&&(e.key==="ArrowUp"||e.key==="ArrowDown")){
+    e.preventDefault();
+    // Set edCursor so global handler knows where we are
+    edCursor=id;
+    // Don't return — let the event bubble to the global document handler
+    // But since we already prevented default, we need to call the logic directly
+    edSaveText(id);
+    if(document.activeElement)document.activeElement.blur();
+
+    var flat=getFlatList();
+    var sc=edSelCount();
+
+    if(e.key==="ArrowDown"){
+      if(sc===0){
+        // Very first press: select current row only
+        edAnchor=id;
+        edSelected={};edSelected[id]=true;
+        edCursor=id;
+      } else {
+        // Extend down from moving cursor
+        var movingIdx=getFlatIndex(edCursor);
+        if(movingIdx>=0&&movingIdx<flat.length-1){
+          edCursor=flat[movingIdx+1].node.id;
+          edSelectRange(edAnchor,edCursor);
+        }
+      }
+    } else {
+      if(sc===0){
+        // Very first press up: select current + one above
+        edAnchor=id;
+        var anchorIdx=getFlatIndex(id);
+        if(anchorIdx>0){
+          edSelected={};
+          edCursor=flat[anchorIdx-1].node.id;
+          edSelectRange(edAnchor,edCursor);
+        } else {
+          edSelected={};edSelected[id]=true;
+          edCursor=id;
+        }
+      } else {
+        var movingIdx=getFlatIndex(edCursor);
+        if(movingIdx>0){
+          edCursor=flat[movingIdx-1].node.id;
+          edSelectRange(edAnchor,edCursor);
+        }
+      }
+    }
+    cv="edit";R();
+    return;
+  }
+  // If multiple rows selected, handle bulk operations
+  if(edSelCount()>1){
+    if(e.key==="Tab"&&!e.shiftKey){e.preventDefault();edBulkIndent();return;}
+    if(e.key==="Tab"&&e.shiftKey){e.preventDefault();edBulkOutdent();return;}
+    if(e.key==="Backspace"||e.key==="Delete"){e.preventDefault();edBulkDelete();return;}
+    if(e.key==="Escape"){e.preventDefault();edClearSelection();R();return;}
+    return; // Block other keys when multi-selected
+  }
+  if(e.key==="Enter"&&!e.shiftKey){
+    e.preventDefault();
+    var el=document.getElementById("ed-"+id);
+    var atStart=false;
+    if(el){
+      var sel=window.getSelection();
+      if(sel.isCollapsed&&sel.rangeCount>0){
+        var r=sel.getRangeAt(0);
+        // Check if cursor is at absolute start
+        if(r.startOffset===0){
+          // Also verify it's the first text node or the element itself
+          if(r.startContainer===el||r.startContainer===el.firstChild){
+            atStart=true;
+          }
+        }
+      }
+    }
+    edSaveText(id);
+    if(atStart&&el&&el.textContent.trim().length>0){
+      // Cursor at start of non-empty row: insert blank line before, pushing this row down
+      edInsertBefore(id);
+    } else {
+      edInsertAfter(id);
+    }
+    return;
+  }
+  if(e.key==="Tab"&&!e.shiftKey){
+    e.preventDefault();
+    edSaveText(id);
+    // Try standard indent first (make child of previous sibling)
+    var loc=getContainer(id);
+    if(loc&&loc.idx>0){
+      indentNode(id);
+    } else {
+      // Node is first child — find the row above in flat list and make this a child of it
+      var flat=getFlatList();
+      var idx=getFlatIndex(id);
+      if(idx>0){
+        var aboveNode=flat[idx-1].node;
+        // Remove from current location
+        var loc2=getContainer(id);
+        if(loc2){
+          pushUndo();
+          var node=loc2.arr.splice(loc2.idx,1)[0];
+          if(!aboveNode.ch)aboveNode.ch=[];
+          aboveNode.ch.push(node);
+          exp[aboveNode.id]=true;
+          sv();
+        }
+      }
+    }
+    cv="edit";R();
+    edFocus(id);
+    return;
+  }
+  if(e.key==="Tab"&&e.shiftKey){
+    e.preventDefault();
+    edSaveText(id);
+    outdentNode(id);
+    cv="edit";R();
+    edFocus(id);
+    return;
+  }
+  if(e.key==="ArrowUp"&&!e.shiftKey&&!e.ctrlKey&&!e.metaKey){
+    // Only navigate if cursor is at start of text
+    var sel=window.getSelection();
+    if(sel.rangeCount>0&&sel.getRangeAt(0).startOffset===0&&sel.isCollapsed){
+      e.preventDefault();
+      edSaveText(id);
+      edClearSelection();
+      var flat=getFlatList();
+      var idx=getFlatIndex(id);
+      if(idx>0)edFocus(flat[idx-1].node.id);
+    }
+    return;
+  }
+  if(e.key==="ArrowDown"&&!e.shiftKey&&!e.ctrlKey&&!e.metaKey){
+    var el=document.getElementById("ed-"+id);
+    var sel=window.getSelection();
+    var atEnd=false;
+    if(el&&sel.rangeCount>0){
+      var r=sel.getRangeAt(0);
+      atEnd=(r.endOffset>=el.textContent.length)&&sel.isCollapsed;
+    }
+    if(atEnd){
+      e.preventDefault();
+      edSaveText(id);
+      edClearSelection();
+      var flat=getFlatList();
+      var idx=getFlatIndex(id);
+      if(idx<flat.length-1)edFocus(flat[idx+1].node.id);
+    }
+    return;
+  }
+  // Ctrl+Shift+Up/Down = move node
+  if((e.ctrlKey||e.metaKey)&&e.shiftKey&&e.key==="ArrowUp"){
+    e.preventDefault();
+    edSaveText(id);
+    moveNode(id,-1);
+    cv="edit";R();
+    edFocus(id);
+    return;
+  }
+  if((e.ctrlKey||e.metaKey)&&e.shiftKey&&e.key==="ArrowDown"){
+    e.preventDefault();
+    edSaveText(id);
+    moveNode(id,1);
+    cv="edit";R();
+    edFocus(id);
+    return;
+  }
+  // Backspace handling
+  if(e.key==="Backspace"){
+    var el=document.getElementById("ed-"+id);
+    // Empty row = delete it
+    if(el&&el.textContent.trim()===""){
+      e.preventDefault();
+      edDeleteIfEmpty(id);
+      return;
+    }
+    // Check if all text is selected (Ctrl+A case)
+    var sel=window.getSelection();
+    if(el&&sel.rangeCount>0&&!sel.isCollapsed){
+      var selText=sel.toString();
+      if(selText.length>=el.textContent.trim().length){
+        e.preventDefault();
+        el.textContent="";
+        edDeleteIfEmpty(id);
+        return;
+      }
+      // Partial selection — let browser handle the delete naturally
+      return;
+    }
+    // Cursor at very start, no selection, non-empty = outdent
+    if(sel.isCollapsed&&sel.rangeCount>0){
+      var r=sel.getRangeAt(0);
+      // Check if cursor is at absolute start
+      var atStart=(r.startOffset===0);
+      // Also check if we're in a text node that's the first child
+      if(r.startContainer!==el&&r.startContainer.parentNode===el){
+        var firstTextNode=el.firstChild;
+        atStart=(r.startContainer===firstTextNode&&r.startOffset===0);
+      }
+      if(atStart){
+        e.preventDefault();
+        edSaveText(id);
+        outdentNode(id);
+        cv="edit";R();
+        edFocus(id);
+        return;
+      }
+    }
+    // Otherwise let browser handle normal backspace (deleting characters)
+    return;
+  }
+  // Delete key on empty = same as backspace on empty
+  if(e.key==="Delete"){
+    var el=document.getElementById("ed-"+id);
+    if(el&&el.textContent.trim()===""){
+      e.preventDefault();
+      edDeleteIfEmpty(id);
+      return;
+    }
+    // Delete at end of text: merge next visible row's text into this one
+    if(el){
+      var sel=window.getSelection();
+      if(sel.isCollapsed&&sel.rangeCount>0){
+        var r=sel.getRangeAt(0);
+        if(r.endOffset>=el.textContent.length){
+          e.preventDefault();
+          var flat=getFlatList();
+          var idx=getFlatIndex(id);
+          if(idx<flat.length-1){
+            var nextNode=flat[idx+1].node;
+            var nextText=nextNode.text;
+            if(nextText){
+              edSaveText(id);
+              pushUndo();
+              // Append next node's text to current
+              var curNode=findNode(id,TREE);
+              if(curNode)curNode.text=curNode.text+nextText;
+              // Delete next node (promote its children)
+              var loc=getContainer(nextNode.id);
+              if(loc){
+                var node2=loc.arr[loc.idx];
+                var children2=(node2.ch&&node2.ch.length>0)?node2.ch.slice():[];
+                loc.arr.splice(loc.idx,1);
+                for(var ci=children2.length-1;ci>=0;ci--){loc.arr.splice(loc.idx,0,children2[ci]);}
+                dayPlan=dayPlan.filter(function(x){return x!==nextNode.id;});
+              }
+              sv();cv="edit";R();
+              edFocus(id);
+            }
+          }
+          return;
+        }
+      }
+    }
+  }
+}
+
+// Save on blur
+function edBlur(id){
+  edSaveText(id);
+}
+
+// Render a single editor row
+function edRow(n,depth){
+  if(st&&!ms(n,st.toLowerCase()))return "";
+  var c=CC[n.comp]||"#64748b";
+  var done=isDone(n);
+  var has=hc(n);
+  var x=!!exp[n.id];
+  var inPlan=dayPlan.indexOf(n.id)>=0;
+  var sel=edIsSelected(n.id);
+
+  var ind="";for(var i=0;i<depth;i++)ind+='<span class="ni"></span>';
+  var tog=has?'<button class="nt'+(x?" expanded":"")+'" onclick="te(\''+n.id+'\')">'+(x?"\u25BE":"\u25B8")+"</button>":'<span class="nl">\u2022</span>';
+  var dot='<span class="cdot" style="background:'+c+'"></span>';
+
+  var planBtn="";
+  if(!done&&!inPlan){planBtn='<button class="abtn go ed-plan" onclick="addToPlan(\''+n.id+'\')" title="Add to plan">\u2192</button>';}
+
+  var cls="ed-text"+(done?" done":"")+(depth===0?" ed-l1":"");
+
+  var html='<div class="ed-row'+(sel?" ed-selected":"")+'" id="edrow-'+n.id+'" onclick="edRowClick(event,\''+n.id+'\')">';
+  html+=ind+tog;
+  html+='<span class="ed-grip" draggable="true" ondragstart="onDragStart(event,\''+n.id+'\')" title="Drag to reorder or to plan">\u2847</span>';
+  html+=dot;
+  html+='<div class="'+cls+'" id="ed-'+n.id+'" contenteditable="true" spellcheck="false"';
+  html+=' onkeydown="edKeyDown(event,\''+n.id+'\')"';
+  html+=' onblur="edBlur(\''+n.id+'\')"';
+  html+=' onfocus="edCursor=\''+n.id+'\'"';
+  html+=' style="opacity:'+(done?0.35:1)+'"';
+  html+='>'+esc(n.text)+'</div>';
+  html+=planBtn;
+  html+='</div>';
+
+  if(has&&x){
+    html+='<div class="ed-children" style="margin-left:'+(depth>0?12:0)+"px;"+(depth>0?"padding-left:6px;border-left:1px solid #252836;":"")+"\">";
+    for(var j=0;j<n.ch.length;j++){html+=edRow(n.ch[j],depth+1);}
+    html+='</div>';
+  }
+  return html;
+}
+
+// Render the full edit tab
+function renderEditTab(){
+  var sc=edSelCount();
+  var h='<div class="pane-toolbar"><input class="search-input" id="sb" placeholder="Search tasks, people, streams..." value="'+esc(st)+'" oninput="st=this.value;R()"><div class="toolbar-btns"><button class="sm-btn" onclick="ea()">All</button><button class="sm-btn" onclick="expandToLevel(1)">L1</button><button class="sm-btn" onclick="expandToLevel(2)">L2</button><button class="sm-btn" onclick="expandToLevel(3)">L3</button><button class="sm-btn" onclick="expandToLevel(4)">L4</button><button class="sm-btn" onclick="ca()">\u2296</button></div></div>';
+  h+='<div class="ed-toolbar"><span class="ed-hint">';
+  if(sc>1){
+    h+='<b>'+sc+' selected</b> &nbsp; ';
+    h+='<button class="sm-btn" onclick="edBulkIndent()">Tab \u2192</button> ';
+    h+='<button class="sm-btn" onclick="edBulkOutdent()">\u2190 Shift+Tab</button> ';
+    h+='<button class="sm-btn" style="border-color:#7f1d1d;color:#f87171" onclick="edBulkDelete()">Delete</button> ';
+    h+='<button class="sm-btn" style="border-color:#065f46;color:#34d399" onclick="edBulkAddToPlan()">\u2192 Plan</button> ';
+    h+='<button class="sm-btn" onclick="edClearSelection();R()">Esc</button>';
+  } else {
+    h+='<b>Enter</b> new &nbsp; <b>Tab</b> indent &nbsp; <b>Shift+Tab</b> outdent &nbsp; <b>\u2191\u2193</b> nav &nbsp; <b>Ctrl+Shift+\u2191\u2193</b> move &nbsp; <b>Shift+Click</b> multi-select';
+  }
+  h+='</span></div>';
+  h+='<div class="tree-container"><div class="card ed-card">';
+  for(var i=0;i<TREE.length;i++){h+=edRow(TREE[i],0);}
+  h+='</div></div>';
+  return h;
+}
+
+R();
+
+</script>
+</body>
+</html>
