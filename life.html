@@ -123,7 +123,19 @@
   @media (min-width: 1100px){
     .app{max-width:1100px;}
     header.top, nav.tabs{max-width:1100px;}
-  }
+    .todo-cols{display:grid;grid-template-columns:1.3fr 1fr;gap:10px;align-items:start;}
+  .todo-cols .card{margin-bottom:0;}
+  @media (max-width: 520px){ .todo-cols{grid-template-columns:1fr 1fr;gap:8px;} .todo-cols h3{font-size:.8rem;} .todo-cols .card{padding:12px;} }
+  .filter-tabs{display:flex;flex-direction:column;gap:6px;}
+  .filter-tabs a{font-size:.8rem;color:var(--accent-3);text-decoration:underline;cursor:pointer;}
+  .filter-tabs a.active{color:var(--accent);font-weight:700;text-decoration:none;}
+  .filter-item{font-size:.8rem;padding:6px 0;border-bottom:1px solid var(--line);}
+  .filter-item:last-child{border-bottom:none;}
+  .filter-item.done{text-decoration:line-through;color:var(--ink-dim);}
+  .task-status-select{width:auto;font-size:.68rem;padding:3px 6px;margin:0;border-radius:6px;}
+  .check-item.status-in_progress{border-left:3px solid var(--accent-3);padding-left:8px;margin-left:-8px;border-radius:8px;}
+  .check-item.status-on_hold{border-left:3px solid var(--accent-2);padding-left:8px;margin-left:-8px;border-radius:8px;opacity:.75;}
+  .check-item.status-not_needed{opacity:.45;}
 </style>
 </head>
 <body>
@@ -207,19 +219,26 @@
 
   <!-- HOME / TODO -->
   <div class="view active" id="view-home">
-    <div class="card">
-      <div class="row between"><h3 style="margin:0;">Office hours tasks</h3><button class="btn small ghost" id="officeTaskClearBtn" onclick="OfficeTasks.clearDay()">Clear all</button></div>
-      <div id="officeTaskTree"></div>
-      <details class="planner" id="officeTaskAddPanel" ontoggle="if(this.open) OfficeTasks.prefill()">
-        <summary>+ Add / edit tasks</summary>
-        <div class="muted">Shows today's tasks — edit text to rename, delete a line to remove it, add new lines for new tasks. Each extra level of indent (tab or spaces) nests one level deeper.</div>
-        <textarea id="officeTaskInput" placeholder="Task 1
+    <div class="todo-cols">
+      <div class="card">
+        <div class="row between"><h3 style="margin:0;">Office hours tasks</h3><button class="btn small ghost" id="officeTaskClearBtn" onclick="OfficeTasks.clearDay()">Clear all</button></div>
+        <div id="officeTaskTree"></div>
+        <details class="planner" id="officeTaskAddPanel" ontoggle="if(this.open) OfficeTasks.prefill()">
+          <summary>+ Add / edit tasks</summary>
+          <div class="muted">Shows today's tasks — edit text to rename, delete a line to remove it, add new lines for new tasks. Each extra level of indent (tab or spaces) nests one level deeper.</div>
+          <textarea id="officeTaskInput" placeholder="Task 1
 	Subtask 1
 		Sub-subtask 1a
 	Subtask 2
 Task 2"></textarea>
-        <button class="btn block" onclick="guardedRun('officeTaskSave',this,()=>OfficeTasks.save())">Save</button>
-      </details>
+          <button class="btn block" onclick="guardedRun('officeTaskSave',this,()=>OfficeTasks.save())">Save</button>
+        </details>
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:10px;">Filter</h3>
+        <div class="filter-tabs" id="todoFilterTabs"></div>
+        <div id="todoFilterList" style="margin-top:10px;"></div>
+      </div>
     </div>
   </div>
 
@@ -885,9 +904,22 @@ async function rolloverOfficeTasks(){
 function renderOfficeItem(t, depth, editable){
   const addedStr = t.created_at ? new Date(t.created_at).toLocaleDateString(undefined,{month:'short',day:'numeric'}) : '';
   const completedStr = t.completed_at ? new Date(t.completed_at).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}) : '';
-  return `<div class="check-item ${t.checked?'checked':''}" style="padding-left:${depth*24}px;">
+  const status = t.status || 'active';
+  const statusClass = status!=='active' ? `status-${status}` : '';
+  const statusSelect = editable ? `
+    <select class="task-status-select" onchange="OfficeTasks.setStatus('${t.id}',this.value)">
+      <option value="active" ${status==='active'?'selected':''}>Active</option>
+      <option value="in_progress" ${status==='in_progress'?'selected':''}>In Progress</option>
+      <option value="on_hold" ${status==='on_hold'?'selected':''}>On Hold</option>
+      <option value="not_needed" ${status==='not_needed'?'selected':''}>Not Needed</option>
+    </select>` : (status!=='active' ? `<span class="pill">${status.replace('_',' ')}</span>` : '');
+  return `<div class="check-item ${t.checked?'checked':''} ${statusClass}" style="padding-left:${depth*24}px;">
     <input type="checkbox" ${t.checked?'checked':''} ${editable?'':'disabled'} onchange="OfficeTasks.toggle('${t.id}',this.checked)">
-    <div style="flex:1;"><div class="label">${t.text}</div><div class="muted" style="font-size:.65rem;">Added ${addedStr}${t.completed_at?` · ✓ Completed ${completedStr}`:''}</div></div>
+    <div style="flex:1;">
+      <div class="label">${t.text}</div>
+      <div class="muted" style="font-size:.65rem;">Added ${addedStr}${t.completed_at?` · ✓ Completed ${completedStr}`:''}</div>
+      <div style="margin-top:4px;">${statusSelect}</div>
+    </div>
     ${editable?`<button class="btn small ghost" onclick="OfficeTasks.remove('${t.id}')">✕</button>`:''}
   </div>`;
 }
@@ -924,9 +956,30 @@ async function renderOfficeTasks(){
   const top = (data||[]).filter(t=>!t.parent_id);
   const byParent = {};
   (data||[]).forEach(t=>{ if(t.parent_id) (byParent[t.parent_id]=byParent[t.parent_id]||[]).push(t); });
-  if(!top.length){ $('officeTaskTree').innerHTML='<div class="empty">No office tasks for this day</div>'; return; }
-  $('officeTaskTree').innerHTML = renderOfficeTree(top, byParent, isToday, 0);
+  $('officeTaskTree').innerHTML = top.length ? renderOfficeTree(top, byParent, isToday, 0) : '<div class="empty">No office tasks for this day</div>';
+  TodoFilter.allTasks = data||[];
+  TodoFilter.render();
 }
+const TodoFilter = {
+  allTasks: [],
+  active: 'completed',
+  labels: {completed:'Completed', in_progress:'In Progress', on_hold:'On Hold', not_needed:'Not Needed'},
+  renderTabs(){
+    $('todoFilterTabs').innerHTML = Object.keys(this.labels).map(k=>
+      `<a class="${this.active===k?'active':''}" onclick="TodoFilter.setFilter('${k}')">${this.labels[k]}</a>`
+    ).join('');
+  },
+  setFilter(k){ this.active = k; this.render(); },
+  render(){
+    this.renderTabs();
+    let matches;
+    if(this.active==='completed') matches = this.allTasks.filter(t=>t.checked);
+    else matches = this.allTasks.filter(t=>(t.status||'active')===this.active);
+    $('todoFilterList').innerHTML = matches.length ? matches.map(t=>
+      `<div class="filter-item ${t.checked?'done':''}">${t.text}</div>`
+    ).join('') : `<div class="empty">Nothing here</div>`;
+  }
+};
 const OfficeTemplate = {
   async prefill(){
     const {data} = await sb.from('office_task_templates').select('*').order('created_at');
@@ -978,6 +1031,10 @@ const OfficeTemplate = {
   }
 };
 const OfficeTasks = {
+  async setStatus(id, status){
+    await sb.from('office_tasks').update({status}).eq('id',id);
+    renderOfficeTasks();
+  },
   async remove(id){
     if(!confirm('Remove this task (and any sub-tasks under it)?')) return;
     await sb.from('office_tasks').delete().eq('id',id);
